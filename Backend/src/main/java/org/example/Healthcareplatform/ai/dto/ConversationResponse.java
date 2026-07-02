@@ -7,20 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-/**
- * Lightweight DTO for listing conversations.
- *
- * <pre>{@code
- * {
- *   "id": 1,
- *   "title": "I have a headache...",
- *   "createdAt": "2026-07-02T11:00:00Z",
- *   "updatedAt": "2026-07-02T11:30:00Z",
- *   "status": "ACTIVE",
- *   "messageCount": 6
- * }
- * }</pre>
- */
 @Data
 @Builder
 @NoArgsConstructor

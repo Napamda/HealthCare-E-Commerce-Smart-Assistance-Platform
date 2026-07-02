@@ -3,25 +3,15 @@ package org.example.Healthcareplatform.ai.provider;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.ai.exception.ProviderUnavailableException;
 import org.example.Healthcareplatform.ai.prompt.PromptTemplate;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Sends prompts to <a href="https://openrouter.ai">OpenRouter</a> (OpenAI-compatible).
- * <p>
- * Parses all prompt markers into properly structured API messages:
- * <ul>
- *   <li>{@code [SYSTEM_PROMPT]}          → role: system</li>
- *   <li>{@code [HEALTH_PROFILE]}         → role: system (Phase 6)</li>
- *   <li>{@code [CONVERSATION_SUMMARY]}   → role: system (Phase 5)</li>
- *   <li>{@code [CONVERSATION_HISTORY]}   → alternating user/assistant</li>
- *   <li>{@code [USER_MESSAGE]}           → role: user</li>
- * </ul>
- */
 @Slf4j
 public class OpenRouterProvider implements AIProvider {
 
@@ -40,9 +30,17 @@ public class OpenRouterProvider implements AIProvider {
                 .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "Bearer " + apiKey)
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .requestFactory(requestFactoryWithTimeouts())
                 .build();
 
         log.info("OpenRouterProvider initialized — model={}, baseUrl={}", model, baseUrl);
+    }
+
+    private static SimpleClientHttpRequestFactory requestFactoryWithTimeouts() {
+        var factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(10_000);
+        factory.setReadTimeout(30_000);
+        return factory;
     }
 
     @Override
@@ -60,8 +58,17 @@ public class OpenRouterProvider implements AIProvider {
             var response = restClient.post()
                     .uri("/chat/completions")
                     .body(body)
-                    .retrieve()
-                    .body(OpenRouterChatResponse.class);
+                    .exchange((req, resp) -> {
+                        HttpStatusCode status = resp.getStatusCode();
+                        if (status.isError()) {
+                            byte[] errorBody = resp.getBody().readAllBytes();
+                            String errorText = new String(errorBody);
+                            log.error("OpenRouter HTTP {} — body: {}", status.value(), errorText);
+                            throw new ProviderUnavailableException("OpenRouter",
+                                    new RuntimeException("HTTP " + status.value() + ": " + errorText));
+                        }
+                        return resp.bodyTo(OpenRouterChatResponse.class);
+                    });
 
             if (response == null
                     || response.choices() == null
@@ -93,30 +100,17 @@ public class OpenRouterProvider implements AIProvider {
         return model;
     }
 
-    // ---- prompt parsing ----
-
-    /**
-     * Parse the flat prompt string into structured API messages.
-     * <p>
-     * All context sections (system prompt, health profile, conversation summary)
-     * are merged into the system message. Conversation history is parsed
-     * into alternating user/assistant turns. The current message becomes
-     * the final user message.
-     */
     private List<Map<String, String>> buildMessages(String prompt) {
         var messages = new ArrayList<Map<String, String>>();
 
-        // Collect all system-level context sections
         var systemContext = new StringBuilder();
 
-        // System prompt
         String systemContent = extractSection(prompt,
                 PromptTemplate.SYSTEM_MARKER, nextMarker(prompt, PromptTemplate.SYSTEM_MARKER));
         if (!systemContent.isBlank()) {
             systemContext.append(systemContent).append("\n\n");
         }
 
-        // Conversation summary (older messages condensed)
         String summaryContent = extractSection(prompt,
                 PromptTemplate.SUMMARY_MARKER, nextMarker(prompt, PromptTemplate.SUMMARY_MARKER));
         if (!summaryContent.isBlank()) {
@@ -127,21 +121,18 @@ public class OpenRouterProvider implements AIProvider {
             messages.add(Map.of("role", "system", "content", systemContext.toString().trim()));
         }
 
-        // Conversation history section (recent messages)
         String historyContent = extractSection(prompt,
                 PromptTemplate.HISTORY_MARKER, nextMarker(prompt, PromptTemplate.HISTORY_MARKER));
         if (!historyContent.isBlank()) {
             messages.addAll(parseHistorySection(historyContent));
         }
 
-        // User message section
         String userContent = extractSection(prompt,
                 PromptTemplate.USER_MARKER, null);
         if (!userContent.isBlank()) {
             messages.add(Map.of("role", "user", "content", userContent));
         }
 
-        // Fallback — if no markers found, send the whole prompt as a user message
         if (messages.isEmpty()) {
             messages.add(Map.of("role", "user", "content", prompt));
         }
@@ -149,10 +140,6 @@ public class OpenRouterProvider implements AIProvider {
         return messages;
     }
 
-    /**
-     * Parse the conversation history section into alternating user/assistant messages.
-     * Each line is expected in the format: "USER: ..." or "ASSISTANT: ...".
-     */
     private List<Map<String, String>> parseHistorySection(String history) {
         var messages = new ArrayList<Map<String, String>>();
         String[] lines = history.split("\n");
@@ -168,15 +155,10 @@ public class OpenRouterProvider implements AIProvider {
             } else if (trimmed.startsWith("SYSTEM: ")) {
                 messages.add(Map.of("role", "system", "content", trimmed.substring(8)));
             }
-            // Ignore lines that don't match any prefix (e.g., blank lines)
         }
         return messages;
     }
 
-    /**
-     * Find the next marker that appears after the current section.
-     * Returns null if no subsequent marker is found.
-     */
     private String nextMarker(String prompt, String currentMarker) {
         int currentPos = prompt.indexOf(currentMarker);
         if (currentPos < 0) return null;
@@ -215,8 +197,6 @@ public class OpenRouterProvider implements AIProvider {
 
         return text.substring(start, end).trim();
     }
-
-    // ---- API response records ----
 
     private record OpenRouterChatResponse(List<Choice> choices) {}
     private record Choice(Message message) {}

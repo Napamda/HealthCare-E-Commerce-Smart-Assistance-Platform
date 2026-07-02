@@ -1,6 +1,6 @@
 <script setup>
 import { storeToRefs } from 'pinia'
-import { useChatStore } from '../stores/chat.js'
+import { useChatStore } from '../../stores/chat.js'
 
 const store = useChatStore()
 const { sortedConversations, activeConversationId } = storeToRefs(store)

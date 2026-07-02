@@ -1,8 +1,5 @@
 package org.example.Healthcareplatform.ai.exception;
 
-/**
- * Thrown when the selected AI provider is unavailable or misconfigured.
- */
 public class ProviderUnavailableException extends AIException {
 
     public ProviderUnavailableException(String providerName) {

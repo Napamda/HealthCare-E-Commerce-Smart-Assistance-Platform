@@ -3,12 +3,6 @@ package org.example.Healthcareplatform.ai.prompt;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 
-/**
- * Holds the static healthcare system prompt injected into every AI call.
- * <p>
- * This is the foundation that Phase 5 (Health Profile),
- * Phase 8 (Escalation), and Phase 9 (Integration) will extend.
- */
 @Getter
 @Component
 public class SystemPrompt {
@@ -19,7 +13,7 @@ public class SystemPrompt {
             
             --- INSTRUCTIONS ---
             • Provide general health information and guidance.
-            • Answer user questions clearly and empathetically.
+            • Answer user questions clearly and empathetically and in a text format.
             • Do NOT diagnose conditions — encourage users to consult a doctor.
             • Keep responses concise and actionable.
             

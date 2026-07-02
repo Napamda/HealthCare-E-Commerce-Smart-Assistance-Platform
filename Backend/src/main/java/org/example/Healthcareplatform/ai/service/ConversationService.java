@@ -6,17 +6,13 @@ import org.example.Healthcareplatform.ai.entity.Conversation;
 import org.example.Healthcareplatform.ai.entity.ConversationMessage;
 import org.example.Healthcareplatform.ai.repository.ConversationMessageRepository;
 import org.example.Healthcareplatform.ai.repository.ConversationRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Manages conversation lifecycle and message persistence.
- * <p>
- * <b>Responsibility boundary:</b> This service handles only persistence.
- * It does NOT contain AI logic, prompt building, or provider calls.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -25,17 +21,8 @@ public class ConversationService {
     private final ConversationRepository conversationRepository;
     private final ConversationMessageRepository messageRepository;
 
-    // ---------------------------------------------------------------
-    // Conversation management
-    // ---------------------------------------------------------------
-
-    /**
-     * Create a new conversation for the given user.
-     * The title is derived from the first user message.
-     */
     @Transactional
     public Conversation createConversation(Long userId, String firstMessage) {
-        // Derive a short title from the first message
         String title = deriveTitle(firstMessage);
 
         Conversation conversation = Conversation.builder()
@@ -49,23 +36,11 @@ public class ConversationService {
         return saved;
     }
 
-    /**
-     * Find a conversation by ID, or throw if not found.
-     */
     public Conversation findConversation(Long id) {
         return conversationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + id));
     }
 
-    /**
-     * Find or create a conversation: if conversationId is provided, load it;
-     * otherwise, create a new one.
-     *
-     * @param conversationId optional existing conversation ID (may be null)
-     * @param userId         the owning user
-     * @param firstMessage   used for title if creating a new conversation
-     * @return the existing or newly created conversation
-     */
     @Transactional
     public Conversation findOrCreateConversation(Long conversationId, Long userId, String firstMessage) {
         if (conversationId != null) {
@@ -81,18 +56,17 @@ public class ConversationService {
         return createConversation(userId, firstMessage);
     }
 
-    /**
-     * List all non-deleted conversations for a user, newest first.
-     */
     public List<Conversation> listConversations(Long userId) {
         return conversationRepository
                 .findByUserIdAndStatusNotOrderByUpdatedAtDesc(
                         userId, Conversation.ConversationStatus.DELETED);
     }
 
-    /**
-     * Soft-delete a conversation by marking it as DELETED.
-     */
+    public Page<Conversation> listConversations(Long userId, Pageable pageable) {
+        return conversationRepository
+                .findByUserIdAndStatusNot(userId, Conversation.ConversationStatus.DELETED, pageable);
+    }
+
     @Transactional
     public void deleteConversation(Long id) {
         Conversation conversation = findConversation(id);
@@ -101,13 +75,7 @@ public class ConversationService {
         log.info("Soft-deleted conversation id={}", id);
     }
 
-    // ---------------------------------------------------------------
-    // Message management
-    // ---------------------------------------------------------------
 
-    /**
-     * Persist a user message.
-     */
     @Transactional
     public ConversationMessage saveUserMessage(Long conversationId, String content) {
         ConversationMessage message = ConversationMessage.builder()
@@ -121,9 +89,6 @@ public class ConversationService {
         return saved;
     }
 
-    /**
-     * Persist an AI assistant response.
-     */
     @Transactional
     public ConversationMessage saveAssistantMessage(Long conversationId, String content,
                                                      String provider, String model) {
@@ -140,25 +105,14 @@ public class ConversationService {
         return saved;
     }
 
-    /**
-     * Retrieve all messages for a conversation, oldest first.
-     */
     public List<ConversationMessage> getMessages(Long conversationId) {
         return messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
     }
 
-    // ---------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------
-
-    /**
-     * Derive a short title from the user's first message.
-     */
     private String deriveTitle(String message) {
         if (message == null || message.isBlank()) {
             return "New conversation";
         }
-        // Truncate to 80 chars and strip trailing punctuation
         String trimmed = message.strip();
         if (trimmed.length() > 80) {
             trimmed = trimmed.substring(0, 80) + "...";

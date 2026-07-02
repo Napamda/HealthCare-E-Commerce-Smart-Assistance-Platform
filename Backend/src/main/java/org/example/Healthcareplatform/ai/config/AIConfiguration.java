@@ -10,17 +10,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-
-/**
- * AI module configuration.
- * <p>
- * Provider selection logic:
- * <ul>
- *   <li>{@code ai.provider=openrouter} → {@link OpenRouterProvider} (default)</li>
- *   <li>{@code ai.provider=mock}        → {@link MockProvider}</li>
- *   <li>If neither can be created       → falls back to {@link MockProvider}</li>
- * </ul>
- */
 @Slf4j
 @Configuration
 public class AIConfiguration {
@@ -31,17 +20,13 @@ public class AIConfiguration {
     @Value("${ai.openrouter.base-url:https://openrouter.ai/api/v1}")
     private String openRouterBaseUrl;
 
-    @Value("${ai.openrouter.model:google/gemini-2.0-flash-001}")
+    @Value("${ai.openrouter.model:google/gemma-4-31b-it:free}")
     private String openRouterModel;
 
     @Value("${ai.openrouter.timeout-seconds:60}")
     private int openRouterTimeout;
 
-    // ---- Provider beans ----
 
-    /**
-     * Creates the OpenRouter provider when {@code ai.provider=openrouter} (the default).
-     */
     @Bean
     @Primary
     @ConditionalOnProperty(name = "ai.provider", havingValue = "openrouter", matchIfMissing = true)
@@ -50,9 +35,6 @@ public class AIConfiguration {
         return new OpenRouterProvider(openRouterBaseUrl, openRouterApiKey, openRouterModel);
     }
 
-    /**
-     * Creates the Mock provider when {@code ai.provider=mock}.
-     */
     @Bean
     @ConditionalOnProperty(name = "ai.provider", havingValue = "mock")
     public AIProvider mockAiProvider() {
@@ -60,9 +42,7 @@ public class AIConfiguration {
         return new MockProvider();
     }
 
-    /**
-     * Ultimate fallback — if neither mode produced an AIProvider, use Mock.
-     */
+
     @Bean
     @ConditionalOnMissingBean(AIProvider.class)
     public AIProvider fallbackProvider() {

@@ -3,13 +3,6 @@ package org.example.Healthcareplatform.ai.provider;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.ai.prompt.PromptTemplate;
 
-/**
- * Mock AI provider for local development and testing.
- * Returns a deterministic response without calling any external API.
- * <p>
- * This bean is created by {@code AIConfiguration} — not auto-detected —
- * so provider selection remains in one place.
- */
 @Slf4j
 public class MockProvider implements AIProvider {
 
@@ -29,12 +22,11 @@ public class MockProvider implements AIProvider {
     public String chat(String prompt) {
         log.info("MockProvider received prompt ({} chars)", prompt.length());
 
-        // Extract just the user message portion for the mock echo
         String userMessage = extractSection(prompt,
                 PromptTemplate.USER_MARKER, null);
 
         if (userMessage.isBlank()) {
-            userMessage = prompt; // fallback: echo the whole prompt
+            userMessage = prompt;
         }
 
         String response = String.format(MOCK_RESPONSE_TEMPLATE, userMessage);

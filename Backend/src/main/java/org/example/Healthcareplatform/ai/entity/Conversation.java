@@ -17,9 +17,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
-/**
- * Represents a chat conversation between a user and the AI.
- */
 @Entity
 @Table(name = "conversations")
 @Data
@@ -32,11 +29,9 @@ public class Conversation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** The user who owns this conversation. */
     @Column(nullable = false)
     private Long userId;
 
-    /** Auto-generated or user-defined conversation title. */
     private String title;
 
     @CreationTimestamp

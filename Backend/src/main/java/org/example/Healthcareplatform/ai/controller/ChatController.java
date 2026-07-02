@@ -9,6 +9,10 @@ import org.example.Healthcareplatform.ai.entity.Conversation;
 import org.example.Healthcareplatform.ai.exception.AIException;
 import org.example.Healthcareplatform.ai.service.AIService;
 import org.example.Healthcareplatform.ai.service.ConversationService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,18 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
-/**
- * REST controller for the AI Chat feature.
- *
- * <h3>Endpoints</h3>
- * <ul>
- *   <li>{@code POST   /api/chat}                       — send a message to the AI</li>
- *   <li>{@code POST   /api/chat/test}                  — health-check / connectivity test</li>
- *   <li>{@code GET    /api/chat/conversations}          — list user conversations</li>
- *   <li>{@code GET    /api/chat/conversations/{id}}     — get conversation details</li>
- *   <li>{@code DELETE /api/chat/conversations/{id}}     — soft-delete a conversation</li>
- * </ul>
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/chat")
@@ -43,24 +35,6 @@ public class ChatController {
     private final AIService aiService;
     private final ConversationService conversationService;
 
-    // ================================================================
-    // Chat
-    // ================================================================
-
-    /**
-     * Main chat endpoint.
-     *
-     * <pre>{@code
-     * POST /api/chat
-     * Content-Type: application/json
-     *
-     * {
-     *   "conversationId": null,
-     *   "message": "I have a headache.",
-     *   "userId": 1
-     * }
-     * }</pre>
-     */
     @PostMapping
     public ResponseEntity<ChatResponse> chat(@RequestBody ChatRequest request) {
         log.info("POST /api/chat — message length: {}",
@@ -74,10 +48,6 @@ public class ChatController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Test endpoint — verifies the controller/service/provider chain
-     * without requiring a real API key (works with Mock too).
-     */
     @PostMapping("/test")
     public ResponseEntity<ChatResponse> test(@RequestBody(required = false) ChatRequest request) {
         String message = (request != null && request.getMessage() != null)
@@ -99,26 +69,34 @@ public class ChatController {
         return ResponseEntity.ok(response);
     }
 
-    // ================================================================
-    // Conversation management
-    // ================================================================
-
-    /**
-     * List all conversations for a user.
-     *
-     * <pre>{@code
-     * GET /api/chat/conversations?userId=1
-     * }</pre>
-     *
-     * @param userId optional query param (defaults to 1 for MVP)
-     */
     @GetMapping("/conversations")
-    public ResponseEntity<List<ConversationResponse>> listConversations(
-            @RequestParam(defaultValue = "1") Long userId) {
-        log.info("GET /api/chat/conversations — userId={}", userId);
+    public ResponseEntity<?> listConversations(
+            @RequestParam(defaultValue = "1") Long userId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        log.info("GET /api/chat/conversations — userId={}, page={}, size={}", userId, page, size);
+
+        if (page != null && size != null) {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+            Page<Conversation> conversationPage = conversationService.listConversations(userId, pageable);
+
+            List<ConversationResponse> items = conversationPage.getContent().stream()
+                    .map(this::toConversationResponse)
+                    .toList();
+
+            Map<String, Object> body = Map.of(
+                    "content", items,
+                    "page", conversationPage.getNumber(),
+                    "size", conversationPage.getSize(),
+                    "totalElements", conversationPage.getTotalElements(),
+                    "totalPages", conversationPage.getTotalPages(),
+                    "first", conversationPage.isFirst(),
+                    "last", conversationPage.isLast()
+            );
+            return ResponseEntity.ok(body);
+        }
 
         List<Conversation> conversations = conversationService.listConversations(userId);
-
         List<ConversationResponse> responses = conversations.stream()
                 .map(this::toConversationResponse)
                 .toList();
@@ -126,13 +104,6 @@ public class ChatController {
         return ResponseEntity.ok(responses);
     }
 
-    /**
-     * Get a single conversation with its messages.
-     *
-     * <pre>{@code
-     * GET /api/chat/conversations/1
-     * }</pre>
-     */
     @GetMapping("/conversations/{id}")
     public ResponseEntity<?> getConversation(@PathVariable Long id) {
         log.info("GET /api/chat/conversations/{}", id);
@@ -155,13 +126,6 @@ public class ChatController {
         }
     }
 
-    /**
-     * Soft-delete a conversation.
-     *
-     * <pre>{@code
-     * DELETE /api/chat/conversations/1
-     * }</pre>
-     */
     @DeleteMapping("/conversations/{id}")
     public ResponseEntity<Void> deleteConversation(@PathVariable Long id) {
         log.info("DELETE /api/chat/conversations/{}", id);
@@ -174,15 +138,15 @@ public class ChatController {
         }
     }
 
-    // ================================================================
-    // Exception handlers
-    // ================================================================
-
     @org.springframework.web.bind.annotation.ExceptionHandler(AIException.class)
     public ResponseEntity<Map<String, String>> handleAIException(AIException ex) {
-        log.error("AI error: {}", ex.getMessage());
+        log.error("AI error: {}", ex.getMessage(), ex);
+        String detail = (ex.getCause() != null) ? ex.getCause().getMessage() : ex.getMessage();
         return ResponseEntity.internalServerError()
-                .body(Map.of("error", ex.getMessage()));
+                .body(Map.of(
+                        "error", ex.getMessage(),
+                        "detail", detail
+                ));
     }
 
     @org.springframework.web.bind.annotation.ExceptionHandler(IllegalArgumentException.class)
@@ -190,10 +154,6 @@ public class ChatController {
         return ResponseEntity.badRequest()
                 .body(Map.of("error", ex.getMessage()));
     }
-
-    // ================================================================
-    // Helpers
-    // ================================================================
 
     private ConversationResponse toConversationResponse(Conversation conversation) {
         long messageCount = conversationService.getMessages(conversation.getId()).size();
