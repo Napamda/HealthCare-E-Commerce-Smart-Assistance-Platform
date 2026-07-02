@@ -1,13 +1,13 @@
-package org.example.healthcareecommercesmartassistanceplatform;
+package org.example.Healthcareplatform;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class HealthCareECommerceSmartAssistancePlatformApplication {
+public class HealthCareplatform {
 
     public static void main(String[] args) {
-        SpringApplication.run(HealthCareECommerceSmartAssistancePlatformApplication.class, args);
+        SpringApplication.run(HealthCareplatform.class, args);
     }
 
 }
