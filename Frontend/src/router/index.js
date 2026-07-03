@@ -3,7 +3,22 @@ import { createRouter, createWebHistory } from 'vue-router'
 const routes = [
   {
     path: '/',
-    redirect: '/prescriptions',
+    redirect: '/chat',
+  },
+  {
+    path: '/chat',
+    name: 'Chat',
+    component: () => import('../pages/ChatPage.vue'),
+  },
+  {
+    path: '/chat/:id',
+    name: 'ChatConversation',
+    component: () => import('../pages/ChatPage.vue'),
+  },
+  {
+    path: '/consultations',
+    name: 'Consultations',
+    component: () => import('../pages/ConsultationStatusPage.vue'),
   },
   {
     path: '/prescriptions',
@@ -18,8 +33,7 @@ const routes = [
   {
     path: '/prescriptions/:id',
     name: 'PrescriptionDetail',
-    component: () => import('../pages/PrescriptionDetailPage.vue'),
-  },
+    component: () => import('../pages/PrescriptionDetailPage.vue'),}
 ]
 
 const router = createRouter({
