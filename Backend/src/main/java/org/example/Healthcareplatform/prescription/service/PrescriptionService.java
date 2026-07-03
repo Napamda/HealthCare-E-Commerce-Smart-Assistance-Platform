@@ -1,6 +1,7 @@
 package org.example.Healthcareplatform.prescription.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.Healthcareplatform.ai.ocr.OCRService;
 import org.example.Healthcareplatform.notification.entity.Notification;
 import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.prescription.dto.DownloadResource;
@@ -34,6 +35,7 @@ public class PrescriptionService {
 
     private final PrescriptionRepository prescriptionRepository;
     private final NotificationService notificationService;
+    private final OCRService ocrService;
 
     @Value("${prescription.storage-root:${user.home}/healthcare-uploads/prescriptions}")
     private String storageRoot;
@@ -61,9 +63,11 @@ public class PrescriptionService {
     private static final byte[] WEBP_MAGIC = new byte[]{0x52, 0x49, 0x46, 0x46};
 
     public PrescriptionService(PrescriptionRepository prescriptionRepository,
-                               NotificationService notificationService) {
+                               NotificationService notificationService,
+                               OCRService ocrService) {
         this.prescriptionRepository = prescriptionRepository;
         this.notificationService = notificationService;
+        this.ocrService = ocrService;
     }
 
     public UploadResponse uploadPrescription(Long patientUserId, MultipartFile file) {
@@ -99,12 +103,29 @@ public class PrescriptionService {
         prescription = prescriptionRepository.save(prescription);
         log.info("Prescription record created — id={}, patientUserId={}", prescription.getId(), patientUserId);
 
+        String ocrResult = null;
+        boolean ocrAttempted = false;
+        try {
+            byte[] fileBytes = file.getBytes();
+            ocrResult = ocrService.extractText(fileBytes, file.getContentType());
+            ocrAttempted = true;
+            if (ocrResult != null && !ocrResult.isBlank()) {
+                prescription.setOcrText(ocrResult);
+                prescriptionRepository.save(prescription);
+                log.info("OCR text saved for prescription — id={}, chars={}", prescription.getId(), ocrResult.length());
+            }
+        } catch (Exception e) {
+            log.warn("OCR failed for prescription — id={}: {}", prescription.getId(), e.getMessage());
+        }
+
         return UploadResponse.builder()
                 .prescriptionId(prescription.getId())
                 .originalFileName(originalFileName)
                 .fileType(file.getContentType())
                 .fileSize(file.getSize())
                 .status(prescription.getStatus().name())
+                .ocrText(prescription.getOcrText())
+                .ocrAttempted(ocrAttempted)
                 .message("Prescription uploaded successfully and is pending review.")
                 .build();
     }
@@ -198,6 +219,18 @@ public class PrescriptionService {
 
         notificationService.createNotification(
                 prescription.getPatientUserId(), title, message, notificationType, prescription.getId());
+
+        return toResponse(prescription);
+    }
+
+    public PrescriptionResponse updateOcrText(Long prescriptionId, String ocrText) {
+        Prescription prescription = prescriptionRepository.findById(prescriptionId)
+                .orElseThrow(() -> new RuntimeException("Prescription not found with id: " + prescriptionId));
+
+        prescription.setOcrText(ocrText);
+        prescription = prescriptionRepository.save(prescription);
+        log.info("OCR text updated — prescriptionId={}, chars={}", prescriptionId,
+                ocrText != null ? ocrText.length() : 0);
 
         return toResponse(prescription);
     }

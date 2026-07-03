@@ -2,6 +2,9 @@ package org.example.Healthcareplatform.ai.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.example.Healthcareplatform.ai.ocr.FallbackOCRProvider;
+import org.example.Healthcareplatform.ai.ocr.OCRProvider;
+import org.example.Healthcareplatform.ai.ocr.OpenRouterOCRProvider;
 import org.example.Healthcareplatform.ai.provider.AIProvider;
 import org.example.Healthcareplatform.ai.provider.MockProvider;
 import org.example.Healthcareplatform.ai.provider.OpenRouterProvider;
@@ -26,6 +29,9 @@ public class AIConfiguration {
 
     @Value("${ai.openrouter.timeout-seconds:60}")
     private int openRouterTimeout;
+
+    @Value("${ai.ocr.model:google/gemini-2.0-flash-001}")
+    private String ocrModel;
 
 
     @Bean
@@ -55,5 +61,27 @@ public class AIConfiguration {
     @ConditionalOnMissingBean(ObjectMapper.class)
     public ObjectMapper objectMapper() {
         return new ObjectMapper();
+    }
+
+    @Bean
+    @Primary
+    @ConditionalOnProperty(name = "ai.ocr.enabled", havingValue = "true", matchIfMissing = true)
+    public OCRProvider openRouterOCRProvider(ObjectMapper objectMapper) {
+        log.info("Activating OpenRouter OCR provider — model={}", ocrModel);
+        return new OpenRouterOCRProvider(openRouterBaseUrl, openRouterApiKey, ocrModel, objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "ai.ocr.enabled", havingValue = "false")
+    public OCRProvider disabledOCRProvider() {
+        log.info("OCR disabled — using fallback only");
+        return new FallbackOCRProvider();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(OCRProvider.class)
+    public OCRProvider fallbackOCRProvider() {
+        log.warn("No OCR provider configured — falling back to FallbackOCRProvider");
+        return new FallbackOCRProvider();
     }
 }

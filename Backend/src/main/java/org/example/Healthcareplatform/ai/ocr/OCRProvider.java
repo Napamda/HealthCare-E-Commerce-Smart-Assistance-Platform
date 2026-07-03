@@ -1,4 +1,8 @@
 package org.example.Healthcareplatform.ai.ocr;
 
-public class OCRProvider {
+public interface OCRProvider {
+
+    String extractText(byte[] imageBytes, String mimeType);
+
+    String providerName();
 }

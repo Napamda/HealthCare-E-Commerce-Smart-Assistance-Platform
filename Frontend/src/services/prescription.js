@@ -37,3 +37,9 @@ export function getPrescriptionDownloadUrl(id, userId) {
   const base = import.meta.env.VITE_API_BASE_URL || ''
   return `${base}/api/prescriptions/${id}/download?userId=${userId}`
 }
+
+export function updateOcrText(id, ocrText) {
+  return apiClient
+    .patch(`/api/prescriptions/${id}/ocr`, { ocrText })
+    .then((res) => res.data)
+}

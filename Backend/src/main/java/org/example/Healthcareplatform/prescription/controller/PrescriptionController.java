@@ -52,6 +52,16 @@ public class PrescriptionController {
         return ResponseEntity.ok(response);
     }
 
+    @PatchMapping("/{id}/ocr")
+    public ResponseEntity<PrescriptionResponse> updateOcrText(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        String ocrText = body.get("ocrText");
+        log.info("Update OCR text — id={}, chars={}", id, ocrText != null ? ocrText.length() : 0);
+        PrescriptionResponse response = prescriptionService.updateOcrText(id, ocrText);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}/download")
     public ResponseEntity<InputStreamResource> downloadPrescription(
             @PathVariable Long id,

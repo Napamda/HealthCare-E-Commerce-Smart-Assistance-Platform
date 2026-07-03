@@ -17,4 +17,6 @@ public class UploadResponse {
     private Long fileSize;
     private String status;
     private String message;
+    private String ocrText;
+    private boolean ocrAttempted;
 }
