@@ -1,8 +1,11 @@
 package org.example.Healthcareplatform.prescription.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.example.Healthcareplatform.notification.entity.Notification;
+import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.prescription.dto.DownloadResource;
 import org.example.Healthcareplatform.prescription.dto.PrescriptionResponse;
+import org.example.Healthcareplatform.prescription.dto.ReviewRequest;
 import org.example.Healthcareplatform.prescription.dto.UploadResponse;
 import org.example.Healthcareplatform.prescription.entity.Prescription;
 import org.example.Healthcareplatform.prescription.repository.PrescriptionRepository;
@@ -30,6 +33,7 @@ import java.util.stream.Collectors;
 public class PrescriptionService {
 
     private final PrescriptionRepository prescriptionRepository;
+    private final NotificationService notificationService;
 
     @Value("${prescription.storage-root:${user.home}/healthcare-uploads/prescriptions}")
     private String storageRoot;
@@ -56,8 +60,10 @@ public class PrescriptionService {
     private static final byte[] PDF_MAGIC = new byte[]{0x25, 0x50, 0x44, 0x46};
     private static final byte[] WEBP_MAGIC = new byte[]{0x52, 0x49, 0x46, 0x46};
 
-    public PrescriptionService(PrescriptionRepository prescriptionRepository) {
+    public PrescriptionService(PrescriptionRepository prescriptionRepository,
+                               NotificationService notificationService) {
         this.prescriptionRepository = prescriptionRepository;
+        this.notificationService = notificationService;
     }
 
     public UploadResponse uploadPrescription(Long patientUserId, MultipartFile file) {
@@ -143,6 +149,57 @@ public class PrescriptionService {
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    public PrescriptionResponse reviewPrescription(Long prescriptionId, ReviewRequest request) {
+        Prescription prescription = prescriptionRepository.findById(prescriptionId)
+                .orElseThrow(() -> new RuntimeException("Prescription not found with id: " + prescriptionId));
+
+        if (prescription.getStatus() != Prescription.PrescriptionStatus.PENDING_REVIEW) {
+            throw new IllegalArgumentException("Prescription has already been reviewed");
+        }
+
+        Prescription.PrescriptionStatus newStatus;
+        try {
+            newStatus = Prescription.PrescriptionStatus.valueOf(request.getStatus().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "Invalid status: " + request.getStatus() + ". Must be APPROVED or REJECTED");
+        }
+
+        if (newStatus != Prescription.PrescriptionStatus.APPROVED
+                && newStatus != Prescription.PrescriptionStatus.REJECTED) {
+            throw new IllegalArgumentException("Status must be APPROVED or REJECTED");
+        }
+
+        prescription.setStatus(newStatus);
+        prescription.setPharmacistComments(request.getPharmacistComments());
+        prescription.setPharmacistId(request.getPharmacistId());
+
+        prescription = prescriptionRepository.save(prescription);
+        log.info("Prescription reviewed — id={}, status={}, pharmacistId={}",
+                prescriptionId, newStatus, request.getPharmacistId());
+
+        Notification.NotificationType notificationType = newStatus == Prescription.PrescriptionStatus.APPROVED
+                ? Notification.NotificationType.PRESCRIPTION_APPROVED
+                : Notification.NotificationType.PRESCRIPTION_REJECTED;
+
+        String title = newStatus == Prescription.PrescriptionStatus.APPROVED
+                ? "Prescription Approved"
+                : "Prescription Rejected";
+
+        String message = newStatus == Prescription.PrescriptionStatus.APPROVED
+                ? "Your prescription \"" + prescription.getOriginalFileName() + "\" has been approved."
+                : "Your prescription \"" + prescription.getOriginalFileName() + "\" has been rejected.";
+
+        if (request.getPharmacistComments() != null && !request.getPharmacistComments().isBlank()) {
+            message += " Pharmacist comment: " + request.getPharmacistComments();
+        }
+
+        notificationService.createNotification(
+                prescription.getPatientUserId(), title, message, notificationType, prescription.getId());
+
+        return toResponse(prescription);
     }
 
     private void validateFile(MultipartFile file) {

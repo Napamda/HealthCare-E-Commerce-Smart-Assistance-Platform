@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.prescription.dto.DownloadResource;
 import org.example.Healthcareplatform.prescription.dto.PrescriptionResponse;
+import org.example.Healthcareplatform.prescription.dto.ReviewRequest;
 import org.example.Healthcareplatform.prescription.dto.UploadResponse;
 import org.example.Healthcareplatform.prescription.service.PrescriptionService;
 import org.springframework.core.io.InputStreamResource;
@@ -39,6 +40,16 @@ public class PrescriptionController {
     public ResponseEntity<PrescriptionResponse> getPrescription(@PathVariable Long id) {
         log.info("Get prescription — id={}", id);
         return ResponseEntity.ok(prescriptionService.getPrescription(id));
+    }
+
+    @PatchMapping("/{id}/review")
+    public ResponseEntity<PrescriptionResponse> reviewPrescription(
+            @PathVariable Long id,
+            @RequestBody ReviewRequest request) {
+        log.info("Review prescription — id={}, status={}, pharmacistId={}",
+                id, request.getStatus(), request.getPharmacistId());
+        PrescriptionResponse response = prescriptionService.reviewPrescription(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}/download")
