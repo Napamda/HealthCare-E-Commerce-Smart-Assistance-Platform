@@ -108,7 +108,17 @@
         <div class="success-details">
           <span class="success-title">Prescription uploaded successfully!</span>
           <span class="success-subtitle">ID: #{{ uploadedId }} &mdash; Your prescription is pending review.</span>
+          <span v-if="ocrText" class="success-ocr-label">OCR text extracted ({{ ocrText.length }} chars)</span>
+          <span v-else-if="ocrAttempted" class="success-ocr-label no-ocr">OCR could not extract text from this image</span>
         </div>
+      </div>
+
+      <div v-if="success && ocrText" class="ocr-preview">
+        <div class="ocr-preview-header">
+          <h3>Extracted Text</h3>
+          <router-link :to="'/prescriptions/' + uploadedId" class="ocr-view-link">View &amp; correct &#8594;</router-link>
+        </div>
+        <pre class="ocr-preview-text">{{ ocrText }}</pre>
       </div>
 
       <div class="upload-actions">
@@ -147,6 +157,8 @@ const uploadProgress = ref(0)
 const error = ref('')
 const success = ref(false)
 const uploadedId = ref(null)
+const ocrText = ref('')
+const ocrAttempted = ref(false)
 
 const isImageFile = computed(() => {
   if (!selectedFile.value) return false
@@ -211,6 +223,8 @@ function resetForm() {
   success.value = false
   uploadProgress.value = 0
   uploadedId.value = null
+  ocrText.value = ''
+  ocrAttempted.value = false
 }
 
 async function uploadFile() {
@@ -230,6 +244,8 @@ async function uploadFile() {
     )
     uploadProgress.value = 100
     uploadedId.value = result.prescriptionId
+    ocrText.value = result.ocrText || ''
+    ocrAttempted.value = result.ocrAttempted || false
     success.value = true
   } catch (err) {
     const message = err.response?.data?.error || err.message || 'Upload failed. Please try again.'
@@ -506,5 +522,65 @@ function formatFileSize(bytes) {
   to {
     transform: rotate(360deg);
   }
+}
+
+.success-ocr-label {
+  font-size: 12px;
+  color: #16a34a;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.success-ocr-label.no-ocr {
+  color: #d97706;
+}
+
+.ocr-preview {
+  margin-top: 16px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.ocr-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.ocr-preview-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+  margin: 0;
+}
+
+.ocr-view-link {
+  font-size: 13px;
+  color: #2563eb;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.ocr-view-link:hover {
+  text-decoration: underline;
+}
+
+.ocr-preview-text {
+  font-size: 13px;
+  font-family: 'Courier New', Courier, monospace;
+  line-height: 1.6;
+  color: #1e293b;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 160px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 10px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #fde68a;
 }
 </style>
