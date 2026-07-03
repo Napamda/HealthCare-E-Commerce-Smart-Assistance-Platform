@@ -1,7 +1,9 @@
 <script setup>
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useChatStore } from '../../stores/chat.js'
 
+const router = useRouter()
 const store = useChatStore()
 const { sortedConversations, activeConversationId } = storeToRefs(store)
 
@@ -18,6 +20,10 @@ function removeConversation(id, event) {
 
 function startNewChat() {
   store.newConversation()
+}
+
+function goToConsultations() {
+  router.push('/consultations')
 }
 
 function formatDate(isoString) {
@@ -84,6 +90,20 @@ function formatDate(isoString) {
           </svg>
         </button>
       </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="sidebar-footer">
+      <button class="btn-nav-link" @click="goToConsultations">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+        My Consultations
+      </button>
     </div>
   </aside>
 </template>
@@ -202,5 +222,27 @@ function formatDate(isoString) {
 .btn-delete:hover {
   color: var(--color-danger);
   background: rgba(220, 38, 38, 0.1);
+}
+
+.sidebar-footer {
+  padding: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.btn-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+.btn-nav-link:hover {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
 }
 </style>

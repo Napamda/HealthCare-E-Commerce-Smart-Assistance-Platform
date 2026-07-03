@@ -15,6 +15,11 @@ const routes = [
     name: 'ChatConversation',
     component: () => import('../pages/ChatPage.vue'),
   },
+  {
+    path: '/consultations',
+    name: 'Consultations',
+    component: () => import('../pages/ConsultationStatusPage.vue'),
+  },
 ]
 
 const router = createRouter({

@@ -3,22 +3,28 @@ import { ref, watch, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useChatStore } from '../stores/chat.js'
+import { useConsultationStore } from '../stores/consultation.js'
 import ChatSidebar from '../components/chat/ChatSidebar.vue'
 import ChatMessage from '../components/chat/ChatMessage.vue'
 import ChatInput from '../components/chat/ChatInput.vue'
+import EscalateDialog from '../components/chat/EscalateDialog.vue'
 
 const route = useRoute()
 const store = useChatStore()
+const consultationStore = useConsultationStore()
 const {
   messages,
   isSending,
   isLoadingConversation,
   error,
   activeConversation,
+  activeConversationId,
 } = storeToRefs(store)
+const { activeConsultation, isEscalating } = storeToRefs(consultationStore)
 
 const chatBodyRef = ref(null)
 const chatInputRef = ref(null)
+const showEscalateDialog = ref(false)
 
 // On mount: load conversations + route-based conversation
 onMounted(async () => {
@@ -64,6 +70,34 @@ function onSend(text) {
 function onRetry() {
   store.clearError()
 }
+
+function openEscalateDialog() {
+  consultationStore.clearEscalationError()
+  showEscalateDialog.value = true
+}
+
+function onEscalateClose() {
+  showEscalateDialog.value = false
+}
+
+function onEscalated() {
+  showEscalateDialog.value = false
+}
+
+function dismissConsultationBanner() {
+  consultationStore.resetActiveConsultation()
+}
+
+function getStatusLabel(status) {
+  const map = {
+    PENDING: 'Pending Review',
+    ACCEPTED: 'Accepted',
+    REJECTED: 'Rejected',
+    IN_PROGRESS: 'In Progress',
+    CLOSED: 'Closed',
+  }
+  return map[status] || status
+}
 </script>
 
 <template>
@@ -73,6 +107,33 @@ function onRetry() {
 
     <!-- Main chat area -->
     <main class="chat-main">
+      <!-- Consultation banner -->
+      <div v-if="activeConsultation" class="consultation-banner" :class="'status-' + activeConsultation.status.toLowerCase()">
+        <div class="banner-content">
+          <div class="banner-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+            </svg>
+          </div>
+          <div class="banner-text">
+            <span class="banner-label">Consultation #{{ activeConsultation.id }}</span>
+            <span class="banner-status">{{ getStatusLabel(activeConsultation.status) }}</span>
+          </div>
+          <span class="banner-priority" :class="'priority-' + activeConsultation.priority.toLowerCase()">
+            {{ activeConsultation.priority }}
+          </span>
+        </div>
+        <button class="banner-dismiss" @click="dismissConsultationBanner" title="Dismiss">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
       <!-- Loading skeleton -->
       <div v-if="isLoadingConversation" class="chat-loading">
         <div class="dot-typing">
@@ -93,6 +154,23 @@ function onRetry() {
         ref="chatBodyRef"
         class="chat-body"
       >
+        <!-- Escalation toolbar (visible when conversation has messages) -->
+        <div v-if="messages.length > 0" class="chat-toolbar">
+          <button
+            class="btn-escalate-toolbar"
+            :disabled="isEscalating || !!activeConsultation"
+            @click="openEscalateDialog"
+            :title="activeConsultation ? 'Consultation already active' : 'Escalate to a doctor'"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <polyline points="16 11 19 14 23 10" />
+            </svg>
+            {{ activeConsultation ? 'Escalated' : 'Escalate to Doctor' }}
+          </button>
+        </div>
         <!-- Empty state -->
         <div v-if="messages.length === 0" class="chat-empty">
           <div class="empty-icon">
@@ -170,6 +248,14 @@ function onRetry() {
         @send="onSend"
       />
     </main>
+
+    <!-- Escalate dialog -->
+    <EscalateDialog
+      v-if="showEscalateDialog"
+      :conversation-id="activeConversationId"
+      @close="onEscalateClose"
+      @escalated="onEscalated"
+    />
   </div>
 </template>
 
@@ -313,5 +399,131 @@ function onRetry() {
   background: var(--color-ai-bubble);
   border: 1px solid var(--color-border);
   border-bottom-left-radius: var(--radius-sm);
+}
+
+/* Consultation banner */
+.consultation-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--color-border);
+}
+.consultation-banner.status-pending {
+  background: #fffbeb;
+  border-bottom-color: #fde68a;
+}
+.consultation-banner.status-accepted,
+.consultation-banner.status-in_progress {
+  background: #ecfdf5;
+  border-bottom-color: #a7f3d0;
+}
+.consultation-banner.status-rejected {
+  background: #fef2f2;
+  border-bottom-color: #fecaca;
+}
+.consultation-banner.status-closed {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.banner-icon {
+  color: var(--color-warning);
+  display: flex;
+}
+.status-accepted .banner-icon,
+.status-in_progress .banner-icon {
+  color: var(--color-success);
+}
+.status-rejected .banner-icon {
+  color: var(--color-danger);
+}
+
+.banner-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.banner-label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.banner-status {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.banner-priority {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.priority-low {
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+.priority-normal {
+  background: #dbeafe;
+  color: #2563eb;
+}
+.priority-high {
+  background: #fef3c7;
+  color: #d97706;
+}
+.priority-urgent {
+  background: #fecaca;
+  color: #dc2626;
+}
+
+.banner-dismiss {
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  transition: color 0.15s;
+}
+.banner-dismiss:hover {
+  color: var(--color-text);
+}
+
+/* Chat toolbar */
+.chat-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 16px;
+}
+
+.btn-escalate-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  color: #d97706;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-escalate-toolbar:hover:not(:disabled) {
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+.btn-escalate-toolbar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

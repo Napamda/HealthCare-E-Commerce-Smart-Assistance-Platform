@@ -1,5 +1,6 @@
 package org.example.Healthcareplatform.ai.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.ai.provider.AIProvider;
 import org.example.Healthcareplatform.ai.provider.MockProvider;
@@ -48,5 +49,11 @@ public class AIConfiguration {
     public AIProvider fallbackProvider() {
         log.warn("No AI provider configured — falling back to MockProvider");
         return new MockProvider();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ObjectMapper.class)
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 }
