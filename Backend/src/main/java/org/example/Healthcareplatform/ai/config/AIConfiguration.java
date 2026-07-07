@@ -24,13 +24,13 @@ public class AIConfiguration {
     @Value("${ai.openrouter.base-url:https://openrouter.ai/api/v1}")
     private String openRouterBaseUrl;
 
-    @Value("${ai.openrouter.model:google/gemma-4-31b-it:free}")
+    @Value("${ai.openrouter.model:{OPENROUTER_MODEL:openrouter/free}")
     private String openRouterModel;
 
     @Value("${ai.openrouter.timeout-seconds:60}")
     private int openRouterTimeout;
 
-    @Value("${ai.ocr.model:google/gemini-2.0-flash-001}")
+    @Value("${ai.ocr.model:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}")
     private String ocrModel;
 
 

@@ -45,14 +45,22 @@ ai:
 
   # Context memory — controls how many messages are sent as prompt context
   memory:
-    # Maximum recent messages to include in the prompt (prevents huge prompts)
     max-history: 10
-    # When total messages exceed this, older messages are replaced with a summary
     summary-threshold: 30
 
-  # OCR configuration — uses OpenRouter vision model for text extraction from prescription images
   ocr:
-    # Set to false to disable AI OCR and only use the fallback placeholder
     enabled: ${AI_OCR_ENABLED:true}
-    # Vision model used for OCR (must support image inputs)
-    model: ${AI_OCR_MODEL:google/gemini-2.0-flash-001}
+    model: ${AI_OCR_MODEL:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}
+    
+logging:
+  level:
+    root: INFO
+    com.yourpackage: DEBUG
+    org.springframework: INFO
+    org.hibernate: DEBUG
+  file:
+    name: application.log
+    path: ./logs/
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
