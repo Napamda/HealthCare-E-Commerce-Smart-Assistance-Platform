@@ -20,6 +20,20 @@ const routes = [
     name: 'Consultations',
     component: () => import('../pages/ConsultationStatusPage.vue'),
   },
+  {
+    path: '/prescriptions',
+    name: 'PrescriptionList',
+    component: () => import('../pages/PrescriptionListPage.vue'),
+  },
+  {
+    path: '/prescriptions/upload',
+    name: 'PrescriptionUpload',
+    component: () => import('../pages/PrescriptionUploadPage.vue'),
+  },
+  {
+    path: '/prescriptions/:id',
+    name: 'PrescriptionDetail',
+    component: () => import('../pages/PrescriptionDetailPage.vue'),}
 ]
 
 const router = createRouter({
