@@ -37,7 +37,7 @@ public class PrescriptionService {
     private final NotificationService notificationService;
     private final OCRService ocrService;
 
-    @Value("${prescription.storage-root:${user.home}/healthcare-uploads/prescriptions}")
+    @Value("${prescription.storage-root:${user.home}/Desktop/HealthCare/healthcare-uploads/prescriptions}")
     private String storageRoot;
 
     @Value("${prescription.max-file-size:10485760}")
