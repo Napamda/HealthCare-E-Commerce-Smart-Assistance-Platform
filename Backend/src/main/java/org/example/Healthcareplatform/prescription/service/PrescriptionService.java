@@ -172,6 +172,43 @@ public class PrescriptionService {
                 .collect(Collectors.toList());
     }
 
+    public List<PrescriptionResponse> getPendingPrescriptions() {
+        return prescriptionRepository.findByStatusOrderByCreatedAtDesc(
+                        Prescription.PrescriptionStatus.PENDING_REVIEW)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<PrescriptionResponse> searchPrescriptions(String status, String search, String startDate, String endDate) {
+        List<Prescription> allPrescriptions = prescriptionRepository.findAllByOrderByCreatedAtDesc();
+
+        return allPrescriptions.stream()
+                .filter(p -> status == null || status.isBlank() || p.getStatus().name().equalsIgnoreCase(status))
+                .filter(p -> {
+                    if (search == null || search.isBlank()) return true;
+                    String lower = search.toLowerCase();
+                    return (p.getOriginalFileName() != null && p.getOriginalFileName().toLowerCase().contains(lower))
+                            || (p.getOcrText() != null && p.getOcrText().toLowerCase().contains(lower))
+                            || (p.getPharmacistComments() != null && p.getPharmacistComments().toLowerCase().contains(lower))
+                            || String.valueOf(p.getPatientUserId()).contains(lower);
+                })
+                .filter(p -> {
+                    if (startDate == null || startDate.isBlank()) return true;
+                    try {
+                        return !p.getCreatedAt().isBefore(LocalDateTime.parse(startDate + "T00:00:00"));
+                    } catch (Exception e) { return true; }
+                })
+                .filter(p -> {
+                    if (endDate == null || endDate.isBlank()) return true;
+                    try {
+                        return !p.getCreatedAt().isAfter(LocalDateTime.parse(endDate + "T23:59:59"));
+                    } catch (Exception e) { return true; }
+                })
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     public PrescriptionResponse reviewPrescription(Long prescriptionId, ReviewRequest request) {
         Prescription prescription = prescriptionRepository.findById(prescriptionId)
                 .orElseThrow(() -> new RuntimeException("Prescription not found with id: " + prescriptionId));
