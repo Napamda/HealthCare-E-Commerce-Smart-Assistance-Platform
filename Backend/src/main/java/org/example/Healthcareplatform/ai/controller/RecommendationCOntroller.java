@@ -6,6 +6,7 @@ import org.example.Healthcareplatform.ai.dto.RecommendationRequest;
 import org.example.Healthcareplatform.ai.dto.RecommendationResponse;
 import org.example.Healthcareplatform.ai.exception.AIException;
 import org.example.Healthcareplatform.ai.service.RecommendationService;
+import org.example.Healthcareplatform.auth.util.SecurityContextUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,17 +23,19 @@ import java.util.Map;
 public class RecommendationCOntroller {
 
     private final RecommendationService recommendationService;
+    private final SecurityContextUtil securityContextUtil;
 
     @PostMapping
     public ResponseEntity<RecommendationResponse> getRecommendations(@RequestBody RecommendationRequest request) {
+        Long userId = securityContextUtil.getCurrentUserId();
         log.info("POST /api/recommendations — userId={}, query={}, allergies={}",
-                request.getUserId(), request.getQuery(), request.getAllergies());
+                userId, request.getQuery(), request.getAllergies());
 
         if (request.getQuery() == null || request.getQuery().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
 
-        RecommendationResponse response = recommendationService.getRecommendations(request);
+        RecommendationResponse response = recommendationService.getRecommendations(request, userId);
         return ResponseEntity.ok(response);
     }
 
