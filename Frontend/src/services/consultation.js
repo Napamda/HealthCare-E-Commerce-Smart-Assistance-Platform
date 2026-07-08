@@ -6,11 +6,18 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-export function escalateToDoctor({ conversationId, patientUserId, reason, priority = 'NORMAL' }) {
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export function escalateToDoctor({ conversationId, reason, priority = 'NORMAL' }) {
   return apiClient
     .post('/api/consultations/escalate', {
       conversationId,
-      patientUserId,
       reason,
       priority,
     })
@@ -27,10 +34,10 @@ export function getPatientConsultations(patientUserId) {
     .then((res) => res.data)
 }
 
-export function updateConsultationStatus(id, status, doctorUserId) {
+export function updateConsultationStatus(id, status) {
   return apiClient
     .patch(`/api/consultations/${id}/status`, null, {
-      params: { status, doctorUserId },
+      params: { status },
     })
     .then((res) => res.data)
 }

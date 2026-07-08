@@ -13,8 +13,6 @@ public class EscalationRequest {
 
     private Long conversationId;
 
-    private Long patientUserId;
-
     private String reason;
 
     private String priority;

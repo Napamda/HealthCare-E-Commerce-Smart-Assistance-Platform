@@ -28,7 +28,7 @@ public class ConsultationService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public ConsultationResponse escalateFromChat(EscalationRequest request) {
+    public ConsultationResponse escalateFromChat(EscalationRequest request, Long patientUserId) {
         if (consultationRepository.existsByConversationIdAndStatusNot(
                 request.getConversationId(), Consultation.ConsultationStatus.CLOSED)) {
             throw new IllegalArgumentException(
@@ -46,7 +46,7 @@ public class ConsultationService {
 
         Consultation consultation = Consultation.builder()
                 .conversationId(request.getConversationId())
-                .patientUserId(request.getPatientUserId())
+                .patientUserId(patientUserId)
                 .status(Consultation.ConsultationStatus.PENDING)
                 .priority(priority)
                 .reason(request.getReason())
