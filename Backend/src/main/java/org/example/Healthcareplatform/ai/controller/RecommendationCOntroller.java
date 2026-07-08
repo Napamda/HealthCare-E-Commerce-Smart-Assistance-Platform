@@ -20,7 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/recommendations")
 @RequiredArgsConstructor
-public class RecommendationCOntroller {
+public class RecommendationController {
 
     private final RecommendationService recommendationService;
     private final SecurityContextUtil securityContextUtil;

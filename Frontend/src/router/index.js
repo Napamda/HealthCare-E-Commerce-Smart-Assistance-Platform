@@ -44,6 +44,8 @@ const routes = [
     name: 'DoctorDashboard',
     meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
     component: () => import('../pages/DoctorDashboardPage.vue'),
+  },
+  {
     path: '/prescriptions',
     name: 'PrescriptionList',
     component: () => import('../pages/PrescriptionListPage.vue'),
@@ -70,8 +72,7 @@ const routes = [
     meta: { requiresRole: [ROLES.VENDOR, ROLES.ADMIN] },
     component: () => import('../pages/VendorDashboardPage.vue'),
   },
-    component: () => import('../pages/PharmacistDashboardPage.vue'),
-  },
+
 ]
 
 const router = createRouter({

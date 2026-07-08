@@ -1,11 +1,6 @@
 spring:
   application:
     name: HealthCare-Platform
-  autoconfigure:
-    exclude:
-      - org.springframework.ai.model.minimax.autoconfigure.MiniMaxChatAutoConfiguration
-      - org.springframework.ai.model.minimax.autoconfigure.MiniMaxEmbeddingAutoConfiguration
-      - org.springframework.ai.model.minimax.autoconfigure.MiniMaxImageAutoConfiguration
   docker:
     compose:
       enabled: false

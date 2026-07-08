@@ -1,0 +1,43 @@
+/* ================================================================
+   HealthCare — Design Tokens / CSS Custom Properties
+   All color, spacing, shadow, radius, and layout tokens live here.
+   ================================================================ */
+
+:root {
+  /* Primary palette */
+  --color-primary: #2563eb;
+  --color-primary-light: #3b82f6;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-bg: #eff6ff;
+
+  /* Neutrals */
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-text: #1e293b;
+  --color-text-secondary: #64748b;
+  --color-text-muted: #94a3b8;
+
+  /* Accents */
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
+  /* Chat-specific */
+  --color-user-bubble: #2563eb;
+  --color-ai-bubble: #f1f5f9;
+  --color-sidebar: #f8fafc;
+
+  /* Spacing */
+  --sidebar-width: 320px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+}
