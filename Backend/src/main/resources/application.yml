@@ -54,7 +54,22 @@ jwt:
 
   # Context memory — controls how many messages are sent as prompt context
   memory:
-    # Maximum recent messages to include in the prompt (prevents huge prompts)
     max-history: 10
-    # When total messages exceed this, older messages are replaced with a summary
     summary-threshold: 30
+
+  ocr:
+    enabled: ${AI_OCR_ENABLED:true}
+    model: ${AI_OCR_MODEL:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}
+    
+logging:
+  level:
+    root: INFO
+    com.yourpackage: DEBUG
+    org.springframework: INFO
+    org.hibernate: DEBUG
+  file:
+    name: application.log
+    path: ./logs/
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
