@@ -43,3 +43,21 @@ export function updateOcrText(id, ocrText) {
     .patch(`/api/prescriptions/${id}/ocr`, { ocrText })
     .then((res) => res.data)
 }
+
+export function getPendingPrescriptions() {
+  return apiClient
+    .get('/api/prescriptions/pharmacist/pending')
+    .then((res) => res.data)
+}
+
+export function searchPrescriptions(params = {}) {
+  return apiClient
+    .get('/api/prescriptions/pharmacist/search', { params })
+    .then((res) => res.data)
+}
+
+export function reviewPrescription(id, reviewData) {
+  return apiClient
+    .patch(`/api/prescriptions/${id}/review`, reviewData)
+    .then((res) => res.data)
+}
