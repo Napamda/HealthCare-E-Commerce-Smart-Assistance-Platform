@@ -2,6 +2,7 @@ package org.example.Healthcareplatform.consultation.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.Healthcareplatform.auth.util.SecurityContextUtil;
 import org.example.Healthcareplatform.consultation.dto.ConsultationResponse;
 import org.example.Healthcareplatform.consultation.dto.EscalationRequest;
 import org.example.Healthcareplatform.consultation.service.ConsultationService;
@@ -26,20 +27,22 @@ import java.util.Map;
 public class ConsultationController {
 
     private final ConsultationService consultationService;
+    private final SecurityContextUtil securityContextUtil;
 
     @PostMapping("/escalate")
     public ResponseEntity<ConsultationResponse> escalate(@RequestBody EscalationRequest request) {
+        Long patientUserId = securityContextUtil.getCurrentUserId();
         log.info("POST /api/consultations/escalate — conversationId={}, patientUserId={}, priority={}",
-                request.getConversationId(), request.getPatientUserId(), request.getPriority());
+                request.getConversationId(), patientUserId, request.getPriority());
 
-        if (request.getConversationId() == null || request.getPatientUserId() == null) {
+        if (request.getConversationId() == null) {
             return ResponseEntity.badRequest().build();
         }
         if (request.getReason() == null || request.getReason().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
 
-        ConsultationResponse response = consultationService.escalateFromChat(request);
+        ConsultationResponse response = consultationService.escalateFromChat(request, patientUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -58,7 +61,14 @@ public class ConsultationController {
     @GetMapping("/patient/{patientUserId}")
     public ResponseEntity<List<ConsultationResponse>> getPatientConsultations(
             @PathVariable Long patientUserId) {
-        log.info("GET /api/consultations/patient/{}", patientUserId);
+        Long currentUserId = securityContextUtil.getCurrentUserId();
+        log.info("GET /api/consultations/patient/{} — caller userId={}", patientUserId, currentUserId);
+
+        if (!currentUserId.equals(patientUserId)
+                && !securityContextUtil.getCurrentUserRole().equals("ADMIN")
+                && !securityContextUtil.getCurrentUserRole().equals("DOCTOR")) {
+            return ResponseEntity.status(403).build();
+        }
 
         List<ConsultationResponse> consultations = consultationService.getPatientConsultations(patientUserId);
         return ResponseEntity.ok(consultations);
@@ -67,8 +77,8 @@ public class ConsultationController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<ConsultationResponse> updateStatus(
             @PathVariable Long id,
-            @RequestParam String status,
-            @RequestParam(required = false) Long doctorUserId) {
+            @RequestParam String status) {
+        Long doctorUserId = securityContextUtil.getCurrentUserId();
         log.info("PATCH /api/consultations/{}/status — status={}, doctorUserId={}", id, status, doctorUserId);
 
         try {

@@ -146,6 +146,8 @@ onMounted(() => {
 
 <template>
   <div class="pharmacist-dashboard">
+    <h1>Pharmacist Dashboard</h1>
+    <p>Prescription review and management will be available here.</p>
     <header class="dashboard-header">
       <div class="header-top">
         <div>
@@ -443,6 +445,16 @@ onMounted(() => {
   padding: 32px 24px;
 }
 
+.pharmacist-dashboard h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+
+.pharmacist-dashboard p {
+  font-size: 15px;
+  color: var(--color-text-secondary);
 .dashboard-header {
   margin-bottom: 28px;
 }

@@ -13,8 +13,6 @@ import java.util.List;
 @AllArgsConstructor
 public class RecommendationRequest {
 
-    private Long userId;
-
     private String query;
 
     private String symptom;
