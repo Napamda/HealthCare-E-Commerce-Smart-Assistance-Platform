@@ -28,6 +28,20 @@ const routes = [
     component: () => import('../pages/ConsultationStatusPage.vue'),
   },
   {
+    path: '/products',
+    name: 'Products',
+    component: () => import('../pages/ProductCatalogPage.vue'),
+  },
+  {
+    path: '/products/:id',
+    name: 'ProductDetail',
+    component: () => import('../pages/ProductDetailPage.vue'),
+  },
+  {
+    path: '/admin/products',
+    name: 'AdminProducts',
+    component: () => import('../pages/AdminProductPage.vue'),}
+  {
     path: '/register',
     name: 'Register',
     component: () => import('../pages/RegisterPage.vue'),
@@ -44,6 +58,8 @@ const routes = [
     name: 'DoctorDashboard',
     meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
     component: () => import('../pages/DoctorDashboardPage.vue'),
+  },
+  {
     path: '/prescriptions',
     name: 'PrescriptionList',
     component: () => import('../pages/PrescriptionListPage.vue'),
@@ -69,8 +85,6 @@ const routes = [
     name: 'VendorDashboard',
     meta: { requiresRole: [ROLES.VENDOR, ROLES.ADMIN] },
     component: () => import('../pages/VendorDashboardPage.vue'),
-  },
-    component: () => import('../pages/PharmacistDashboardPage.vue'),
   },
 ]
 
