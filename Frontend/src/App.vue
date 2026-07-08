@@ -8,6 +8,7 @@ const route = useRoute()
 const navItems = [
   { path: '/prescriptions', label: 'My Prescriptions' },
   { path: '/prescriptions/upload', label: 'Upload' },
+  { path: '/pharmacist', label: 'Pharmacist' },
 ]
 
 function isActive(path) {

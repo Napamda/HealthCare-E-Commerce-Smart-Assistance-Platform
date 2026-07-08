@@ -86,6 +86,24 @@ public class PrescriptionController {
         return ResponseEntity.ok(prescriptionService.getPatientPrescriptions(patientUserId));
     }
 
+    @GetMapping("/pharmacist/pending")
+    public ResponseEntity<List<PrescriptionResponse>> getPendingPrescriptions() {
+        log.info("List all pending prescriptions");
+        return ResponseEntity.ok(prescriptionService.getPendingPrescriptions());
+    }
+
+    @GetMapping("/pharmacist/search")
+    public ResponseEntity<List<PrescriptionResponse>> searchPrescriptions(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        log.info("Search prescriptions — status={}, search={}, startDate={}, endDate={}",
+                status, search, startDate, endDate);
+        return ResponseEntity.ok(
+                prescriptionService.searchPrescriptions(status, search, startDate, endDate));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleValidationError(IllegalArgumentException e) {
         log.warn("Prescription validation error: {}", e.getMessage());
