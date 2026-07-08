@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -25,8 +24,6 @@ public class AIService {
     private final ConversationService conversationService;
     private final ConversationSummaryService summaryService;
 
-    private static final Long DEFAULT_USER_ID = 1L;
-
     @Value("${ai.memory.max-history:10}")
     private int maxHistory;
 
@@ -34,8 +31,7 @@ public class AIService {
     private int summaryThreshold;
 
     @Transactional
-    public ChatResponse chat(ChatRequest request) {
-        Long userId = resolveUserId(request);
+    public ChatResponse chat(ChatRequest request, Long userId) {
         log.info("AIService.chat — provider={}, model={}, userId={}, convoId={}, maxHistory={}, summaryThreshold={}",
                 aiProvider.providerName(), aiProvider.modelName(),
                 userId, request.getConversationId(), maxHistory, summaryThreshold);
@@ -85,9 +81,5 @@ public class AIService {
                 .model(aiProvider.modelName())
                 .timestamp(Instant.now())
                 .build();
-    }
-
-    private Long resolveUserId(ChatRequest request) {
-        return (request.getUserId() != null) ? request.getUserId() : DEFAULT_USER_ID;
     }
 }

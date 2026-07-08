@@ -13,14 +13,13 @@ export const useConsultationStore = defineStore('consultation', () => {
   const isEscalating = ref(false)
   const escalationError = ref(null)
 
-  async function escalateFromChat({ conversationId, patientUserId, reason, priority }) {
+  async function escalateFromChat({ conversationId, reason, priority }) {
     isEscalating.value = true
     escalationError.value = null
 
     try {
       const result = await escalateToDoctor({
         conversationId,
-        patientUserId,
         reason,
         priority,
       })

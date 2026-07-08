@@ -18,9 +18,9 @@ public class RecommendationService {
     private final RecommendationEngine recommendationEngine;
     private final AllergyChecker allergyChecker;
 
-    public RecommendationResponse getRecommendations(RecommendationRequest request) {
+    public RecommendationResponse getRecommendations(RecommendationRequest request, Long userId) {
         log.info("RecommendationService.getRecommendations — userId={}, query={}",
-                request.getUserId(), request.getQuery());
+                userId, request.getQuery());
 
         RecommendationResponse response = recommendationEngine.generateRecommendations(request);
 
