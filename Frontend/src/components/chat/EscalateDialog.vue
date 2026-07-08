@@ -5,7 +5,6 @@ import { useConsultationStore } from '../../stores/consultation.js'
 
 const props = defineProps({
   conversationId: { type: Number, required: true },
-  patientUserId: { type: Number, default: 1 },
 })
 
 const emit = defineEmits(['close', 'escalated'])
@@ -35,7 +34,6 @@ async function submitEscalation() {
   try {
     await consultationStore.escalateFromChat({
       conversationId: props.conversationId,
-      patientUserId: props.patientUserId,
       reason: reason.value.trim(),
       priority: priority.value,
     })
