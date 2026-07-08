@@ -14,6 +14,4 @@ public class ChatRequest {
     private Long conversationId;
 
     private String message;
-
-    private Long userId;
 }
