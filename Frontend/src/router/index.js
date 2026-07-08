@@ -28,6 +28,20 @@ const routes = [
     component: () => import('../pages/ConsultationStatusPage.vue'),
   },
   {
+    path: '/products',
+    name: 'Products',
+    component: () => import('../pages/ProductCatalogPage.vue'),
+  },
+  {
+    path: '/products/:id',
+    name: 'ProductDetail',
+    component: () => import('../pages/ProductDetailPage.vue'),
+  },
+  {
+    path: '/admin/products',
+    name: 'AdminProducts',
+    component: () => import('../pages/AdminProductPage.vue'),}
+  ,{
     path: '/register',
     name: 'Register',
     component: () => import('../pages/RegisterPage.vue'),
@@ -72,7 +86,6 @@ const routes = [
     meta: { requiresRole: [ROLES.VENDOR, ROLES.ADMIN] },
     component: () => import('../pages/VendorDashboardPage.vue'),
   },
-
 ]
 
 const router = createRouter({

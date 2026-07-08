@@ -30,6 +30,7 @@ public class RecommendationResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class RecommendedProduct {
+        private Long productId;
         private String productName;
         private String category;
         private String description;
