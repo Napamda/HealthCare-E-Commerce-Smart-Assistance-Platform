@@ -33,7 +33,13 @@ const routes = [
   {
     path: '/prescriptions/:id',
     name: 'PrescriptionDetail',
-    component: () => import('../pages/PrescriptionDetailPage.vue'),}
+    component: () => import('../pages/PrescriptionDetailPage.vue'),
+  },
+  {
+    path: '/pharmacist',
+    name: 'PharmacistDashboard',
+    component: () => import('../pages/PharmacistDashboardPage.vue'),
+  },
 ]
 
 const router = createRouter({
