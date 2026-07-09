@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -77,12 +78,25 @@ public class ConsultationController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<ConsultationResponse> updateStatus(
             @PathVariable Long id,
-            @RequestParam String status) {
+            @RequestParam String status,
+            @RequestParam(required = false) String rejectionReason,
+            @RequestParam(required = false) String scheduledAt) {
         Long doctorUserId = securityContextUtil.getCurrentUserId();
-        log.info("PATCH /api/consultations/{}/status — status={}, doctorUserId={}", id, status, doctorUserId);
+        log.info("PATCH /api/consultations/{}/status — status={}, doctorUserId={}, rejectionReason={}, scheduledAt={}",
+                id, status, doctorUserId, rejectionReason, scheduledAt);
+
+        Instant scheduledInstant = null;
+        if (scheduledAt != null && !scheduledAt.isBlank()) {
+            try {
+                scheduledInstant = Instant.parse(scheduledAt);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(null);
+            }
+        }
 
         try {
-            ConsultationResponse response = consultationService.updateStatus(id, status, doctorUserId);
+            ConsultationResponse response = consultationService.updateStatus(
+                    id, status, doctorUserId, rejectionReason, scheduledInstant);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
@@ -102,6 +116,20 @@ public class ConsultationController {
 
         List<ConsultationResponse> queue = consultationService.getDoctorQueue(doctorUserId);
         return ResponseEntity.ok(queue);
+    }
+
+    @GetMapping("/doctor/upcoming")
+    public ResponseEntity<List<ConsultationResponse>> getDoctorUpcoming() {
+        Long doctorUserId = securityContextUtil.getCurrentUserId();
+        String role = securityContextUtil.getCurrentUserRole();
+        log.info("GET /api/consultations/doctor/upcoming — doctorUserId={}, role={}", doctorUserId, role);
+
+        if (!role.equals("DOCTOR") && !role.equals("ADMIN")) {
+            return ResponseEntity.status(403).build();
+        }
+
+        List<ConsultationResponse> upcoming = consultationService.getDoctorUpcoming(doctorUserId);
+        return ResponseEntity.ok(upcoming);
     }
 
     @PatchMapping("/{id}/priority")

@@ -20,17 +20,24 @@ export function getPatientConsultations(patientUserId) {
     .then((res) => res.data)
 }
 
-export function updateConsultationStatus(id, status) {
+export function updateConsultationStatus(id, status, { rejectionReason, scheduledAt } = {}) {
+  const params = { status }
+  if (rejectionReason) params.rejectionReason = rejectionReason
+  if (scheduledAt) params.scheduledAt = scheduledAt
   return apiClient
-    .patch(`/api/consultations/${id}/status`, null, {
-      params: { status },
-    })
+    .patch(`/api/consultations/${id}/status`, null, { params })
     .then((res) => res.data)
 }
 
 export function getDoctorQueue() {
   return apiClient
     .get('/api/consultations/doctor/queue')
+    .then((res) => res.data)
+}
+
+export function getDoctorUpcoming() {
+  return apiClient
+    .get('/api/consultations/doctor/upcoming')
     .then((res) => res.data)
 }
 

@@ -27,7 +27,6 @@ spring:
 # AI Configuration — OpenRouter via custom provider
 # =====================================================
 ai:
-  provider: ${AI_PROVIDER:openrouter}
   openrouter:
     api-key: ${OPENROUTER_API_KEY}
     base-url: https://openrouter.ai/api/v1

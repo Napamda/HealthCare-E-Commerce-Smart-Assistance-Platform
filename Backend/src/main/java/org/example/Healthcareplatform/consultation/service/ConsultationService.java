@@ -81,7 +81,8 @@ public class ConsultationService {
     }
 
     @Transactional
-    public ConsultationResponse updateStatus(Long consultationId, String newStatus, Long doctorUserId) {
+    public ConsultationResponse updateStatus(Long consultationId, String newStatus, Long doctorUserId,
+                                             String rejectionReason, Instant scheduledAt) {
         Consultation consultation = consultationRepository.findById(consultationId)
                 .orElseThrow(() -> new IllegalArgumentException("Consultation not found: " + consultationId));
 
@@ -90,6 +91,12 @@ public class ConsultationService {
         consultation.setStatus(status);
         if (doctorUserId != null) {
             consultation.setDoctorUserId(doctorUserId);
+        }
+        if (rejectionReason != null && !rejectionReason.isBlank()) {
+            consultation.setRejectionReason(rejectionReason);
+        }
+        if (scheduledAt != null) {
+            consultation.setScheduledAt(scheduledAt);
         }
 
         Consultation saved = consultationRepository.save(consultation);
@@ -105,6 +112,17 @@ public class ConsultationService {
                 Consultation.ConsultationStatus.ACCEPTED,
                 Consultation.ConsultationStatus.IN_PROGRESS);
         return consultationRepository.findByStatusInOrderByPriorityAscCreatedAtAsc(activeStatuses)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public List<ConsultationResponse> getDoctorUpcoming(Long doctorUserId) {
+        List<Consultation.ConsultationStatus> upcomingStatuses = List.of(
+                Consultation.ConsultationStatus.ACCEPTED,
+                Consultation.ConsultationStatus.IN_PROGRESS);
+        return consultationRepository
+                .findByStatusInAndDoctorUserIdOrderByScheduledAtAscCreatedAtDesc(upcomingStatuses, doctorUserId)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -192,6 +210,8 @@ public class ConsultationService {
                 .priority(consultation.getPriority().name())
                 .reason(consultation.getReason())
                 .doctorNotes(consultation.getDoctorNotes())
+                .rejectionReason(consultation.getRejectionReason())
+                .scheduledAt(consultation.getScheduledAt())
                 .messageCount(0)
                 .chatContextSummary("")
                 .createdAt(consultation.getCreatedAt())

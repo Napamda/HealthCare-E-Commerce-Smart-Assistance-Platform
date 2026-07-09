@@ -35,6 +35,10 @@ public class ConsultationResponse {
 
     private String doctorNotes;
 
+    private String rejectionReason;
+
+    private Instant scheduledAt;
+
     private int messageCount;
 
     private Instant createdAt;

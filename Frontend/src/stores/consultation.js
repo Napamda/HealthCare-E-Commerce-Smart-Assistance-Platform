@@ -6,12 +6,14 @@ import {
   getPatientConsultations,
   updateConsultationStatus,
   getDoctorQueue,
+  getDoctorUpcoming,
   updateConsultationPriority,
 } from '../services/consultation.js'
 
 export const useConsultationStore = defineStore('consultation', () => {
   const consultations = ref([])
   const doctorQueue = ref([])
+  const upcomingConsultations = ref([])
   const activeConsultation = ref(null)
   const isEscalating = ref(false)
   const escalationError = ref(null)
@@ -64,15 +66,32 @@ export const useConsultationStore = defineStore('consultation', () => {
     }
   }
 
-  async function updateStatus(id, status) {
+  async function fetchUpcoming() {
     try {
-      const updated = await updateConsultationStatus(id, status)
+      const data = await getDoctorUpcoming()
+      upcomingConsultations.value = data
+    } catch (err) {
+      escalationError.value = err.response?.data?.error || err.message
+    }
+  }
+
+  async function updateStatus(id, status, { rejectionReason, scheduledAt } = {}) {
+    try {
+      const updated = await updateConsultationStatus(id, status, { rejectionReason, scheduledAt })
       const idx = doctorQueue.value.findIndex((c) => c.id === id)
       if (idx !== -1) {
         if (status === 'REJECTED' || status === 'CLOSED') {
           doctorQueue.value.splice(idx, 1)
         } else {
           doctorQueue.value[idx] = updated
+        }
+      }
+      const upcomingIdx = upcomingConsultations.value.findIndex((c) => c.id === id)
+      if (upcomingIdx !== -1) {
+        if (status === 'REJECTED' || status === 'CLOSED') {
+          upcomingConsultations.value.splice(upcomingIdx, 1)
+        } else {
+          upcomingConsultations.value[upcomingIdx] = updated
         }
       }
       const patientIdx = consultations.value.findIndex((c) => c.id === id)
@@ -111,6 +130,7 @@ export const useConsultationStore = defineStore('consultation', () => {
   return {
     consultations,
     doctorQueue,
+    upcomingConsultations,
     activeConsultation,
     isEscalating,
     escalationError,
@@ -118,6 +138,7 @@ export const useConsultationStore = defineStore('consultation', () => {
     fetchPatientConsultations,
     fetchConsultation,
     fetchDoctorQueue,
+    fetchUpcoming,
     updateStatus,
     updatePriority,
     clearEscalationError,

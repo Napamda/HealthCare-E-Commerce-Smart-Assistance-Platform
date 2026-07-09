@@ -53,6 +53,9 @@ public class OpenRouterOCRProvider implements OCRProvider {
         return factory;
     }
 
+    private static final int MAX_RETRIES = 3;
+    private static final long BASE_DELAY_MS = 1000;
+
     @Override
     public String extractText(byte[] imageBytes, String mimeType) {
         log.info("OpenRouterOCRProvider — extracting text from {} image ({} bytes)", mimeType, imageBytes.length);
@@ -68,28 +71,68 @@ public class OpenRouterOCRProvider implements OCRProvider {
         var message = Map.of("role", "user", "content", content);
         var body = Map.of("model", model, "messages", List.of(message));
 
-        try {
-            String responseJson = restClient.post()
-                    .uri("/chat/completions")
-                    .body(body)
-                    .exchange((req, resp) -> {
-                        HttpStatusCode status = resp.getStatusCode();
-                        if (status.isError()) {
-                            byte[] errorBody = resp.getBody().readAllBytes();
-                            String errorText = new String(errorBody);
-                            log.error("OpenRouter OCR HTTP {} — body: {}", status.value(), errorText);
-                            throw new RuntimeException("OpenRouter OCR error: HTTP " + status.value());
-                        }
-                        byte[] responseBytes = resp.getBody().readAllBytes();
-                        return new String(responseBytes);
-                    });
+        Exception lastException = null;
 
-            return extractContentFromResponse(responseJson);
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                String responseJson = restClient.post()
+                        .uri("/chat/completions")
+                        .body(body)
+                        .exchange((req, resp) -> {
+                            HttpStatusCode status = resp.getStatusCode();
+                            if (status.is5xxServerError() || status.value() == 429) {
+                                byte[] errorBody = resp.getBody().readAllBytes();
+                                String errorText = new String(errorBody);
+                                log.warn("OpenRouter OCR HTTP {} on attempt {}/{} — retryable: {}",
+                                        status.value(), attempt, MAX_RETRIES, errorText);
+                                throw new RuntimeException("HTTP " + status.value() + ": " + errorText);
+                            }
+                            if (status.isError()) {
+                                byte[] errorBody = resp.getBody().readAllBytes();
+                                String errorText = new String(errorBody);
+                                log.error("OpenRouter OCR HTTP {} — non-retryable: {}", status.value(), errorText);
+                                throw new RuntimeException("OpenRouter OCR error: HTTP " + status.value());
+                            }
+                            byte[] responseBytes = resp.getBody().readAllBytes();
+                            return new String(responseBytes);
+                        });
 
-        } catch (Exception e) {
-            log.error("OpenRouter OCR call failed", e);
-            throw new RuntimeException("OCR extraction failed: " + e.getMessage(), e);
+                return extractContentFromResponse(responseJson);
+
+            } catch (Exception e) {
+                lastException = e;
+                if (attempt < MAX_RETRIES && isRetryableOcr(e)) {
+                    long delayMs = BASE_DELAY_MS * (1L << (attempt - 1));
+                    log.warn("OpenRouter OCR attempt {}/{} failed ({}), retrying in {}ms",
+                            attempt, MAX_RETRIES, e.getMessage(), delayMs);
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("OCR retry interrupted", ie);
+                    }
+                } else {
+                    if (attempt >= MAX_RETRIES) {
+                        log.error("OpenRouter OCR call exhausted all {} retries", MAX_RETRIES, e);
+                    }
+                }
+            }
         }
+
+        throw new RuntimeException("OCR extraction failed after " + MAX_RETRIES + " attempts",
+                lastException);
+    }
+
+    private boolean isRetryableOcr(Exception e) {
+        String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+        return e instanceof java.io.IOException
+                || msg.contains("timeout")
+                || msg.contains("connection")
+                || msg.contains("network")
+                || msg.contains("reset")
+                || msg.contains("refused")
+                || msg.contains("5")
+                || msg.contains("429");
     }
 
     @SuppressWarnings("unchecked")

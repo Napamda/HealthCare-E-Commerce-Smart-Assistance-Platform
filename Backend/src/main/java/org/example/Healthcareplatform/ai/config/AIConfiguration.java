@@ -6,7 +6,6 @@ import org.example.Healthcareplatform.ai.ocr.FallbackOCRProvider;
 import org.example.Healthcareplatform.ai.ocr.OCRProvider;
 import org.example.Healthcareplatform.ai.ocr.OpenRouterOCRProvider;
 import org.example.Healthcareplatform.ai.provider.AIProvider;
-import org.example.Healthcareplatform.ai.provider.MockProvider;
 import org.example.Healthcareplatform.ai.provider.OpenRouterProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -33,25 +32,9 @@ public class AIConfiguration {
 
     @Bean
     @Primary
-    @ConditionalOnProperty(name = "ai.provider", havingValue = "openrouter", matchIfMissing = true)
     public AIProvider openRouterProvider() {
         log.info("Activating OpenRouter provider — model={}, base-url={}", openRouterModel, openRouterBaseUrl);
         return new OpenRouterProvider(openRouterBaseUrl, openRouterApiKey, openRouterModel);
-    }
-
-    @Bean
-    @ConditionalOnProperty(name = "ai.provider", havingValue = "mock")
-    public AIProvider mockAiProvider() {
-        log.info("Activating Mock AI provider");
-        return new MockProvider();
-    }
-
-
-    @Bean
-    @ConditionalOnMissingBean(AIProvider.class)
-    public AIProvider fallbackProvider() {
-        log.warn("No AI provider configured — falling back to MockProvider");
-        return new MockProvider();
     }
 
     @Bean
