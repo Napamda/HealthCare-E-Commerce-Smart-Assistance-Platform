@@ -19,7 +19,11 @@ public class ConsultationResponse {
 
     private Long patientUserId;
 
+    private String patientName;
+
     private Long doctorUserId;
+
+    private String doctorName;
 
     private String status;
 
@@ -28,6 +32,8 @@ public class ConsultationResponse {
     private String reason;
 
     private String chatContextSummary;
+
+    private String doctorNotes;
 
     private int messageCount;
 

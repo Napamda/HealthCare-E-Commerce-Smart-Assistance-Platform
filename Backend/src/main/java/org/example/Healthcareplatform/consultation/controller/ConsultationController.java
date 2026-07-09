@@ -90,6 +90,35 @@ public class ConsultationController {
         }
     }
 
+    @GetMapping("/doctor/queue")
+    public ResponseEntity<List<ConsultationResponse>> getDoctorQueue() {
+        Long doctorUserId = securityContextUtil.getCurrentUserId();
+        String role = securityContextUtil.getCurrentUserRole();
+        log.info("GET /api/consultations/doctor/queue — doctorUserId={}, role={}", doctorUserId, role);
+
+        if (!role.equals("DOCTOR") && !role.equals("ADMIN")) {
+            return ResponseEntity.status(403).build();
+        }
+
+        List<ConsultationResponse> queue = consultationService.getDoctorQueue(doctorUserId);
+        return ResponseEntity.ok(queue);
+    }
+
+    @PatchMapping("/{id}/priority")
+    public ResponseEntity<ConsultationResponse> updatePriority(
+            @PathVariable Long id,
+            @RequestParam String priority) {
+        log.info("PATCH /api/consultations/{}/priority — priority={}", id, priority);
+
+        try {
+            ConsultationResponse response = consultationService.updatePriority(id, priority);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(null);
+        }
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity.badRequest()

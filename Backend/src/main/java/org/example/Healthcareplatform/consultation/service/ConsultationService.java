@@ -11,6 +11,8 @@ import org.example.Healthcareplatform.consultation.dto.EscalationRequest;
 import org.example.Healthcareplatform.consultation.entity.Consultation;
 import org.example.Healthcareplatform.consultation.event.ConsultationCreatedEvent;
 import org.example.Healthcareplatform.consultation.repository.ConsultationRepository;
+import org.example.Healthcareplatform.user.entity.User;
+import org.example.Healthcareplatform.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ public class ConsultationService {
 
     private final ConsultationRepository consultationRepository;
     private final ConversationService conversationService;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional
@@ -93,8 +96,32 @@ public class ConsultationService {
         log.info("Consultation id={} status updated to {} by doctorUserId={}",
                 saved.getId(), saved.getStatus(), doctorUserId);
 
-        List<ConversationMessage> messages = conversationService.getMessages(saved.getConversationId());
-        return toResponse(saved, messages);
+        return toResponse(saved);
+    }
+
+    public List<ConsultationResponse> getDoctorQueue(Long doctorUserId) {
+        List<Consultation.ConsultationStatus> activeStatuses = List.of(
+                Consultation.ConsultationStatus.PENDING,
+                Consultation.ConsultationStatus.ACCEPTED,
+                Consultation.ConsultationStatus.IN_PROGRESS);
+        return consultationRepository.findByStatusInOrderByPriorityAscCreatedAtAsc(activeStatuses)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional
+    public ConsultationResponse updatePriority(Long consultationId, String newPriority) {
+        Consultation consultation = consultationRepository.findById(consultationId)
+                .orElseThrow(() -> new IllegalArgumentException("Consultation not found: " + consultationId));
+
+        Consultation.Priority priority = Consultation.Priority.valueOf(newPriority.toUpperCase());
+        consultation.setPriority(priority);
+
+        Consultation saved = consultationRepository.save(consultation);
+        log.info("Consultation id={} priority updated to {}", saved.getId(), saved.getPriority());
+
+        return toResponse(saved);
     }
 
     private void publishNotification(Consultation consultation) {
@@ -134,20 +161,39 @@ public class ConsultationService {
     }
 
     private ConsultationResponse toResponse(Consultation consultation, List<ConversationMessage> messages) {
-        String summary = messages.size() > 0
+        ConsultationResponse response = toResponse(consultation);
+        response.setChatContextSummary(messages.size() > 0
                 ? messages.size() + " messages in conversation"
-                : "No messages";
+                : "No messages");
+        response.setMessageCount(messages.size());
+        return response;
+    }
+
+    private ConsultationResponse toResponse(Consultation consultation) {
+        String patientName = userRepository.findById(consultation.getPatientUserId())
+                .map(u -> u.getFirstName() + " " + u.getLastName())
+                .orElse("Unknown Patient");
+
+        String doctorName = null;
+        if (consultation.getDoctorUserId() != null) {
+            doctorName = userRepository.findById(consultation.getDoctorUserId())
+                    .map(u -> u.getFirstName() + " " + u.getLastName())
+                    .orElse(null);
+        }
 
         return ConsultationResponse.builder()
                 .id(consultation.getId())
                 .conversationId(consultation.getConversationId())
                 .patientUserId(consultation.getPatientUserId())
+                .patientName(patientName)
                 .doctorUserId(consultation.getDoctorUserId())
+                .doctorName(doctorName)
                 .status(consultation.getStatus().name())
                 .priority(consultation.getPriority().name())
                 .reason(consultation.getReason())
-                .chatContextSummary(summary)
-                .messageCount(messages.size())
+                .doctorNotes(consultation.getDoctorNotes())
+                .messageCount(0)
+                .chatContextSummary("")
                 .createdAt(consultation.getCreatedAt())
                 .updatedAt(consultation.getUpdatedAt())
                 .build();

@@ -27,9 +27,6 @@ public class AIConfiguration {
     @Value("${ai.openrouter.model:openrouter/free}")
     private String openRouterModel;
 
-    @Value("${ai.openrouter.timeout-seconds:60}")
-    private int openRouterTimeout;
-
     @Value("${ai.ocr.model:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}")
     private String ocrModel;
 
