@@ -3,13 +3,17 @@ import { onMounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useProductStore } from '../stores/product.js'
+import { useCartStore } from '../stores/cart.js'
 
 const route = useRoute()
 const router = useRouter()
 const store = useProductStore()
+const cartStore = useCartStore()
 const { selectedProduct, isLoading, error } = storeToRefs(store)
 
 const activeTab = ref('ingredients')
+const addingToCart = ref(false)
+const addedToCart = ref(false)
 
 const productId = computed(() => Number(route.params.id))
 
@@ -45,6 +49,17 @@ function goBack() {
 onMounted(async () => {
   await store.fetchProductById(productId.value)
 })
+
+async function handleAddToCart() {
+  if (!selectedProduct.value || addingToCart.value) return
+  addingToCart.value = true
+  const success = await cartStore.addItem(selectedProduct.value)
+  addingToCart.value = false
+  if (success) {
+    addedToCart.value = true
+    setTimeout(() => { addedToCart.value = false }, 2500)
+  }
+}
 </script>
 
 <template>
@@ -118,6 +133,29 @@ onMounted(async () => {
               In Stock ({{ selectedProduct.stockQuantity }})
             </span>
             <span v-else class="out-of-stock">Out of Stock</span>
+          </div>
+
+          <div class="detail-actions">
+            <button
+              class="btn-add-cart"
+              :class="{ 'btn-added': addedToCart }"
+              :disabled="addingToCart || selectedProduct.stockQuantity <= 0"
+              @click="handleAddToCart"
+            >
+              <svg v-if="addedToCart" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              <span v-if="addingToCart">Adding...</span>
+              <span v-else-if="addedToCart">Added to Cart!</span>
+              <span v-else>Add to Cart</span>
+            </button>
+            <router-link to="/cart" class="btn-view-cart" v-if="addedToCart">View Cart</router-link>
           </div>
 
           <div class="rating-row">
@@ -310,6 +348,79 @@ onMounted(async () => {
   color: var(--color-danger);
   font-weight: 500;
 }
+
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.btn-add-cart {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-add-cart:hover:not(:disabled) { background: #1d4ed8; }
+.btn-add-cart:disabled { opacity: 0.5; cursor: default; }
+.btn-add-cart.btn-added { background: #16a34a; }
+.btn-view-cart {
+  padding: 12px 20px;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.btn-view-cart:hover { background: var(--color-primary-bg); }
+
+/* Add to Cart */
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.btn-add-cart {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-add-cart:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.btn-add-cart:disabled { opacity: 0.6; cursor: default; }
+.btn-added {
+  background: #16a34a !important;
+}
+.btn-view-cart {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.btn-view-cart:hover { background: var(--color-primary-bg); }
 
 .rating-row {
   display: flex;

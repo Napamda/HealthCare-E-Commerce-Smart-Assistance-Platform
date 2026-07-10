@@ -1,11 +1,14 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth.js'
+import { useCartStore } from './stores/cart.js'
+import CartIcon from './components/cart/CartIcon.vue'
 import { ROLE_LABELS, ROLE_DASHBOARD } from './config/permissions.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 
 const dashboardLink = computed(() => {
   if (!authStore.userRole) return '/chat'
@@ -20,25 +23,13 @@ const roleLabel = computed(() => {
 async function handleLogout() {
   await authStore.logout()
   router.push('/login')
-import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-
-const router = useRouter()
-const route = useRoute()
-
-const navItems = [
-  { path: '/prescriptions', label: 'My Prescriptions' },
-  { path: '/prescriptions/upload', label: 'Upload' },
-  { path: '/pharmacist', label: 'Pharmacist' },
-]
-
-function isActive(path) {
-  return route.path === path
 }
 
-function navigate(path) {
-  router.push(path)
-}
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    cartStore.fetchCount()
+  }
+})
 </script>
 
 <template>
@@ -50,80 +41,50 @@ function navigate(path) {
       <div class="nav-right">
         <router-link to="/chat" class="nav-link">Chat</router-link>
         <router-link to="/consultations" class="nav-link">Consultations</router-link>
+        <router-link to="/products" class="nav-link">Products</router-link>
 
         <router-link
           v-if="authStore.hasRole('ADMIN')"
           to="/admin"
           class="nav-link"
-        >
-          Admin
-        </router-link>
+        >Admin</router-link>
         <router-link
           v-if="authStore.hasRole('DOCTOR')"
           to="/doctor"
           class="nav-link"
-        >
-          Doctor
-        </router-link>
+        >Doctor</router-link>
         <router-link
           v-if="authStore.hasRole('PHARMACIST')"
           to="/pharmacist"
           class="nav-link"
-        >
-          Pharmacist
-        </router-link>
+        >Pharmacist</router-link>
         <router-link
           v-if="authStore.hasRole('VENDOR')"
           to="/vendor"
           class="nav-link"
-        >
-          Vendor
-        </router-link>
-
+        >Vendor</router-link>
         <router-link
           v-if="authStore.hasRole('DOCTOR', 'PHARMACIST', 'ADMIN')"
           :to="dashboardLink"
           class="nav-link"
-        >
-          Dashboard
-        </router-link>
+        >Dashboard</router-link>
 
-        <template v-if="!authStore.isAuthenticated">
-          <router-link to="/login" class="nav-link">Sign in</router-link>
-          <router-link to="/register" class="nav-link nav-cta">
-            Register
-          </router-link>
-        </template>
-        <template v-else>
+        <template v-if="authStore.isAuthenticated">
+          <CartIcon />
+          <router-link to="/orders" class="nav-link">Orders</router-link>
           <span class="nav-user">
             {{ authStore.currentUser?.firstName }}
             <span class="nav-role-badge">{{ roleLabel }}</span>
           </span>
           <button class="nav-logout" @click="handleLogout">Sign out</button>
         </template>
+        <template v-else>
+          <router-link to="/login" class="nav-link">Sign in</router-link>
+          <router-link to="/register" class="nav-link nav-cta">Register</router-link>
+        </template>
       </div>
     </nav>
     <main class="app-main">
-    <nav class="navbar">
-      <div class="navbar-inner">
-        <div class="brand" @click="navigate('/prescriptions')">
-          <span class="brand-icon">&#9878;</span>
-          <span class="brand-text">HealthCare</span>
-        </div>
-        <div class="nav-links">
-          <button
-            v-for="item in navItems"
-            :key="item.path"
-            class="nav-link"
-            :class="{ active: isActive(item.path) }"
-            @click="navigate(item.path)"
-          >
-            {{ item.label }}
-          </button>
-        </div>
-      </div>
-    </nav>
-    <main class="main-content">
       <router-view />
     </main>
   </div>
@@ -134,6 +95,7 @@ function navigate(path) {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background: var(--color-bg);
 }
 
 .app-nav {
@@ -147,10 +109,7 @@ function navigate(path) {
   flex-shrink: 0;
 }
 
-.nav-left {
-  display: flex;
-  align-items: center;
-}
+.nav-left { display: flex; align-items: center; }
 
 .nav-brand {
   font-size: 18px;
@@ -162,79 +121,25 @@ function navigate(path) {
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.nav-link {
-  padding: 6px 14px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  min-height: 100vh;
-  background: var(--color-bg);
-}
-
-.navbar {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  backdrop-filter: blur(10px);
-}
-
-.navbar-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.brand-icon {
-  font-size: 24px;
-  line-height: 1;
-}
-
-.brand-text {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.nav-links {
-  display: flex;
   gap: 4px;
 }
 
 .nav-link {
-  padding: 8px 16px;
+  padding: 6px 12px;
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-secondary);
+  text-decoration: none;
   border-radius: var(--radius-md);
-  transition: all 0.15s ease;
+  transition: all 0.15s;
 }
-
 .nav-link:hover {
   color: var(--color-text);
   background: var(--color-bg);
 }
-
 .nav-link.router-link-active {
   color: var(--color-primary);
-  background: var(--color-primary-bg, rgba(37, 99, 235, 0.08));
+  background: var(--color-primary-bg);
 }
 
 .nav-cta {
@@ -242,7 +147,6 @@ function navigate(path) {
   color: #fff !important;
   font-weight: 600;
 }
-
 .nav-cta:hover {
   background: #1d4ed8 !important;
   color: #fff !important;
@@ -279,9 +183,8 @@ function navigate(path) {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.15s;
 }
-
 .nav-logout:hover {
   color: #dc2626;
   border-color: #dc2626;
@@ -294,15 +197,5 @@ function navigate(path) {
   flex-direction: column;
   background: var(--color-bg);
   color: var(--color-text);
-}
-
-.nav-link.active {
-  background: var(--color-primary-bg);
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
-.main-content {
-  min-height: calc(100vh - 56px);
 }
 </style>
