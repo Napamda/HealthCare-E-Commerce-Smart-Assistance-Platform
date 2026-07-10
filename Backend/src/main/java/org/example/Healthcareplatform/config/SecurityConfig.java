@@ -55,6 +55,7 @@ public class SecurityConfig {
                                 "/api/auth/refresh",
                                 "/api/auth/verify-email"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/pharmacist/**").hasAnyRole("PHARMACIST", "ADMIN")
                         .requestMatchers("/api/doctor/**").hasAnyRole("DOCTOR", "ADMIN")
