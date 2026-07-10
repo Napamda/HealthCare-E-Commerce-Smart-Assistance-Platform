@@ -8,6 +8,7 @@ import { getNavItems } from '../config/navigation.js'
 const router = useRouter()
 const authStore = useAuthStore()
 const openDropdown = ref(null)
+let closeTimer = null
 
 const roleLabel = computed(() => {
   if (!authStore.userRole) return ''
@@ -19,21 +20,24 @@ const navItems = computed(() => {
   return getNavItems(authStore.userRole)
 })
 
-function toggleDropdown(label) {
-  openDropdown.value = openDropdown.value === label ? null : label
+function showDropdown(label) {
+  clearTimeout(closeTimer)
+  openDropdown.value = label
 }
 
-function closeDropdown() {
-  openDropdown.value = null
+function hideDropdown() {
+  closeTimer = setTimeout(() => {
+    openDropdown.value = null
+  }, 150)
 }
 
 function navigate(path) {
-  closeDropdown()
+  openDropdown.value = null
   router.push(path)
 }
 
 async function handleLogout() {
-  closeDropdown()
+  openDropdown.value = null
   await authStore.logout()
   router.push('/login')
 }
@@ -52,29 +56,36 @@ function isDropdown(item) {
     <div class="nav-center" v-if="authStore.isAuthenticated">
       <template v-for="item in navItems" :key="item.label">
         <template v-if="isDropdown(item)">
-          <div class="nav-dropdown-wrapper">
+          <div
+            class="nav-dropdown-wrapper"
+            @mouseenter="showDropdown(item.label)"
+            @mouseleave="hideDropdown"
+          >
             <button
               class="nav-link nav-dropdown-trigger"
               :class="{ 'nav-dropdown-open': openDropdown === item.label }"
-              @click="toggleDropdown(item.label)"
             >
               {{ item.label }}
-              <span class="nav-chevron">▾</span>
+              <svg class="nav-caret" width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </button>
             <div class="nav-dropdown-menu" v-show="openDropdown === item.label">
-              <button
-                v-for="child in item.children"
-                :key="child.to"
-                class="nav-dropdown-item"
-                @click="navigate(child.to)"
-              >
-                {{ child.label }}
-              </button>
+              <div class="nav-dropdown-section">
+                <button
+                  v-for="child in item.children"
+                  :key="child.to"
+                  class="nav-dropdown-item"
+                  @click="navigate(child.to)"
+                >
+                  {{ child.label }}
+                </button>
+              </div>
             </div>
           </div>
         </template>
 
-        <router-link v-else :to="item.to" class="nav-link" @click="closeDropdown">
+        <router-link v-else :to="item.to" class="nav-link" @click="openDropdown = null">
           {{ item.label }}
         </router-link>
       </template>
