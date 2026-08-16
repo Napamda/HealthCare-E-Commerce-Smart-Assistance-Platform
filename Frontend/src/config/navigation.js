@@ -3,6 +3,7 @@ import { ROLES } from './permissions.js'
 export const NAV_ITEMS = {
   [ROLES.PATIENT]: [
     { to: '/chat', label: 'AI Chat' },
+    { to: '/professionals', label: 'Find Professionals' },
     { to: '/consultations', label: 'Consultations' },
     { to: '/prescriptions', label: 'My Prescriptions' },
     { to: '/prescriptions/upload', label: 'Upload Rx' },
