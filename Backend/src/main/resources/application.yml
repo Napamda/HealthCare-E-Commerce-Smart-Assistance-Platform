@@ -56,6 +56,13 @@ jwt:
     enabled: ${AI_OCR_ENABLED:true}
     model: ${AI_OCR_MODEL:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}
     
+# =====================================================
+# Geocoding Configuration — Nominatim (OpenStreetMap)
+# =====================================================
+geocoding:
+  base-url: ${GEOCODING_BASE_URL:https://nominatim.openstreetmap.org}
+  user-agent: ${GEOCODING_USER_AGENT:HealthCarePlatform/1.0 (https://localhost)}
+
 logging:
   level:
     root: INFO

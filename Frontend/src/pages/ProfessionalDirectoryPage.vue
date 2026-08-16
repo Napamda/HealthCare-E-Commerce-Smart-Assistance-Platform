@@ -3,6 +3,7 @@ import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { listProfessionals, listSpecialties, searchNearby } from '../services/professional.js'
+import { geocodeAddress, reverseGeocode } from '../services/geocoding.js'
 
 const professionals = ref([])
 const specialties = ref([])
@@ -13,6 +14,9 @@ const specialtyFilter = ref('')
 const radiusKm = ref(25)
 const userLocation = ref(null)
 const locating = ref(false)
+const addressQuery = ref('')
+const geocoding = ref(false)
+const locationLabel = ref('')
 
 const mapEl = ref(null)
 let map = null
@@ -138,6 +142,13 @@ function useMyLocation() {
         lng: pos.coords.longitude,
       }
       locating.value = false
+      locationLabel.value = ''
+      try {
+        const result = await reverseGeocode(pos.coords.latitude, pos.coords.longitude)
+        locationLabel.value = result.displayName || ''
+      } catch (_) {
+        locationLabel.value = ''
+      }
       await loadNearby()
     },
     (err) => {
@@ -146,6 +157,31 @@ function useMyLocation() {
     },
     { enableHighAccuracy: true, timeout: 10000 }
   )
+}
+
+async function searchByAddress() {
+  const query = addressQuery.value.trim()
+  if (!query || geocoding.value) return
+  geocoding.value = true
+  error.value = ''
+  try {
+    const result = await geocodeAddress(query)
+    userLocation.value = { lat: result.latitude, lng: result.longitude }
+    locationLabel.value = result.displayName || query
+    addressQuery.value = ''
+    await loadNearby()
+  } catch (e) {
+    error.value = e.response?.data?.error || 'Could not find that address'
+  } finally {
+    geocoding.value = false
+  }
+}
+
+function clearLocation() {
+  userLocation.value = null
+  locationLabel.value = ''
+  addressQuery.value = ''
+  loadAll()
 }
 
 async function loadAll() {
@@ -229,19 +265,44 @@ onBeforeUnmount(() => {
 
     <div class="controls-card">
       <div class="control-row">
-        <button class="btn-locate" :disabled="locating" @click="useMyLocation">
+        <form class="address-search" @submit.prevent="searchByAddress">
+          <input
+            v-model="addressQuery"
+            type="text"
+            class="address-input"
+            placeholder="Search by address, city or landmark"
+            :disabled="geocoding"
+          />
+          <button type="submit" class="btn-locate" :disabled="geocoding || !addressQuery.trim()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+            </svg>
+            <span v-if="geocoding">Searching...</span>
+            <span v-else>Search</span>
+          </button>
+        </form>
+
+        <button class="btn-locate btn-locate-secondary" :disabled="locating" @click="useMyLocation">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" />
           </svg>
           <span v-if="locating">Locating...</span>
-          <span v-else>{{ userLocation ? 'Update My Location' : 'Use My Location' }}</span>
+          <span v-else>Use My Location</span>
         </button>
 
-        <div v-if="userLocation" class="coord-display">
-          {{ userLocation.lat.toFixed(4) }}, {{ userLocation.lng.toFixed(4) }}
-        </div>
-        <div v-else class="coord-display muted">Showing all professionals — enable location to sort by distance</div>
+        <button v-if="userLocation" class="btn-clear" @click="clearLocation">
+          Clear location
+        </button>
+      </div>
+
+      <div v-if="userLocation" class="coord-display">
+        <span v-if="locationLabel" class="location-label">{{ locationLabel }}</span>
+        <span class="location-coords">{{ userLocation.lat.toFixed(4) }}, {{ userLocation.lng.toFixed(4) }}</span>
+      </div>
+      <div v-else class="coord-display muted">
+        Showing all professionals — search an address or enable location to sort by distance
       </div>
 
       <div class="filter-row">
