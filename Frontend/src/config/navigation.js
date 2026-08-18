@@ -4,6 +4,7 @@ export const NAV_ITEMS = {
   [ROLES.PATIENT]: [
     { to: '/chat', label: 'AI Chat' },
     { to: '/professionals', label: 'Find Professionals' },
+    { to: '/events', label: 'Health Events' },
     { to: '/consultations', label: 'Consultations' },
     { to: '/prescriptions', label: 'My Prescriptions' },
     { to: '/prescriptions/upload', label: 'Upload Rx' },
@@ -11,6 +12,7 @@ export const NAV_ITEMS = {
 
   [ROLES.DOCTOR]: [
     { to: '/doctor', label: 'Dashboard' },
+    { to: '/events/manage', label: 'Manage Events' },
     { to: '/consultations', label: 'Consultations' },
     { to: '/prescriptions', label: 'Prescriptions' },
     { to: '/chat', label: 'AI Chat' },
@@ -18,6 +20,7 @@ export const NAV_ITEMS = {
 
   [ROLES.PHARMACIST]: [
     { to: '/pharmacist', label: 'Dashboard' },
+    { to: '/events', label: 'Health Events' },
     { to: '/prescriptions', label: 'Prescriptions' },
     { to: '/consultations', label: 'Consultations' },
     { to: '/chat', label: 'AI Chat' },
@@ -33,6 +36,7 @@ export const NAV_ITEMS = {
         { to: '/vendor', label: 'Vendor View' },
       ],
     },
+    { to: '/events/manage', label: 'Manage Events' },
     { to: '/consultations', label: 'Consultations' },
     { to: '/prescriptions', label: 'Prescriptions' },
     { to: '/chat', label: 'AI Chat' },
@@ -40,6 +44,7 @@ export const NAV_ITEMS = {
 
   [ROLES.VENDOR]: [
     { to: '/vendor', label: 'Dashboard' },
+    { to: '/events', label: 'Health Events' },
     { to: '/chat', label: 'AI Chat' },
     { to: '/consultations', label: 'Consultations' },
   ],

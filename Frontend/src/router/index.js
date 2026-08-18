@@ -33,6 +33,16 @@ const routes = [
     component: () => import('../pages/ProfessionalDirectoryPage.vue'),
   },
   {
+    path: '/events',
+    name: 'Events',
+    component: () => import('../pages/EventListPage.vue'),
+  },
+  {
+    path: '/events/manage',
+    name: 'Event Management',
+    component: () => import('../pages/EventManagementPage.vue'),
+  },
+  {
     path: '/products',
     name: 'Products',
     component: () => import('../pages/ProductCatalogPage.vue'),
