@@ -63,15 +63,15 @@ geocoding:
   base-url: ${GEOCODING_BASE_URL:https://nominatim.openstreetmap.org}
   user-agent: ${GEOCODING_USER_AGENT:HealthCarePlatform/1.0 (https://localhost)}
 
-logging:
-  level:
-    root: INFO
-    com.yourpackage: DEBUG
-    org.springframework: INFO
-    org.hibernate: DEBUG
-  file:
-    name: application.log
-    path: ${user.home}/Desktop/HealthCare/logs/
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+#logging:
+ # level:
+#    root: INFO
+ #  com.yourpackage: DEBUG
+  #  org.springframework: INFO
+   # org.hibernate: DEBUG
+  #file:
+   # name: application.log
+    #path: ${user.home}/Desktop/ME
+  #pattern:
+   # console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    #file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
