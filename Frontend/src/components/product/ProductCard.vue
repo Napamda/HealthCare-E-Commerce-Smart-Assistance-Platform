@@ -1,6 +1,7 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useCartStore } from '../../stores/cart.js'
 
 const props = defineProps({
   product: {
@@ -10,23 +11,16 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const cartStore = useCartStore()
+const adding = ref(false)
 
 const categoryLabel = computed(() => {
   const labels = {
-    VITAMINS: 'Vitamins',
-    PAIN_RELIEF: 'Pain Relief',
-    SKIN_CARE: 'Skin Care',
-    DIGESTIVE_HEALTH: 'Digestive Health',
-    RESPIRATORY: 'Respiratory',
-    HEART_HEALTH: 'Heart Health',
-    DIABETES_CARE: 'Diabetes Care',
-    FIRST_AID: 'First Aid',
-    MEDICAL_DEVICES: 'Medical Devices',
-    PERSONAL_CARE: 'Personal Care',
-    WELLNESS: 'Wellness',
-    BABY_CARE: 'Baby Care',
-    ELDERLY_CARE: 'Elderly Care',
-    OTHER: 'Other',
+    VITAMINS: 'Vitamins', PAIN_RELIEF: 'Pain Relief', SKIN_CARE: 'Skin Care',
+    DIGESTIVE_HEALTH: 'Digestive Health', RESPIRATORY: 'Respiratory', HEART_HEALTH: 'Heart Health',
+    DIABETES_CARE: 'Diabetes Care', FIRST_AID: 'First Aid', MEDICAL_DEVICES: 'Medical Devices',
+    PERSONAL_CARE: 'Personal Care', WELLNESS: 'Wellness', BABY_CARE: 'Baby Care',
+    ELDERLY_CARE: 'Elderly Care', OTHER: 'Other',
   }
   return labels[props.product.category] || props.product.category
 })
@@ -38,18 +32,21 @@ function formatPrice(price) {
 
 function renderStars(rating) {
   const full = Math.floor(rating || 0)
-  const half = (rating || 0) - full >= 0.5
   let stars = ''
-  for (let i = 0; i < 5; i++) {
-    if (i < full) stars += '★'
-    else if (i === full && half) stars += '☆'
-    else stars += '☆'
-  }
+  for (let i = 0; i < 5; i++) stars += i < full ? '★' : '☆'
   return stars
 }
 
 function navigateToDetail() {
   router.push(`/products/${props.product.id}`)
+}
+
+async function handleAddToCart(e) {
+  e.stopPropagation()
+  if (adding.value) return
+  adding.value = true
+  await cartStore.addItem(props.product)
+  adding.value = false
 }
 </script>
 
@@ -87,6 +84,15 @@ function navigateToDetail() {
         </div>
         <span class="product-price">{{ formatPrice(product.price) }}</span>
       </div>
+
+      <button class="btn-card-cart" :disabled="adding" @click="handleAddToCart">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        </svg>
+        {{ adding ? 'Adding...' : 'Add to Cart' }}
+      </button>
 
       <div v-if="product.prescriptionRequired" class="prescription-badge">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -218,4 +224,28 @@ function navigateToDetail() {
   font-weight: 600;
   border: 1px solid #fecaca;
 }
+
+.btn-card-cart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  background: var(--color-bg);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-card-cart:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.btn-card-cart:disabled { opacity: 0.5; cursor: default; }
 </style>

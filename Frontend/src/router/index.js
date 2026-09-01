@@ -65,6 +65,26 @@ const routes = [
     component: () => import('../pages/ProductDetailPage.vue'),
   },
   {
+    path: '/cart',
+    name: 'Cart',
+    component: () => import('../pages/CartPage.vue'),
+  },
+  {
+    path: '/checkout',
+    name: 'Checkout',
+    component: () => import('../pages/CheckoutPage.vue'),
+  },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: () => import('../pages/OrderHistoryPage.vue'),
+  },
+  {
+    path: '/orders/:id',
+    name: 'OrderDetail',
+    component: () => import('../pages/OrderDetailPage.vue'),
+  },
+  {
     path: '/admin/products',
     name: 'AdminProducts',
     meta: { requiresRole: [ROLES.ADMIN] },
