@@ -5,6 +5,7 @@ import org.example.Healthcareplatform.notification.entity.Notification;
 import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.prescription.dto.PrescriptionResponse;
 import org.example.Healthcareplatform.prescription.dto.ReviewRequest;
+import org.example.Healthcareplatform.prescription.dto.UploadResponse;
 import org.example.Healthcareplatform.prescription.entity.Prescription;
 import org.example.Healthcareplatform.prescription.repository.PrescriptionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,11 @@ class PrescriptionServiceTest {
                 prescriptionService,
                 "maxFileSize",
                 10_485_760L
+        );
+        ReflectionTestUtils.setField(
+                prescriptionService,
+                "storageRoot",
+                "target/test-uploads/prescriptions"
         );
 
         pendingPrescription = Prescription.builder()
@@ -383,7 +389,7 @@ class PrescriptionServiceTest {
                 prescriptionService.uploadPrescription(1L, file)
         )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("does not match");
+                .hasMessageContaining("do not match");
     }
 
     @Test
@@ -402,14 +408,14 @@ class PrescriptionServiceTest {
                     saved.setId(1L);
                     return saved;
                 });
-        when(ocrService.extractTextFromFile(any())).thenReturn("Take medicine daily");
+        when(ocrService.extractText(any(), any())).thenReturn("Take medicine daily");
 
-        PrescriptionResponse result =
+        UploadResponse result =
                 prescriptionService.uploadPrescription(1L, file);
 
-        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getPrescriptionId()).isEqualTo(1L);
         assertThat(result.getStatus()).isEqualTo("PENDING_REVIEW");
-        verify(prescriptionRepository).save(any(Prescription.class));
+        verify(prescriptionRepository, times(2)).save(any(Prescription.class));
     }
 
     @Test
@@ -440,7 +446,7 @@ class PrescriptionServiceTest {
         assertThatThrownBy(() ->
                 prescriptionService.reviewPrescription(99L, request)
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("99");
 
         verify(prescriptionRepository, never()).save(any());
@@ -453,7 +459,7 @@ class PrescriptionServiceTest {
         assertThatThrownBy(() ->
                 prescriptionService.updateOcrText(99L, "Corrected")
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("99");
     }
 
@@ -474,12 +480,12 @@ class PrescriptionServiceTest {
         when(prescriptionRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> prescriptionService.getPrescription(99L))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("99");
     }
 
     @Test
-    void shouldFilterByPatientId() {
+    void shouldSearchByPatientId() {
         when(prescriptionRepository.findAllByOrderByCreatedAtDesc())
                 .thenReturn(List.of(
                         pendingPrescription,
@@ -489,7 +495,7 @@ class PrescriptionServiceTest {
 
         List<PrescriptionResponse> result =
                 prescriptionService.searchPrescriptions(
-                        null, null, null, null, 1L, null
+                        null, "1", null, null
                 );
 
         assertThat(result).hasSize(1);

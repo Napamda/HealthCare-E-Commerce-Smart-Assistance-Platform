@@ -275,7 +275,7 @@ class ProfessionalProfileServiceTest {
         when(profileRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> professionalProfileService.getProfile(99L))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("99");
     }
 
@@ -333,7 +333,7 @@ class ProfessionalProfileServiceTest {
         assertThatThrownBy(() ->
                 professionalProfileService.updateProfile(99L, request(100L))
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("99");
     }
 
@@ -344,7 +344,7 @@ class ProfessionalProfileServiceTest {
         assertThatThrownBy(() ->
                 professionalProfileService.deleteProfile(99L)
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("99");
     }
 

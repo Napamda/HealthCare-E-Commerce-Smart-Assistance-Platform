@@ -69,6 +69,10 @@ public class AIService {
 
         String responseText = aiProvider.chat(prompt);
 
+        if (responseText == null || responseText.isBlank()) {
+            throw new IllegalArgumentException("AI provider returned an empty response");
+        }
+
         ConversationMessage saved = conversationService.saveAssistantMessage(
                 conversation.getId(), responseText,
                 aiProvider.providerName(), aiProvider.modelName());
