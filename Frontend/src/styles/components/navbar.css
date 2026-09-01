@@ -1,0 +1,355 @@
+/* ================================================================
+   HealthCare — Navbar
+   ================================================================ */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  height: 56px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.nav-brand {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.nav-center {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.nav-link {
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: all 0.15s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.nav-link:hover,
+.nav-link:focus-visible {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.nav-link:focus-visible,
+.nav-dropdown-trigger:focus-visible,
+.nav-user-trigger:focus-visible,
+.nav-hamburger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.nav-link.router-link-active {
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.nav-cta {
+  background: var(--color-primary);
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.nav-cta:hover {
+  background: var(--color-primary-dark) !important;
+  color: #fff !important;
+}
+
+/* ---- dropdown (shared by top-nav "Role Views" and the user menu) ---- */
+
+.nav-dropdown-wrapper {
+  position: relative;
+}
+
+.nav-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-dropdown-open {
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.nav-chevron {
+  font-size: 10px;
+  transition: transform 0.15s ease;
+}
+
+.nav-dropdown-open .nav-chevron {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  z-index: 200;
+  animation: navDropdownIn 0.12s ease;
+}
+
+/* the "Role Views" dropdown in the center nav should still open from the left */
+.nav-center .nav-dropdown-menu {
+  left: 0;
+  right: auto;
+}
+
+@keyframes navDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nav-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: all 0.1s ease;
+}
+
+.nav-dropdown-item:hover {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.nav-logout-item:hover {
+  color: var(--color-danger);
+  background: #fef2f2;
+}
+
+/* ---- user menu (replaces the old always-visible nav-user + nav-logout pair) ---- */
+
+.nav-user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.nav-user-trigger:hover {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+}
+
+.nav-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nav-user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.nav-user-menu {
+  min-width: 200px;
+}
+
+.nav-user-menu-header {
+  padding: 6px 10px 10px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 6px;
+}
+
+.nav-role-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+}
+
+.nav-notification-slot {
+  display: flex;
+  align-items: center;
+}
+
+/* ---- hamburger (hidden on desktop) ---- */
+
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.nav-hamburger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--color-text);
+  border-radius: 2px;
+}
+
+/* ---- mobile drawer (hidden on desktop) ---- */
+
+.nav-mobile-drawer {
+  display: none;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* ================================================================
+   Responsive — below this width, the primary nav collapses into
+   the hamburger drawer instead of wrapping/overflowing.
+   ================================================================ */
+
+@media (max-width: 860px) {
+  .nav-center {
+    display: none;
+  }
+
+  .nav-user-name {
+    display: none; /* keep the avatar, drop the name to save width */
+  }
+
+  .nav-hamburger {
+    display: flex;
+  }
+
+  .nav-mobile-drawer {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+    padding: 8px;
+    z-index: 150;
+    animation: navDropdownIn 0.15s ease;
+  }
+
+  .nav-mobile-link {
+    padding: 12px 14px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text);
+    background: none;
+    border: none;
+    border-radius: var(--radius-md);
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .nav-mobile-link:hover {
+    background: var(--color-bg);
+  }
+
+  .nav-mobile-sublink {
+    padding-left: 28px;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+  }
+
+  .nav-mobile-group-label {
+    padding: 10px 14px 2px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-dropdown-menu,
+  .nav-mobile-drawer {
+    animation: none;
+  }
+}

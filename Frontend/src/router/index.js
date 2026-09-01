@@ -28,6 +28,33 @@ const routes = [
     component: () => import('../pages/ConsultationStatusPage.vue'),
   },
   {
+    path: '/professionals',
+    name: 'Professionals',
+    component: () => import('../pages/ProfessionalDirectoryPage.vue'),
+  },
+  {
+    path: '/events',
+    name: 'Events',
+    component: () => import('../pages/EventListPage.vue'),
+  },
+  {
+    path: '/events/manage',
+    name: 'Event Management',
+    meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
+    component: () => import('../pages/EventManagementPage.vue'),
+  },
+  {
+    path: '/events/registrations',
+    name: 'MyEventRegistrations',
+    meta: { requiresRole: [ROLES.PATIENT, ROLES.DOCTOR, ROLES.PHARMACIST, ROLES.VENDOR, ROLES.ADMIN] },
+    component: () => import('../pages/MyEventRegistrationsPage.vue'),
+  },
+  {
+    path: '/events/:id',
+    name: 'EventDetail',
+    component: () => import('../pages/EventDetailPage.vue'),
+  },
+  {
     path: '/products',
     name: 'Products',
     component: () => import('../pages/ProductCatalogPage.vue'),
@@ -60,8 +87,9 @@ const routes = [
   {
     path: '/admin/products',
     name: 'AdminProducts',
-    component: () => import('../pages/AdminProductPage.vue'),},
-  {
+    meta: { requiresRole: [ROLES.ADMIN] },
+    component: () => import('../pages/AdminProductPage.vue'),}
+  ,{
     path: '/register',
     name: 'Register',
     component: () => import('../pages/RegisterPage.vue'),

@@ -7,7 +7,6 @@ import org.example.Healthcareplatform.notification.repository.NotificationReposi
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -40,14 +39,14 @@ public class NotificationService {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<NotificationResponse> getUnreadNotifications(Long userId) {
         return notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public long getUnreadCount(Long userId) {

@@ -19,7 +19,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -56,6 +55,15 @@ public class SecurityConfig {
                                 "/api/auth/verify-email"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/professionals/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/geocode/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/professionals/**").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/professionals/**").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/professionals/**").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/events/**").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/events/**").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/pharmacist/**").hasAnyRole("PHARMACIST", "ADMIN")
                         .requestMatchers("/api/doctor/**").hasAnyRole("DOCTOR", "ADMIN")
@@ -94,7 +102,7 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://localhost:8081"
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 

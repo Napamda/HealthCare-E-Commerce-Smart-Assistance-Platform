@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -133,7 +134,7 @@ public class ChatController {
         }
     }
 
-    @org.springframework.web.bind.annotation.ExceptionHandler(AIException.class)
+    @ExceptionHandler(AIException.class)
     public ResponseEntity<Map<String, String>> handleAIException(AIException ex) {
         log.error("AI error: {}", ex.getMessage(), ex);
         String detail = (ex.getCause() != null) ? ex.getCause().getMessage() : ex.getMessage();
@@ -144,7 +145,7 @@ public class ChatController {
                 ));
     }
 
-    @org.springframework.web.bind.annotation.ExceptionHandler(IllegalArgumentException.class)
+    @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity.badRequest()
                 .body(Map.of("error", ex.getMessage()));

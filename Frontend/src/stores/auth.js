@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login as loginApi, logoutRequest, refreshAccessToken } from '../services/auth.js'
-import { ROLES, getPermissionsForRole, canAccessRoute } from '../config/permissions.js'
+import { ROLES, getPermissionsForRole, canAccessRoute as checkRouteAccess } from '../config/permissions.js'
 
 export const useAuthStore = defineStore('auth', () => {
   const currentUser = ref(restoreUser())
@@ -33,7 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function canAccessRoute(requiredRoles) {
-    return canAccessRoute(userRole.value, requiredRoles)
+    return checkRouteAccess(userRole.value, requiredRoles)
   }
 
   function restoreUser() {

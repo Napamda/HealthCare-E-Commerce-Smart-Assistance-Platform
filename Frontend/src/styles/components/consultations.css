@@ -1,0 +1,133 @@
+/* ================================================================
+   HealthCare — Consultations Page
+   ================================================================ */
+
+.consultations-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  min-height: 100vh;
+}
+
+.consultations-page .page-header {
+  margin-bottom: 24px;
+}
+
+.consultations-page .page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.consultations-page .page-subtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.filters-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  transition: all 0.15s;
+}
+
+.filter-chip:hover {
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.filter-chip.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.consultations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.consultation-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  transition: box-shadow 0.15s;
+}
+
+.consultation-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.consultation-card .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.card-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.card-status {
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.consultation-card .card-body {
+  margin-bottom: 10px;
+}
+
+.card-reason {
+  display: flex;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.card-reason .label {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.card-reason .value {
+  color: var(--color-text);
+}
+
+.consultation-card .card-footer {
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+}
+
+.footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}

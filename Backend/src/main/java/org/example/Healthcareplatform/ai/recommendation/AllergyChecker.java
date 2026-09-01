@@ -2,7 +2,6 @@ package org.example.Healthcareplatform.ai.recommendation;
 
 import org.example.Healthcareplatform.ai.dto.RecommendationRequest;
 import org.example.Healthcareplatform.ai.dto.RecommendationResponse;
-import org.example.Healthcareplatform.ai.provider.AIProvider;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

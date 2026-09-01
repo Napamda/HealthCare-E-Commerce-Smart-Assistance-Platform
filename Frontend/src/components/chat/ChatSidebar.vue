@@ -1,9 +1,7 @@
 <script setup>
-import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useChatStore } from '../../stores/chat.js'
 
-const router = useRouter()
 const store = useChatStore()
 const { sortedConversations, activeConversationId } = storeToRefs(store)
 
@@ -20,14 +18,6 @@ function removeConversation(id, event) {
 
 function startNewChat() {
   store.newConversation()
-}
-
-function goToConsultations() {
-  router.push('/consultations')
-}
-
-function goToProducts() {
-  router.push('/products')
 }
 
 function formatDate(isoString) {
@@ -61,7 +51,8 @@ function formatDate(isoString) {
       </button>
     </div>
 
-    <!-- Conversation list -->
+    <!-- Conversation list — now the only other element in the sidebar,
+         so it fills 100% of whatever height the header doesn't use. -->
     <div class="conversation-list">
       <div v-if="sortedConversations.length === 0" class="empty-state">
         No conversations yet. Start a new chat!
@@ -95,167 +86,5 @@ function formatDate(isoString) {
         </button>
       </div>
     </div>
-
-    <!-- Bottom nav -->
-    <div class="sidebar-footer">
-      <button class="btn-nav-link" @click="goToProducts">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-        Browse Products
-      </button>
-      <button class="btn-nav-link" @click="goToConsultations">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-        My Consultations
-      </button>
-    </div>
   </aside>
 </template>
-
-<style scoped>
-.sidebar {
-  width: var(--sidebar-width);
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-sidebar);
-  border-right: 1px solid var(--color-border);
-}
-
-.sidebar-header {
-  padding: 20px 16px 12px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.sidebar-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin-bottom: 12px;
-}
-
-.btn-new-chat {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  width: 100%;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: #fff;
-  font-weight: 600;
-  font-size: 14px;
-  transition: background 0.15s;
-}
-.btn-new-chat:hover {
-  background: var(--color-primary-dark);
-}
-
-/* Conversation list */
-.conversation-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.empty-state {
-  padding: 24px 16px;
-  text-align: center;
-  color: var(--color-text-muted);
-  font-size: 13px;
-}
-
-.conversation-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background 0.15s;
-  margin-bottom: 2px;
-}
-.conversation-item:hover {
-  background: var(--color-primary-bg);
-}
-.conversation-item.active {
-  background: var(--color-primary-bg);
-  outline: 1px solid var(--color-primary-light);
-}
-
-.conv-icon {
-  flex-shrink: 0;
-  color: var(--color-text-muted);
-  display: flex;
-}
-
-.conv-details {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.conv-title {
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.conv-meta {
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.btn-delete {
-  flex-shrink: 0;
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
-  opacity: 0;
-  transition: opacity 0.15s, color 0.15s;
-  display: flex;
-}
-.conversation-item:hover .btn-delete {
-  opacity: 1;
-}
-.btn-delete:hover {
-  color: var(--color-danger);
-  background: rgba(220, 38, 38, 0.1);
-}
-
-.sidebar-footer {
-  padding: 8px;
-  border-top: 1px solid var(--color-border);
-}
-
-.btn-nav-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 12px;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  transition: background 0.15s, color 0.15s;
-}
-.btn-nav-link:hover {
-  background: var(--color-primary-bg);
-  color: var(--color-primary);
-}
-</style>

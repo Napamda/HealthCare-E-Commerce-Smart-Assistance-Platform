@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -169,7 +168,7 @@ public class PrescriptionService {
         return prescriptionRepository.findByPatientUserIdOrderByCreatedAtDesc(patientUserId)
                 .stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<PrescriptionResponse> getPendingPrescriptions() {
@@ -177,7 +176,7 @@ public class PrescriptionService {
                         Prescription.PrescriptionStatus.PENDING_REVIEW)
                 .stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<PrescriptionResponse> searchPrescriptions(String status, String search, String startDate, String endDate) {
@@ -206,7 +205,7 @@ public class PrescriptionService {
                     } catch (Exception e) { return true; }
                 })
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public PrescriptionResponse reviewPrescription(Long prescriptionId, ReviewRequest request) {

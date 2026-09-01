@@ -24,7 +24,7 @@ public class AIConfiguration {
     @Value("${ai.openrouter.base-url:https://openrouter.ai/api/v1}")
     private String openRouterBaseUrl;
 
-    @Value("${ai.openrouter.model:{OPENROUTER_MODEL:openrouter/free}")
+    @Value("${ai.openrouter.model:openrouter/free}")
     private String openRouterModel;
 
     @Value("${ai.openrouter.timeout-seconds:60}")

@@ -74,7 +74,7 @@ public class ConsultationService {
         return consultationRepository.findByPatientUserIdOrderByCreatedAtDesc(patientUserId)
                 .stream()
                 .map(c -> toResponse(c, conversationService.getMessages(c.getConversationId())))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional

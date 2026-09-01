@@ -1,9 +1,4 @@
-import axios from 'axios'
-
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
-  headers: { 'Content-Type': 'application/json' },
-})
+import apiClient from './api.js'
 
 export function getNotifications(userId) {
   return apiClient.get(`/api/notifications/${userId}`).then((res) => res.data)
