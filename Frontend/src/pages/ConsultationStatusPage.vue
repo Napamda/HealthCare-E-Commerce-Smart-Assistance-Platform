@@ -2,8 +2,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useConsultationStore } from '../stores/consultation.js'
+import { useAuthStore } from '../stores/auth.js'
 
 const consultationStore = useConsultationStore()
+const authStore = useAuthStore()
 const { consultations, escalationError } = storeToRefs(consultationStore)
 
 const statusFilter = ref('ALL')
@@ -22,7 +24,10 @@ const sortedConsultations = computed(() =>
 )
 
 onMounted(() => {
-  consultationStore.fetchPatientConsultations(1)
+  const userId = authStore.currentUser?.id
+  if (userId) {
+    consultationStore.fetchPatientConsultations(userId)
+  }
 })
 
 function getStatusLabel(status) {
