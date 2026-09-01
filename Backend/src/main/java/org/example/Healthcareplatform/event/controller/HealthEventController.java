@@ -5,10 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.event.dto.HealthEventRequest;
 import org.example.Healthcareplatform.event.dto.HealthEventResponse;
 import org.example.Healthcareplatform.event.service.HealthEventService;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +35,36 @@ public class HealthEventController {
     public ResponseEntity<List<String>> listCategories() {
         log.info("List event categories");
         return ResponseEntity.ok(eventService.listCategories());
+    }
+
+    @GetMapping("/cities")
+    public ResponseEntity<List<String>> listCities() {
+        log.info("List event cities");
+        return ResponseEntity.ok(eventService.listCities());
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> searchEvents(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "9") int size) {
+        log.info("Search events — keyword={}, category={}, city={}, dateFrom={}, dateTo={}, status={}, page={}, size={}",
+                keyword, category, city, dateFrom, dateTo, status, page, size);
+        Page<HealthEventResponse> result = eventService.searchEvents(
+                keyword, category, city, dateFrom, dateTo, status, page, size);
+        return ResponseEntity.ok(Map.of(
+                "content", result.getContent(),
+                "page", result.getNumber(),
+                "size", result.getSize(),
+                "totalElements", result.getTotalElements(),
+                "totalPages", result.getTotalPages(),
+                "first", result.isFirst(),
+                "last", result.isLast()));
     }
 
     @GetMapping("/{id}")

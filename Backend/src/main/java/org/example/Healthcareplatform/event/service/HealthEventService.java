@@ -7,10 +7,16 @@ import org.example.Healthcareplatform.event.dto.HealthEventResponse;
 import org.example.Healthcareplatform.event.entity.EventStatus;
 import org.example.Healthcareplatform.event.entity.HealthEvent;
 import org.example.Healthcareplatform.event.repository.HealthEventRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -43,6 +49,25 @@ public class HealthEventService {
     @Transactional(readOnly = true)
     public List<String> listCategories() {
         return eventRepository.findDistinctCategories();
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> listCities() {
+        return eventRepository.findDistinctCities();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<HealthEventResponse> searchEvents(String keyword, String category, String city,
+                                                  LocalDate dateFrom, LocalDate dateTo,
+                                                  String status, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100),
+                Sort.by(Sort.Direction.ASC, "startDateTime"));
+        LocalDateTime from = dateFrom != null ? dateFrom.atStartOfDay() : null;
+        LocalDateTime to = dateTo != null ? dateTo.atTime(LocalTime.MAX) : null;
+        return eventRepository.searchEvents(
+                normalize(keyword), normalize(category), normalize(city),
+                from, to, parseStatus(status), pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -142,6 +167,13 @@ public class HealthEventService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid event status: " + status);
         }
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private HealthEventResponse toResponse(HealthEvent event) {

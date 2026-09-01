@@ -6,6 +6,28 @@
 
     <p v-if="error" class="alert alert-error">{{ error }}</p>
 
+    <div class="event-toolbar">
+      <div class="event-search-group">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          v-model.trim="keyword"
+          class="event-search-input"
+          type="text"
+          placeholder="Search events by title, location, organizer..."
+          @keyup.enter="applySearch"
+        />
+      </div>
+      <select v-model="cityFilter" class="form-input event-filter-select" @change="applySearch">
+        <option value="">All locations</option>
+        <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
+      </select>
+      <input v-model="dateFrom" class="form-input event-filter-select" type="date" @change="applySearch" />
+      <input v-model="dateTo" class="form-input event-filter-select" type="date" @change="applySearch" />
+    </div>
+
     <div class="filter-row">
       <button
         v-for="cat in categoryOptions"
@@ -25,7 +47,12 @@
     </div>
 
     <div v-else class="events-grid">
-      <div v-for="event in events" :key="event.id" class="event-card">
+      <router-link
+        v-for="event in events"
+        :key="event.id"
+        :to="`/events/${event.id}`"
+        class="event-card"
+      >
         <div class="event-card-top">
           <span class="category-badge">{{ event.category }}</span>
           <span v-if="event.capacity" class="capacity-text">{{ event.capacity }} spots</span>
@@ -59,20 +86,34 @@
         <div v-if="event.tags && event.tags.length" class="tag-list">
           <span v-for="tag in event.tags" :key="tag" class="tag-chip">{{ tag }}</span>
         </div>
-      </div>
+      </router-link>
+    </div>
+
+    <div v-if="totalPages > 1" class="event-pagination">
+      <button class="btn-secondary" :disabled="page === 0" @click="goToPage(page - 1)">Prev</button>
+      <span class="event-pagination-info">Page {{ page + 1 }} of {{ totalPages }}</span>
+      <button class="btn-secondary" :disabled="page >= totalPages - 1" @click="goToPage(page + 1)">Next</button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { listEvents, listEventCategories } from '../services/event.js'
+import { searchEvents, listEventCategories, listEventCities } from '../services/event.js'
 
 const events = ref([])
 const categories = ref([])
+const cities = ref([])
 const categoryFilter = ref('All')
+const keyword = ref('')
+const cityFilter = ref('')
+const dateFrom = ref('')
+const dateTo = ref('')
 const loading = ref(false)
 const error = ref('')
+const page = ref(0)
+const size = 9
+const totalPages = ref(0)
 
 const categoryOptions = computed(() => ['All', ...categories.value])
 
@@ -80,11 +121,19 @@ async function loadEvents() {
   loading.value = true
   error.value = ''
   try {
-    const params = { status: 'PUBLISHED' }
-    if (categoryFilter.value !== 'All') {
-      params.category = categoryFilter.value
+    const params = {
+      status: 'PUBLISHED',
+      page: page.value,
+      size,
     }
-    events.value = await listEvents(params)
+    if (categoryFilter.value !== 'All') params.category = categoryFilter.value
+    if (keyword.value) params.keyword = keyword.value
+    if (cityFilter.value) params.city = cityFilter.value
+    if (dateFrom.value) params.dateFrom = dateFrom.value
+    if (dateTo.value) params.dateTo = dateTo.value
+    const result = await searchEvents(params)
+    events.value = result.content || []
+    totalPages.value = result.totalPages || 0
   } catch (e) {
     error.value = e.response?.data?.error || 'Failed to load events'
   } finally {
@@ -100,8 +149,27 @@ async function loadCategories() {
   }
 }
 
+async function loadCities() {
+  try {
+    cities.value = await listEventCities()
+  } catch (_) {
+    cities.value = []
+  }
+}
+
 function setCategory(cat) {
   categoryFilter.value = cat
+  page.value = 0
+  loadEvents()
+}
+
+function applySearch() {
+  page.value = 0
+  loadEvents()
+}
+
+function goToPage(target) {
+  page.value = target
   loadEvents()
 }
 
@@ -120,5 +188,6 @@ function formatDateTime(dt) {
 onMounted(() => {
   loadEvents()
   loadCategories()
+  loadCities()
 })
 </script>

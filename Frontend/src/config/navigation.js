@@ -1,33 +1,42 @@
 import { ROLES } from './permissions.js'
 
+// Single source of truth for top-nav items, per role.
+// ChatSidebar (and anything else) should import getNavItems()
+// instead of hardcoding its own router.push() targets — that's
+// what let /products and /admin/products go missing before.
 export const NAV_ITEMS = {
   [ROLES.PATIENT]: [
     { to: '/chat', label: 'AI Chat' },
-    { to: '/professionals', label: 'Find Professionals' },
-    { to: '/events', label: 'Health Events' },
+    { to: '/products', label: 'Shop' },
+    { to: '/events', label: 'Events' },
+    { to: '/events/registrations', label: 'My Events' },
     { to: '/consultations', label: 'Consultations' },
-    { to: '/prescriptions', label: 'My Prescriptions' },
-    { to: '/prescriptions/upload', label: 'Upload Rx' },
+    { to: '/prescriptions', label: 'Prescriptions' },
   ],
 
   [ROLES.DOCTOR]: [
     { to: '/doctor', label: 'Dashboard' },
-    { to: '/events/manage', label: 'Manage Events' },
     { to: '/consultations', label: 'Consultations' },
+    { to: '/events', label: 'Events' },
+    { to: '/events/manage', label: 'Manage Events' },
+    { to: '/events/registrations', label: 'My Events' },
     { to: '/prescriptions', label: 'Prescriptions' },
     { to: '/chat', label: 'AI Chat' },
   ],
 
   [ROLES.PHARMACIST]: [
     { to: '/pharmacist', label: 'Dashboard' },
-    { to: '/events', label: 'Health Events' },
     { to: '/prescriptions', label: 'Prescriptions' },
+    { to: '/events', label: 'Events' },
+    { to: '/events/registrations', label: 'My Events' },
     { to: '/consultations', label: 'Consultations' },
     { to: '/chat', label: 'AI Chat' },
   ],
 
   [ROLES.ADMIN]: [
     { to: '/admin', label: 'Dashboard' },
+    { to: '/admin/products', label: 'Manage Products' },
+    { to: '/events/manage', label: 'Manage Events' },
     {
       label: 'Role Views',
       children: [
@@ -36,15 +45,15 @@ export const NAV_ITEMS = {
         { to: '/vendor', label: 'Vendor View' },
       ],
     },
-    { to: '/events/manage', label: 'Manage Events' },
     { to: '/consultations', label: 'Consultations' },
     { to: '/prescriptions', label: 'Prescriptions' },
-    { to: '/chat', label: 'AI Chat' },
   ],
 
   [ROLES.VENDOR]: [
     { to: '/vendor', label: 'Dashboard' },
-    { to: '/events', label: 'Health Events' },
+    { to: '/products', label: 'Shop' },
+    { to: '/events', label: 'Events' },
+    { to: '/events/registrations', label: 'My Events' },
     { to: '/chat', label: 'AI Chat' },
     { to: '/consultations', label: 'Consultations' },
   ],
@@ -52,4 +61,14 @@ export const NAV_ITEMS = {
 
 export function getNavItems(role) {
   return NAV_ITEMS[role] || []
+}
+
+// Flat list of every path referenced above, so a route guard or a
+// test can assert "every route with a page either appears here or
+// is deliberately excluded" instead of that drifting silently again.
+export function getAllNavPaths() {
+  return Object.values(NAV_ITEMS)
+    .flat()
+    .flatMap((item) => (item.children ? item.children : [item]))
+    .map((item) => item.to)
 }

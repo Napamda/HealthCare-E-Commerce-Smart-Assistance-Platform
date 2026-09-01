@@ -40,7 +40,19 @@ const routes = [
   {
     path: '/events/manage',
     name: 'Event Management',
+    meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
     component: () => import('../pages/EventManagementPage.vue'),
+  },
+  {
+    path: '/events/registrations',
+    name: 'MyEventRegistrations',
+    meta: { requiresRole: [ROLES.PATIENT, ROLES.DOCTOR, ROLES.PHARMACIST, ROLES.VENDOR, ROLES.ADMIN] },
+    component: () => import('../pages/MyEventRegistrationsPage.vue'),
+  },
+  {
+    path: '/events/:id',
+    name: 'EventDetail',
+    component: () => import('../pages/EventDetailPage.vue'),
   },
   {
     path: '/products',
@@ -55,6 +67,7 @@ const routes = [
   {
     path: '/admin/products',
     name: 'AdminProducts',
+    meta: { requiresRole: [ROLES.ADMIN] },
     component: () => import('../pages/AdminProductPage.vue'),}
   ,{
     path: '/register',
