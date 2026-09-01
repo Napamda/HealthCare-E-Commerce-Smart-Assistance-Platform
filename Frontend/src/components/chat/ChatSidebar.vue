@@ -1,9 +1,7 @@
 <script setup>
-import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useChatStore } from '../../stores/chat.js'
 
-const router = useRouter()
 const store = useChatStore()
 const { sortedConversations, activeConversationId } = storeToRefs(store)
 
@@ -20,14 +18,6 @@ function removeConversation(id, event) {
 
 function startNewChat() {
   store.newConversation()
-}
-
-function goToConsultations() {
-  router.push('/consultations')
-}
-
-function goToProducts() {
-  router.push('/products')
 }
 
 function formatDate(isoString) {
@@ -61,7 +51,8 @@ function formatDate(isoString) {
       </button>
     </div>
 
-    <!-- Conversation list -->
+    <!-- Conversation list — now the only other element in the sidebar,
+         so it fills 100% of whatever height the header doesn't use. -->
     <div class="conversation-list">
       <div v-if="sortedConversations.length === 0" class="empty-state">
         No conversations yet. Start a new chat!
@@ -95,30 +86,5 @@ function formatDate(isoString) {
         </button>
       </div>
     </div>
-
-    <!-- Bottom nav -->
-    <div class="sidebar-footer">
-      <button class="btn-nav-link" @click="goToProducts">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-        Browse Products
-      </button>
-      <button class="btn-nav-link" @click="goToConsultations">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-        My Consultations
-      </button>
-    </div>
   </aside>
 </template>
-
-
