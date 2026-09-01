@@ -48,25 +48,31 @@ jwt:
   refresh-token-expiration-ms: 86400000
   remember-me-expiration-ms: 2592000000
 
-# =====================================================
-# Prescription storage
-# =====================================================
-prescription:
-  storage-root: ${user.home}/Desktop/HealthCare/healthcare-uploads/prescriptions
-  max-file-size: 10485760
+  # Context memory — controls how many messages are sent as prompt context
+  memory:
+    max-history: 10
+    summary-threshold: 30
 
+  ocr:
+    enabled: ${AI_OCR_ENABLED:true}
+    model: ${AI_OCR_MODEL:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}
+    
 # =====================================================
-# Logging
+# Geocoding Configuration — Nominatim (OpenStreetMap)
 # =====================================================
-logging:
-  level:
-    root: INFO
-    com.yourpackage: DEBUG
-    org.springframework: INFO
-    org.hibernate: WARN
-  file:
-    name: application.log
-    path: ${user.home}/Desktop/HealthCare/logs/
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+geocoding:
+  base-url: ${GEOCODING_BASE_URL:https://nominatim.openstreetmap.org}
+  user-agent: ${GEOCODING_USER_AGENT:HealthCarePlatform/1.0 (https://localhost)}
+
+#logging:
+ # level:
+  #  root: INFO
+   # com.yourpackage: DEBUG
+    #org.springframework: INFO
+    #org.hibernate: DEBUG
+  #file:
+   # name: application.log
+    #path: ${user.home}/Desktop/HealthCare/logs/
+  #pattern:
+   # console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    #file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

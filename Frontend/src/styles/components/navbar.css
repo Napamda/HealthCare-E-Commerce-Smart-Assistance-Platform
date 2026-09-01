@@ -67,9 +67,18 @@
   white-space: nowrap;
 }
 
-.nav-link:hover {
+.nav-link:hover,
+.nav-link:focus-visible {
   color: var(--color-text);
   background: var(--color-bg);
+}
+
+.nav-link:focus-visible,
+.nav-dropdown-trigger:focus-visible,
+.nav-user-trigger:focus-visible,
+.nav-hamburger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .nav-link.router-link-active {
@@ -90,7 +99,7 @@
   color: #fff !important;
 }
 
-/* ---- Dropdown ---- */
+/* ---- dropdown (shared by top-nav "Role Views" and the user menu) ---- */
 
 .nav-dropdown-wrapper {
   position: relative;
@@ -119,27 +128,33 @@
 
 .nav-dropdown-menu {
   position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 200px;
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  min-width: 180px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
   padding: 6px;
   z-index: 200;
-  animation: navDropdownIn 0.15s ease;
+  animation: navDropdownIn 0.12s ease;
+}
+
+/* the "Role Views" dropdown in the center nav should still open from the left */
+.nav-center .nav-dropdown-menu {
+  left: 0;
+  right: auto;
 }
 
 @keyframes navDropdownIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-4px);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
 }
 
@@ -175,16 +190,59 @@
   background: var(--color-primary-bg);
 }
 
-/* ---- User area ---- */
+.nav-logout-item:hover {
+  color: var(--color-danger);
+  background: #fef2f2;
+}
 
-.nav-user {
+/* ---- user menu (replaces the old always-visible nav-user + nav-logout pair) ---- */
+
+.nav-user-trigger {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13.5px;
+  padding: 4px 10px 4px 4px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.nav-user-trigger:hover {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+}
+
+.nav-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nav-user-name {
+  font-size: 14px;
   font-weight: 500;
   color: var(--color-text);
-  padding: 6px 12px;
+}
+
+.nav-user-menu {
+  min-width: 200px;
+}
+
+.nav-user-menu-header {
+  padding: 6px 10px 10px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 6px;
 }
 
 .nav-role-badge {
@@ -192,29 +250,45 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: var(--radius-full);
   background: var(--color-primary-bg);
   color: var(--color-primary);
   border: 1px solid rgba(37, 99, 235, 0.15);
 }
 
-.nav-logout {
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.15s ease;
+.nav-notification-slot {
+  display: flex;
+  align-items: center;
 }
 
-.nav-logout:hover {
-  color: var(--color-danger);
-  border-color: var(--color-danger);
-  background: #fef2f2;
+/* ---- hamburger (hidden on desktop) ---- */
+
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.nav-hamburger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--color-text);
+  border-radius: 2px;
+}
+
+/* ---- mobile drawer (hidden on desktop) ---- */
+
+.nav-mobile-drawer {
+  display: none;
 }
 
 /* ---- App main content area ---- */
@@ -227,4 +301,81 @@
   overflow-y: auto;
   background: var(--color-bg);
   color: var(--color-text);
+}
+
+/* ================================================================
+   Responsive — below this width, the primary nav collapses into
+   the hamburger drawer instead of wrapping/overflowing.
+   ================================================================ */
+
+@media (max-width: 860px) {
+  .nav-center {
+    display: none;
+  }
+
+  .nav-user-name {
+    display: none; /* keep the avatar, drop the name to save width */
+  }
+
+  .nav-orders-link {
+    display: none; /* Orders moves into the mobile drawer below */
+  }
+
+  .nav-hamburger {
+    display: flex;
+  }
+
+  .nav-mobile-drawer {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+    padding: 8px;
+    z-index: 150;
+    animation: navDropdownIn 0.15s ease;
+  }
+
+  .nav-mobile-link {
+    padding: 12px 14px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text);
+    background: none;
+    border: none;
+    border-radius: var(--radius-md);
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .nav-mobile-link:hover {
+    background: var(--color-bg);
+  }
+
+  .nav-mobile-sublink {
+    padding-left: 28px;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+  }
+
+  .nav-mobile-group-label {
+    padding: 10px 14px 2px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-dropdown-menu,
+  .nav-mobile-drawer {
+    animation: none;
+  }
 }

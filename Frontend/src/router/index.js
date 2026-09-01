@@ -28,6 +28,33 @@ const routes = [
     component: () => import('../pages/ConsultationStatusPage.vue'),
   },
   {
+    path: '/professionals',
+    name: 'Professionals',
+    component: () => import('../pages/ProfessionalDirectoryPage.vue'),
+  },
+  {
+    path: '/events',
+    name: 'Events',
+    component: () => import('../pages/EventListPage.vue'),
+  },
+  {
+    path: '/events/manage',
+    name: 'Event Management',
+    meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
+    component: () => import('../pages/EventManagementPage.vue'),
+  },
+  {
+    path: '/events/registrations',
+    name: 'MyEventRegistrations',
+    meta: { requiresRole: [ROLES.PATIENT, ROLES.DOCTOR, ROLES.PHARMACIST, ROLES.VENDOR, ROLES.ADMIN] },
+    component: () => import('../pages/MyEventRegistrationsPage.vue'),
+  },
+  {
+    path: '/events/:id',
+    name: 'EventDetail',
+    component: () => import('../pages/EventDetailPage.vue'),
+  },
+  {
     path: '/products',
     name: 'Products',
     component: () => import('../pages/ProductCatalogPage.vue'),
@@ -38,8 +65,29 @@ const routes = [
     component: () => import('../pages/ProductDetailPage.vue'),
   },
   {
+    path: '/cart',
+    name: 'Cart',
+    component: () => import('../pages/CartPage.vue'),
+  },
+  {
+    path: '/checkout',
+    name: 'Checkout',
+    component: () => import('../pages/CheckoutPage.vue'),
+  },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: () => import('../pages/OrderHistoryPage.vue'),
+  },
+  {
+    path: '/orders/:id',
+    name: 'OrderDetail',
+    component: () => import('../pages/OrderDetailPage.vue'),
+  },
+  {
     path: '/admin/products',
     name: 'AdminProducts',
+    meta: { requiresRole: [ROLES.ADMIN] },
     component: () => import('../pages/AdminProductPage.vue'),}
   ,{
     path: '/register',
