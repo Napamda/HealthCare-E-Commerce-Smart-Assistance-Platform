@@ -3,6 +3,7 @@ package org.example.Healthcareplatform.location.geocoding.service;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.location.geocoding.dto.GeocodeResult;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class GeocodingService {
         log.info("GeocodingService initialized — baseUrl={}", baseUrl);
     }
 
+    @Cacheable(cacheNames = "geocode")
     public GeocodeResult geocode(String query) {
         if (query == null || query.isBlank()) {
             throw new IllegalArgumentException("Address query is required");
@@ -52,6 +54,7 @@ public class GeocodingService {
         return parseResult(results.get(0));
     }
 
+    @Cacheable(cacheNames = "reverseGeocode")
     public GeocodeResult reverseGeocode(double latitude, double longitude) {
         log.info("Reverse geocoding — lat={}, lng={}", latitude, longitude);
 

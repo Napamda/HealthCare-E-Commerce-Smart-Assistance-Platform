@@ -49,14 +49,4 @@ public class NotificationController {
         return ResponseEntity.ok(Map.of("message", "All notifications marked as read"));
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, String>> handleRuntimeError(RuntimeException e) {
-        log.error("Notification error: {}", e.getMessage(), e);
-        if (e.getMessage() != null && e.getMessage().contains("not found")) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
-        }
-        return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
-    }
 }

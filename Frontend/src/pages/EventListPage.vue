@@ -55,7 +55,13 @@
       >
         <div class="event-card-top">
           <span class="category-badge">{{ event.category }}</span>
-          <span v-if="event.capacity" class="capacity-text">{{ event.capacity }} spots</span>
+          <span
+            v-if="event.capacity"
+            class="capacity-text"
+            :class="{ 'capacity-full': spotsLeft(event) === 0 }"
+          >
+            {{ spotsLeft(event) === 0 ? 'Event full' : spotsLeft(event) + ' spots left' }}
+          </span>
         </div>
         <h3 class="event-card-title">{{ event.title }}</h3>
         <p v-if="event.description" class="event-card-desc">{{ event.description }}</p>
@@ -98,8 +104,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { searchEvents, listEventCategories, listEventCities } from '../services/event.js'
+
+let pollTimer = null
 
 const events = ref([])
 const categories = ref([])
@@ -117,9 +125,9 @@ const totalPages = ref(0)
 
 const categoryOptions = computed(() => ['All', ...categories.value])
 
-async function loadEvents() {
-  loading.value = true
-  error.value = ''
+async function loadEvents(silent = false) {
+  if (!silent) loading.value = true
+  if (!silent) error.value = ''
   try {
     const params = {
       status: 'PUBLISHED',
@@ -135,10 +143,16 @@ async function loadEvents() {
     events.value = result.content || []
     totalPages.value = result.totalPages || 0
   } catch (e) {
-    error.value = e.response?.data?.error || 'Failed to load events'
+    if (!silent) error.value = e.response?.data?.error || 'Failed to load events'
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
   }
+}
+
+function spotsLeft(event) {
+  const capacity = event.capacity
+  if (!capacity) return null
+  return Math.max(capacity - (event.registeredCount || 0), 0)
 }
 
 async function loadCategories() {
@@ -189,5 +203,10 @@ onMounted(() => {
   loadEvents()
   loadCategories()
   loadCities()
+  pollTimer = setInterval(() => loadEvents(true), 20000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer)
 })
 </script>

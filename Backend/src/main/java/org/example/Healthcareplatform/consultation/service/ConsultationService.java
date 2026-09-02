@@ -13,6 +13,7 @@ import org.example.Healthcareplatform.consultation.event.ConsultationCreatedEven
 import org.example.Healthcareplatform.consultation.repository.ConsultationRepository;
 import org.example.Healthcareplatform.user.entity.User;
 import org.example.Healthcareplatform.user.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class ConsultationService {
     private final ConversationService conversationService;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public ConsultationResponse escalateFromChat(EscalationRequest request, Long patientUserId) {
@@ -60,7 +62,14 @@ public class ConsultationService {
         log.info("Consultation created — id={}, conversationId={}, patientUserId={}, priority={}",
                 saved.getId(), saved.getConversationId(), saved.getPatientUserId(), saved.getPriority());
 
-        publishNotification(saved);
+        applicationEventPublisher.publishEvent(ConsultationCreatedEvent.builder()
+                .consultationId(saved.getId())
+                .conversationId(saved.getConversationId())
+                .patientUserId(saved.getPatientUserId())
+                .reason(saved.getReason())
+                .priority(saved.getPriority().name())
+                .createdAt(Instant.now())
+                .build());
 
         return toResponse(saved, messages);
     }
@@ -140,20 +149,6 @@ public class ConsultationService {
         log.info("Consultation id={} priority updated to {}", saved.getId(), saved.getPriority());
 
         return toResponse(saved);
-    }
-
-    private void publishNotification(Consultation consultation) {
-        ConsultationCreatedEvent event = ConsultationCreatedEvent.builder()
-                .consultationId(consultation.getId())
-                .conversationId(consultation.getConversationId())
-                .patientUserId(consultation.getPatientUserId())
-                .reason(consultation.getReason())
-                .priority(consultation.getPriority().name())
-                .createdAt(Instant.now())
-                .build();
-
-        log.info("Notification event published — consultationId={}, patientUserId={}, priority={}",
-                event.getConsultationId(), event.getPatientUserId(), event.getPriority());
     }
 
     private String serializeChatContext(List<ConversationMessage> messages) {

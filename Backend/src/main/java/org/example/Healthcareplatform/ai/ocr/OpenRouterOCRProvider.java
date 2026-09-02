@@ -75,6 +75,7 @@ public class OpenRouterOCRProvider implements OCRProvider {
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
+                int currentAttempt = attempt;
                 String responseJson = restClient.post()
                         .uri("/chat/completions")
                         .body(body)
@@ -84,7 +85,7 @@ public class OpenRouterOCRProvider implements OCRProvider {
                                 byte[] errorBody = resp.getBody().readAllBytes();
                                 String errorText = new String(errorBody);
                                 log.warn("OpenRouter OCR HTTP {} on attempt {}/{} — retryable: {}",
-                                        status.value(), attempt, MAX_RETRIES, errorText);
+                                        status.value(), currentAttempt, MAX_RETRIES, errorText);
                                 throw new RuntimeException("HTTP " + status.value() + ": " + errorText);
                             }
                             if (status.isError()) {

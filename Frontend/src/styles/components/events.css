@@ -405,6 +405,11 @@
   color: var(--color-text-muted);
 }
 
+.capacity-text.capacity-full {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
 .event-card-title {
   font-size: 17px;
   font-weight: 700;

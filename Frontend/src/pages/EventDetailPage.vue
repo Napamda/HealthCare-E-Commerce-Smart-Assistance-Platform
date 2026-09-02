@@ -46,7 +46,7 @@
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
             <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
-          {{ event.capacity }} spots
+          {{ spotsLeftText }}
         </span>
       </div>
 
@@ -105,13 +105,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getEvent, registerForEvent, getEventRegistrationStatus, cancelRegistration } from '../services/event.js'
 import { useAuthStore } from '../stores/auth.js'
 
 const route = useRoute()
 const authStore = useAuthStore()
+let regPollTimer = null
+
 const event = ref(null)
 const loading = ref(false)
 const error = ref('')
@@ -124,6 +126,13 @@ const regSuccess = ref('')
 const spotsLeft = computed(() => {
   if (!regStatus.value || !regStatus.value.capacity) return null
   return Math.max(regStatus.value.capacity - regStatus.value.count, 0)
+})
+
+const spotsLeftText = computed(() => {
+  if (!event.value?.capacity) return null
+  const count = regStatus.value?.count ?? event.value.registeredCount ?? 0
+  const left = Math.max(event.value.capacity - count, 0)
+  return left === 0 ? 'Event full' : `${left} spots left`
 })
 
 const capacityTone = computed(() => {
@@ -178,11 +187,19 @@ async function loadRegistrationStatus() {
   regError.value = ''
   try {
     regStatus.value = await getEventRegistrationStatus(route.params.id)
+    if (event.value) event.value.registeredCount = regStatus.value.count
   } catch (e) {
     regError.value = e.response?.data?.error || 'Failed to load registration status'
   } finally {
     regLoading.value = false
   }
+}
+
+async function refreshRegistrationStatus() {
+  try {
+    regStatus.value = await getEventRegistrationStatus(route.params.id)
+    if (event.value) event.value.registeredCount = regStatus.value.count
+  } catch (_) {}
 }
 
 async function handleRegister() {
@@ -228,5 +245,16 @@ function formatDateTime(dt) {
   })
 }
 
-onMounted(loadEvent)
+onMounted(() => {
+  loadEvent()
+  regPollTimer = setInterval(() => {
+    if (authStore.isAuthenticated && event.value && !actionLoading.value) {
+      refreshRegistrationStatus()
+    }
+  }, 10000)
+})
+
+onUnmounted(() => {
+  if (regPollTimer) clearInterval(regPollTimer)
+})
 </script>

@@ -16,7 +16,7 @@ onMounted(() => {
 
 <template>
   <div class="app-shell">
-    <AppNavbar />
+    <AppNavbar v-if="authStore.isAuthenticated" />
     <main class="app-main">
       <router-view />
     </main>

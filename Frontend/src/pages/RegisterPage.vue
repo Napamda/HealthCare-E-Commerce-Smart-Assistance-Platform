@@ -109,6 +109,13 @@ async function handleSubmit() {
 function goToLogin() {
   router.push('/login')
 }
+
+function goVerifyNow() {
+  try {
+    const token = new URL(verificationLink.value).searchParams.get('token')
+    if (token) router.push({ path: '/verify-email', query: { token } })
+  } catch (_) {}
+}
 </script>
 
 <template>
@@ -127,9 +134,14 @@ function goToLogin() {
           <p class="hint">Verification link (for testing):</p>
           <code class="verification-link">{{ verificationLink }}</code>
         </div>
-        <button class="btn btn-primary btn-full" @click="goToLogin">
-          Go to Login
-        </button>
+        <div class="verify-actions">
+          <button class="btn btn-primary btn-full" @click="goVerifyNow">
+            Verify Email Now
+          </button>
+          <button class="btn btn-secondary btn-full" @click="goToLogin">
+            Go to Login
+          </button>
+        </div>
       </div>
 
       <form v-else @submit.prevent="handleSubmit" class="register-form">

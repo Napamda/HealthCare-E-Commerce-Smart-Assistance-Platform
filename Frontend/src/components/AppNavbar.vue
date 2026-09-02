@@ -5,7 +5,6 @@ import { useAuthStore } from '../stores/auth.js'
 import { ROLE_LABELS } from '../config/permissions.js'
 import { getNavItems } from '../config/navigation.js'
 import NotificationBell from './NotificationBell.vue'
-import CartIcon from './cart/CartIcon.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -78,7 +77,7 @@ async function handleLogout() {
             @click="toggleDropdown(item.label)"
           >
             {{ item.label }}
-            <span class="nav-caret">▾</span>
+            <span class="nav-chevron">▾</span>
           </button>
           <div class="nav-dropdown-menu" v-show="openDropdown === item.label">
             <button
@@ -107,14 +106,12 @@ async function handleLogout() {
 
       <template v-else>
         <NotificationBell :user-id="authStore.currentUser?.id" class="nav-notification-slot" />
-        <CartIcon />
-        <router-link to="/orders" class="nav-link nav-orders-link">Orders</router-link>
 
         <div class="nav-dropdown-wrapper">
           <button class="nav-user-trigger" @click="toggleUserMenu">
             <span class="nav-user-avatar">{{ authStore.currentUser?.firstName?.[0] || '?' }}</span>
             <span class="nav-user-name">{{ authStore.currentUser?.firstName }}</span>
-            <span class="nav-caret">▾</span>
+            <span class="nav-chevron">▾</span>
           </button>
 
           <div class="nav-dropdown-menu nav-user-menu" v-show="userMenuOpen">
@@ -152,9 +149,6 @@ async function handleLogout() {
           {{ item.label }}
         </button>
       </template>
-      <button class="nav-mobile-link nav-mobile-orders" @click="navigate('/orders')">
-        Orders
-      </button>
     </div>
   </nav>
 </template>

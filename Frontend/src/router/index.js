@@ -11,6 +11,7 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: () => import('../pages/LoginPage.vue'),
+    meta: { public: true },
   },
   {
     path: '/chat',
@@ -25,7 +26,13 @@ const routes = [
   {
     path: '/consultations',
     name: 'Consultations',
+    meta: { requiresRole: [ROLES.PATIENT] },
     component: () => import('../pages/ConsultationStatusPage.vue'),
+  },
+  {
+    path: '/recommendations',
+    name: 'Recommendations',
+    component: () => import('../pages/RecommendationsPage.vue'),
   },
   {
     path: '/professionals',
@@ -89,12 +96,19 @@ const routes = [
     name: 'AdminProducts',
     meta: { requiresRole: [ROLES.ADMIN] },
     component: () => import('../pages/AdminProductPage.vue'),}
-  ,{
+  ,  {
     path: '/register',
     name: 'Register',
     component: () => import('../pages/RegisterPage.vue'),
+    meta: { public: true },
   },
-  
+  {
+    path: '/verify-email',
+    name: 'VerifyEmail',
+    component: () => import('../pages/VerifyEmailPage.vue'),
+    meta: { public: true },
+  },
+
   {
     path: '/admin',
     name: 'AdminDashboard',
@@ -110,16 +124,19 @@ const routes = [
   {
     path: '/prescriptions',
     name: 'PrescriptionList',
+    meta: { requiresRole: [ROLES.PATIENT] },
     component: () => import('../pages/PrescriptionListPage.vue'),
   },
   {
     path: '/prescriptions/upload',
     name: 'PrescriptionUpload',
+    meta: { requiresRole: [ROLES.PATIENT] },
     component: () => import('../pages/PrescriptionUploadPage.vue'),
   },
   {
     path: '/prescriptions/:id',
     name: 'PrescriptionDetail',
+    meta: { requiresRole: [ROLES.PATIENT] },
     component: () => import('../pages/PrescriptionDetailPage.vue'),
   },
   {
@@ -151,15 +168,20 @@ router.beforeEach(async (to, _from, next) => {
     await authStore.tryRestoreSession()
   }
 
+  if (!to.meta.public && !authStore.isAuthenticated) {
+    next({ name: 'Login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  if (to.matched.length === 0) {
+    next({ name: 'Chat' })
+    return
+  }
+
   const requiredRoles = to.meta.requiresRole
 
   if (!requiredRoles || requiredRoles.length === 0) {
     next()
-    return
-  }
-
-  if (!authStore.isAuthenticated) {
-    next({ name: 'Login', query: { redirect: to.fullPath } })
     return
   }
 

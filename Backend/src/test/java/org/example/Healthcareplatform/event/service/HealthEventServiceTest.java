@@ -5,6 +5,7 @@ import org.example.Healthcareplatform.event.dto.HealthEventRequest;
 import org.example.Healthcareplatform.event.dto.HealthEventResponse;
 import org.example.Healthcareplatform.event.entity.EventStatus;
 import org.example.Healthcareplatform.event.entity.HealthEvent;
+import org.example.Healthcareplatform.event.registration.repository.EventRegistrationRepository;
 import org.example.Healthcareplatform.event.repository.HealthEventRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ class HealthEventServiceTest {
 
     @Mock
     private HealthEventRepository eventRepository;
+
+    @Mock
+    private EventRegistrationRepository registrationRepository;
 
     @Mock
     private SecurityContextUtil securityContextUtil;

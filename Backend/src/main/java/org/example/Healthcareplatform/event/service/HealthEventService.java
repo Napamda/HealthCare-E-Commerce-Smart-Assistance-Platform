@@ -6,6 +6,8 @@ import org.example.Healthcareplatform.event.dto.HealthEventRequest;
 import org.example.Healthcareplatform.event.dto.HealthEventResponse;
 import org.example.Healthcareplatform.event.entity.EventStatus;
 import org.example.Healthcareplatform.event.entity.HealthEvent;
+import org.example.Healthcareplatform.event.registration.entity.RegistrationStatus;
+import org.example.Healthcareplatform.event.registration.repository.EventRegistrationRepository;
 import org.example.Healthcareplatform.event.repository.HealthEventRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +29,7 @@ import java.util.Set;
 public class HealthEventService {
 
     private final HealthEventRepository eventRepository;
+    private final EventRegistrationRepository registrationRepository;
     private final SecurityContextUtil securityContextUtil;
 
     @Transactional(readOnly = true)
@@ -177,6 +180,12 @@ public class HealthEventService {
     }
 
     private HealthEventResponse toResponse(HealthEvent event) {
+        long registeredCount = registrationRepository
+                .countByEventIdAndStatus(event.getId(), RegistrationStatus.CONFIRMED);
+        return toResponse(event, registeredCount);
+    }
+
+    private HealthEventResponse toResponse(HealthEvent event, long registeredCount) {
         return HealthEventResponse.builder()
                 .id(event.getId())
                 .title(event.getTitle())
@@ -191,6 +200,7 @@ public class HealthEventService {
                 .longitude(event.getLongitude())
                 .organizer(event.getOrganizer())
                 .capacity(event.getCapacity())
+                .registeredCount(registeredCount)
                 .status(event.getStatus())
                 .createdBy(event.getCreatedBy())
                 .createdAt(event.getCreatedAt())

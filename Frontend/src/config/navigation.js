@@ -7,6 +7,7 @@ import { ROLES } from './permissions.js'
 export const NAV_ITEMS = {
   [ROLES.PATIENT]: [
     { to: '/chat', label: 'AI Chat' },
+    { to: '/recommendations', label: 'AI Recommendations' },
     { to: '/products', label: 'Shop' },
     { to: '/events', label: 'Events' },
     { to: '/events/registrations', label: 'My Events' },
@@ -16,20 +17,16 @@ export const NAV_ITEMS = {
 
   [ROLES.DOCTOR]: [
     { to: '/doctor', label: 'Dashboard' },
-    { to: '/consultations', label: 'Consultations' },
     { to: '/events', label: 'Events' },
     { to: '/events/manage', label: 'Manage Events' },
     { to: '/events/registrations', label: 'My Events' },
-    { to: '/prescriptions', label: 'Prescriptions' },
     { to: '/chat', label: 'AI Chat' },
   ],
 
   [ROLES.PHARMACIST]: [
     { to: '/pharmacist', label: 'Dashboard' },
-    { to: '/prescriptions', label: 'Prescriptions' },
     { to: '/events', label: 'Events' },
     { to: '/events/registrations', label: 'My Events' },
-    { to: '/consultations', label: 'Consultations' },
   ],
 
   [ROLES.ADMIN]: [
@@ -44,8 +41,6 @@ export const NAV_ITEMS = {
         { to: '/vendor', label: 'Vendor View' },
       ],
     },
-    { to: '/consultations', label: 'Consultations' },
-    { to: '/prescriptions', label: 'Prescriptions' },
   ],
 
   [ROLES.VENDOR]: [
@@ -54,7 +49,6 @@ export const NAV_ITEMS = {
     { to: '/events', label: 'Events' },
     { to: '/events/registrations', label: 'My Events' },
     { to: '/chat', label: 'AI Chat' },
-    { to: '/consultations', label: 'Consultations' },
   ],
 }
 

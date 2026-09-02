@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.ai.dto.RecommendationRequest;
 import org.example.Healthcareplatform.ai.dto.RecommendationResponse;
 import org.example.Healthcareplatform.ai.provider.AIProvider;
-import org.example.Healthcareplatform.product.dto.ProductResponse;
+import org.example.Healthcareplatform.product.dto.ProductRef;
 import org.example.Healthcareplatform.product.service.ProductService;
 import org.springframework.stereotype.Component;
 
@@ -39,46 +39,22 @@ public class RecommendationEngine {
     private String buildRecommendationPrompt(RecommendationRequest request) {
         StringBuilder sb = new StringBuilder();
         sb.append("You are a healthcare product recommendation assistant. ");
-        sb.append("Based on the user's needs, recommend suitable healthcare products from the available catalog and provide health tips.\n\n");
+        sb.append("Use the user's request and any provided health context to recommend suitable products from the catalog and provide health tips.\n\n");
 
         sb.append("User context:\n");
-        if (request.getQuery() != null && !request.getQuery().isBlank()) {
-            sb.append("- Query: ").append(request.getQuery()).append("\n");
-        }
-        if (request.getSymptom() != null && !request.getSymptom().isBlank()) {
-            sb.append("- Symptom: ").append(request.getSymptom()).append("\n");
-        }
-        if (request.getCondition() != null && !request.getCondition().isBlank()) {
-            sb.append("- Health condition: ").append(request.getCondition()).append("\n");
-        }
-        if (request.getCategory() != null && !request.getCategory().isBlank()) {
-            sb.append("- Preferred category: ").append(request.getCategory()).append("\n");
-        }
-        if (request.getAllergies() != null && !request.getAllergies().isEmpty()) {
-            sb.append("- Known allergies: ").append(String.join(", ", request.getAllergies())).append("\n");
-        }
-        if (request.getRecentProductCategories() != null && !request.getRecentProductCategories().isEmpty()) {
-            sb.append("- Recently browsed categories: ").append(String.join(", ", request.getRecentProductCategories())).append("\n");
-        }
+        appendContextLine(sb, "Request", request.getQuery());
+        appendContextLine(sb, "Symptoms", request.getSymptoms());
+        appendContextLine(sb, "Current health conditions", request.getCurrentConditions());
+        appendContextLine(sb, "Previous health conditions", request.getPreviousConditions());
+        appendContextLine(sb, "Preferred category", request.getPreferredCategory());
+        appendContextLine(sb, "Known allergies", request.getAllergies());
+        appendContextLine(sb, "Recently browsed categories", request.getRecentlyBrowsedCategories());
 
-        // Inject real product catalog from database
-        List<ProductResponse> availableProducts = productService.getAllProductsForRecommendation();
+        List<ProductRef> availableProducts = productService.getAllProductsForRecommendation();
         if (!availableProducts.isEmpty()) {
             sb.append("\nAvailable products in our catalog (recommend ONLY from this list):\n");
-            for (ProductResponse p : availableProducts) {
-                sb.append("- [").append(p.getCategory()).append("] ")
-                        .append(p.getName())
-                        .append(" ($").append(p.getPrice()).append(")");
-                if (p.getManufacturer() != null && !p.getManufacturer().isBlank()) {
-                    sb.append(" by ").append(p.getManufacturer());
-                }
-                if (p.getIngredients() != null && !p.getIngredients().isBlank()) {
-                    String shortIngredients = p.getIngredients().length() > 120
-                            ? p.getIngredients().substring(0, 120) + "..."
-                            : p.getIngredients();
-                    sb.append(" — Ingredients: ").append(shortIngredients);
-                }
-                sb.append("\n");
+            for (ProductRef p : availableProducts) {
+                sb.append("- ").append(p.name()).append("\n");
             }
             sb.append("\nIMPORTANT: You MUST recommend products from the above catalog only. ");
             sb.append("Use the EXACT product name as listed in the catalog.\n");
@@ -101,6 +77,18 @@ public class RecommendationEngine {
         sb.append("Set confidenceScore between 0.0 and 1.0.");
 
         return sb.toString();
+    }
+
+    private void appendContextLine(StringBuilder sb, String label, String value) {
+        if (value != null && !value.isBlank()) {
+            sb.append("- ").append(label).append(": ").append(value).append("\n");
+        }
+    }
+
+    private void appendContextLine(StringBuilder sb, String label, List<String> values) {
+        if (values != null && !values.isEmpty()) {
+            sb.append("- ").append(label).append(": ").append(String.join(", ", values)).append("\n");
+        }
     }
 
     private RecommendationResponse parseAiResponse(String aiResponse) {

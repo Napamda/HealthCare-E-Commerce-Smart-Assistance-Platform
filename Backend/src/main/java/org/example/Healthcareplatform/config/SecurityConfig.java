@@ -56,10 +56,6 @@ public class SecurityConfig {
                                 "/api/auth/refresh",
                                 "/api/auth/verify-email"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/professionals/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/geocode/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/professionals/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/professionals/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/professionals/**").hasAnyRole("DOCTOR", "ADMIN")

@@ -3,6 +3,7 @@ package org.example.Healthcareplatform.product.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.product.dto.CategoryCountResponse;
+import org.example.Healthcareplatform.product.dto.ProductRef;
 import org.example.Healthcareplatform.product.dto.ProductResponse;
 import org.example.Healthcareplatform.product.entity.Product;
 import org.example.Healthcareplatform.product.service.ProductService;
@@ -103,9 +104,9 @@ public class ProductController {
     }
 
     @GetMapping("/recommended/context")
-    public ResponseEntity<List<ProductResponse>> getProductsForRecommendation() {
+    public ResponseEntity<List<ProductRef>> getProductsForRecommendation() {
         log.info("GET /api/products/recommended/context");
-        List<ProductResponse> products = productService.getAllProductsForRecommendation();
+        List<ProductRef> products = productService.getAllProductsForRecommendation();
         return ResponseEntity.ok(products);
     }
 }
