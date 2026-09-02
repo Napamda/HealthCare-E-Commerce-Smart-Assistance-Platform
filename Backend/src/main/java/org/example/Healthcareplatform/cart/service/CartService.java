@@ -2,6 +2,7 @@ package org.example.Healthcareplatform.cart.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.Healthcareplatform.cart.dto.CartMergeItem;
 import org.example.Healthcareplatform.cart.dto.CartRequest;
 import org.example.Healthcareplatform.cart.dto.CartResponse;
 import org.example.Healthcareplatform.cart.entity.CartItem;
@@ -51,6 +52,38 @@ public class CartService {
     }
 
     @Transactional
+    public Map<String, Object> mergeCartItems(Long userId, List<CartMergeItem> items) {
+        int merged = 0;
+        for (CartMergeItem mergeItem : items) {
+            if (mergeItem == null || mergeItem.getProductId() == null) continue;
+            Product product = productRepository.findById(mergeItem.getProductId()).orElse(null);
+            if (product == null) continue;
+            int qty = mergeItem.getQuantity() != null && mergeItem.getQuantity() > 0
+                    ? mergeItem.getQuantity() : 1;
+            if (qty > product.getStockQuantity()) qty = Math.max(1, product.getStockQuantity());
+
+            var existing = cartItemRepository.findByUserIdAndProductId(userId, product.getId());
+            if (existing.isPresent()) {
+                CartItem item = existing.get();
+                item.setQuantity(Math.min(item.getQuantity() + qty, product.getStockQuantity()));
+                cartItemRepository.save(item);
+            } else {
+                cartItemRepository.save(CartItem.builder()
+                        .userId(userId)
+                        .productId(product.getId())
+                        .productName(product.getName())
+                        .productImage(product.getImageUrl())
+                        .quantity(qty)
+                        .unitPrice(product.getPrice())
+                        .build());
+            }
+            merged++;
+        }
+        log.info("Merged {} guest cart items for userId={}", merged, userId);
+        return getCartSummary(userId);
+    }
+
+    @Transactional
     public CartResponse addToCart(Long userId, CartRequest request) {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + request.getProductId()));
@@ -62,6 +95,10 @@ public class CartService {
             int newQty = request.getQuantity() != null && request.getQuantity() > 0
                     ? request.getQuantity()
                     : item.getQuantity() + 1;
+            if (newQty > product.getStockQuantity()) {
+                throw new IllegalArgumentException("Only " + product.getStockQuantity()
+                        + " units of " + product.getName() + " are in stock");
+            }
             item.setQuantity(newQty);
             CartItem saved = cartItemRepository.save(item);
             log.info("Updated cart: userId={}, productId={}, qty={}", userId, request.getProductId(), newQty);
@@ -95,6 +132,13 @@ public class CartService {
         if (!item.getUserId().equals(userId)) {
             throw new IllegalArgumentException("Cart item does not belong to user");
         }
+
+        productRepository.findById(item.getProductId()).ifPresent(product -> {
+            if (quantity > product.getStockQuantity()) {
+                throw new IllegalArgumentException("Only " + product.getStockQuantity()
+                        + " units of " + product.getName() + " are in stock");
+            }
+        });
 
         item.setQuantity(quantity);
         CartItem saved = cartItemRepository.save(item);

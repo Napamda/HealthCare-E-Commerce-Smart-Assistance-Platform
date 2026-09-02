@@ -28,8 +28,8 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
-    public Page<ProductResponse> listProducts(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+    public Page<ProductResponse> listProducts(int page, int size, String sort) {
+        Pageable pageable = PageRequest.of(page, size, buildSort(sort));
         Page<Product> productPage = productRepository.findAll(pageable);
         return productPage.map(ProductResponse::fromEntity);
     }
@@ -41,7 +41,8 @@ public class ProductService {
             BigDecimal minPrice,
             BigDecimal maxPrice,
             int page,
-            int size) {
+            int size,
+            String sort) {
 
         Product.ProductCategory productCategory = null;
         if (category != null && !category.isBlank()) {
@@ -52,7 +53,7 @@ public class ProductService {
             }
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, buildSort(sort));
 
         if (keyword != null && !keyword.isBlank()) {
             Page<Product> products = productRepository.searchProducts(
@@ -77,6 +78,22 @@ public class ProductService {
 
         Page<Product> products = productRepository.findAll(pageable);
         return products.map(ProductResponse::fromEntity);
+    }
+
+    private Sort buildSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return Sort.by(Sort.Direction.DESC, "createdAt");
+        }
+        return switch (sort) {
+            case "price_asc" -> Sort.by(Sort.Direction.ASC, "price");
+            case "price_desc" -> Sort.by(Sort.Direction.DESC, "price");
+            case "name_asc" -> Sort.by(Sort.Direction.ASC, "name");
+            case "name_desc" -> Sort.by(Sort.Direction.DESC, "name");
+            case "newest" -> Sort.by(Sort.Direction.DESC, "createdAt");
+            case "popular" -> Sort.by(Sort.Direction.DESC, "ratings");
+            case "stock_asc" -> Sort.by(Sort.Direction.ASC, "stockQuantity");
+            default -> Sort.by(Sort.Direction.DESC, "createdAt");
+        };
     }
 
     @Transactional(readOnly = true)
@@ -112,6 +129,7 @@ public class ProductService {
                 .category(category)
                 .imageUrl(request.getImageUrl())
                 .stockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0)
+                .lowStockThreshold(request.getLowStockThreshold() != null ? request.getLowStockThreshold() : 5)
                 .manufacturer(request.getManufacturer())
                 .dosage(request.getDosage())
                 .ingredients(request.getIngredients())
@@ -151,6 +169,9 @@ public class ProductService {
         }
         if (request.getStockQuantity() != null) {
             product.setStockQuantity(request.getStockQuantity());
+        }
+        if (request.getLowStockThreshold() != null) {
+            product.setLowStockThreshold(request.getLowStockThreshold());
         }
         if (request.getManufacturer() != null) {
             product.setManufacturer(request.getManufacturer());

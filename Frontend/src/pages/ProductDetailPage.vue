@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useProductStore } from '../stores/product.js'
 import { useCartStore } from '../stores/cart.js'
+import { getProductImages } from '../services/product.js'
+import ImageGallery from '../components/product/ImageGallery.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,6 +16,7 @@ const { selectedProduct, isLoading, error } = storeToRefs(store)
 const activeTab = ref('ingredients')
 const addingToCart = ref(false)
 const addedToCart = ref(false)
+const images = ref([])
 
 const productId = computed(() => Number(route.params.id))
 
@@ -47,7 +50,10 @@ function goBack() {
 }
 
 onMounted(async () => {
-  await store.fetchProductById(productId.value)
+  await Promise.all([
+    store.fetchProductById(productId.value),
+    getProductImages(productId.value).then((imgs) => { images.value = imgs }).catch(() => { images.value = [] }),
+  ])
 })
 
 async function handleAddToCart() {
@@ -95,23 +101,13 @@ async function handleAddToCart() {
       </button>
 
       <div class="detail-layout">
-        <!-- Image -->
+        <!-- Image gallery -->
         <div class="detail-image-section">
-          <div class="detail-image">
-            <img
-              v-if="selectedProduct.imageUrl"
-              :src="selectedProduct.imageUrl"
-              :alt="selectedProduct.name"
-            />
-            <div v-else class="image-placeholder">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
-            </div>
-          </div>
+          <ImageGallery
+            :images="images"
+            :fallback-url="selectedProduct.imageUrl"
+            :alt="selectedProduct.name"
+          />
         </div>
 
         <!-- Info -->
@@ -285,15 +281,12 @@ async function handleAddToCart() {
 }
 
 .detail-image-section {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 28px;
   min-height: 400px;
 }
-.detail-image { width: 100%; }
-.detail-image img { width: 100%; height: 100%; object-fit: cover; }
-.image-placeholder { color: var(--color-text-muted); opacity: 0.5; }
 
 .detail-info {
   padding: 32px;

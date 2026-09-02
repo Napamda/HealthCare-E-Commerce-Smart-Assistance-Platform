@@ -42,6 +42,11 @@ onMounted(() => {
         <router-link to="/chat" class="nav-link">Chat</router-link>
         <router-link to="/consultations" class="nav-link">Consultations</router-link>
         <router-link to="/products" class="nav-link">Products</router-link>
+        <router-link
+          v-if="authStore.hasRole('VENDOR')"
+          to="/inventory"
+          class="nav-link"
+        >Inventory</router-link>
 
         <router-link
           v-if="authStore.hasRole('ADMIN')"

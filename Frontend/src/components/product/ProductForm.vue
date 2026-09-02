@@ -1,5 +1,11 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
+import {
+  getProductImages,
+  uploadProductImage,
+  setPrimaryImage,
+  deleteProductImage,
+} from '../../services/product.js'
 
 const props = defineProps({
   product: {
@@ -12,7 +18,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['save', 'close'])
+const emit = defineEmits(['save', 'close', 'images-changed'])
 
 const isEditing = computed(() => !!props.product)
 
@@ -33,9 +39,15 @@ const form = ref({
 const validationError = ref('')
 const isSubmitting = ref(false)
 
+// Image management (edit mode only)
+const images = ref([])
+const uploading = ref(false)
+const imageError = ref('')
+const fileInput = ref(null)
+
 watch(
   () => props.product,
-  (p) => {
+  async (p) => {
     if (p) {
       form.value = {
         name: p.name || '',
@@ -50,12 +62,66 @@ watch(
         prescriptionRequired: p.prescriptionRequired ?? false,
         sideEffects: p.sideEffects || '',
       }
+      if (p.id) loadImages(p.id)
     } else {
       resetForm()
+      images.value = []
     }
   },
   { immediate: true },
 )
+
+async function loadImages(productId) {
+  try {
+    images.value = await getProductImages(productId)
+  } catch {
+    images.value = []
+  }
+}
+
+function onPickFiles(e) {
+  const files = Array.from(e.target.files || [])
+  if (!files.length || !props.product?.id) return
+  uploadFiles(files)
+  e.target.value = ''
+}
+
+async function uploadFiles(files) {
+  uploading.value = true
+  imageError.value = ''
+  try {
+    for (const file of files) {
+      await uploadProductImage(props.product.id, file)
+    }
+    await loadImages(props.product.id)
+    emit('images-changed')
+  } catch (err) {
+    imageError.value = err?.response?.data?.message || 'Image upload failed. Check the file type/size.'
+  } finally {
+    uploading.value = false
+  }
+}
+
+async function onSetPrimary(img) {
+  if (img.primary) return
+  try {
+    await setPrimaryImage(img.id)
+    await loadImages(props.product.id)
+    emit('images-changed')
+  } catch (err) {
+    imageError.value = err?.response?.data?.message || 'Failed to set primary image.'
+  }
+}
+
+async function onDeleteImage(img) {
+  try {
+    await deleteProductImage(img.id)
+    await loadImages(props.product.id)
+    emit('images-changed')
+  } catch (err) {
+    imageError.value = err?.response?.data?.message || 'Failed to delete image.'
+  }
+}
 
 function resetForm() {
   form.value = {
@@ -184,6 +250,56 @@ function onCancel() {
           <div class="form-group">
             <label for="prod-image">Image URL</label>
             <input id="prod-image" v-model="form.imageUrl" type="text" placeholder="https://..." />
+          </div>
+
+          <!-- Image manager (edit mode) -->
+          <div v-if="isEditing" class="form-group image-manager">
+            <label>Product Images</label>
+            <p class="image-manager__hint">
+              Upload multiple images. The first image becomes primary; use ★ to change it.
+            </p>
+
+            <div v-if="imageError" class="image-error">{{ imageError }}</div>
+
+            <div v-if="images.length" class="image-grid">
+              <div v-for="img in images" :key="img.id" class="image-tile">
+                <img :src="img.thumbnailUrl || img.url" :alt="img.fileName" />
+                <div class="image-tile__actions">
+                  <button
+                    type="button"
+                    class="image-tile__btn"
+                    :class="{ 'image-tile__btn--primary': img.primary }"
+                    :title="img.primary ? 'Primary image' : 'Set as primary'"
+                    :disabled="img.primary"
+                    @click="onSetPrimary(img)"
+                  >★</button>
+                  <button
+                    type="button"
+                    class="image-tile__btn image-tile__btn--delete"
+                    title="Delete image"
+                    @click="onDeleteImage(img)"
+                  >&times;</button>
+                </div>
+              </div>
+            </div>
+
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/*"
+              multiple
+              class="image-input"
+              @change="onPickFiles"
+            />
+            <button
+              type="button"
+              class="btn-upload"
+              :disabled="uploading"
+              @click="fileInput?.click()"
+            >
+              <span v-if="uploading" class="spinner spinner--dark" />
+              <span v-else>+ Upload Images</span>
+            </button>
           </div>
 
           <div class="form-group">
@@ -357,6 +473,93 @@ function onCancel() {
 .form-check label {
   font-size: 14px;
   color: var(--color-text);
+}
+
+/* Image manager */
+.image-manager__hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: -2px 0 10px;
+}
+.image-error {
+  background: #fef2f2;
+  color: var(--color-danger);
+  border: 1px solid #fecaca;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.image-tile {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-bg);
+}
+.image-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.image-tile__actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+}
+.image-tile__btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  font-size: 12px;
+  line-height: 1;
+  background: rgba(15, 23, 42, 0.6);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.image-tile__btn:hover { background: rgba(15, 23, 42, 0.85); }
+.image-tile__btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+.image-tile__btn--primary:disabled { cursor: default; }
+.image-tile__btn--delete:hover { background: var(--color-danger); }
+.image-input {
+  display: none;
+}
+.btn-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px dashed var(--color-primary-light);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-upload:hover:not(:disabled) {
+  background: #e0ecfd;
+  border-color: var(--color-primary);
+}
+.btn-upload:disabled { opacity: 0.6; cursor: not-allowed; }
+.spinner--dark {
+  border-color: rgba(37, 99, 235, 0.25);
+  border-top-color: var(--color-primary);
 }
 
 .dialog-footer {

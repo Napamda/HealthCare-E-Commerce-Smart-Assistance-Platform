@@ -1,1 +1,0 @@
-import{_ as e}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{o as t,c as r,a}from"./index-B2ayGR8h.js";const s={},n={class:"doctor-dashboard"};function c(l,o){return t(),r("div",n,[...o[0]||(o[0]=[a("h1",null,"Doctor Dashboard",-1),a("p",null,"Patient management and consultations will be available here.",-1)])])}const _=e(s,[["render",c]]);export{_ as default};

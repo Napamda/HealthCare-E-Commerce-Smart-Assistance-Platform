@@ -16,7 +16,7 @@ const auth = useAuthorization()
         <span class="stat-icon">&#128230;</span>
         <h3>Inventory</h3>
         <p>Manage medication stock levels and supplies</p>
-        <span class="stat-badge">Coming soon</span>
+        <router-link to="/inventory" class="vendor-card-link">Open Inventory</router-link>
       </div>
       <div class="stat-card">
         <span class="stat-icon">&#128666;</span>
@@ -52,4 +52,24 @@ const auth = useAuthorization()
   </div>
 </template>
 
+<style scoped>
+.vendor-card-link {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.vendor-card-link:hover {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: var(--color-primary-light);
+}
+</style>
 

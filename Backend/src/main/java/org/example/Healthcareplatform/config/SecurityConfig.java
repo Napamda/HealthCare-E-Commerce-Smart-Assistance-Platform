@@ -54,7 +54,9 @@ public class SecurityConfig {
                                 "/api/auth/refresh",
                                 "/api/auth/verify-email"
                         ).permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/professionals/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/geocode/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
@@ -65,6 +67,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/events/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/orders/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/inventory/**").hasAnyRole("VENDOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/discounts/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/discounts/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/discounts/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/discounts/**").authenticated()
+                        .requestMatchers("/api/cart/**", "/api/orders/**", "/api/payments/**",
+                                "/api/notifications/**").authenticated()
                         .requestMatchers("/api/pharmacist/**").hasAnyRole("PHARMACIST", "ADMIN")
                         .requestMatchers("/api/doctor/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers("/api/vendor/**").hasAnyRole("VENDOR", "ADMIN")

@@ -56,6 +56,10 @@ public class Product {
     @Builder.Default
     private Integer stockQuantity = 0;
 
+    @Column(name = "low_stock_threshold")
+    @Builder.Default
+    private Integer lowStockThreshold = 5;
+
     @Column(length = 200)
     private String manufacturer;
 
