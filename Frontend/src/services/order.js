@@ -27,3 +27,12 @@ export function getOrderById(orderId) {
 export function cancelOrder(orderId) {
   return api.post(`/api/orders/${orderId}/cancel`).then((res) => res.data)
 }
+
+/**
+ * Preview the checkout breakdown (subtotal, discount, shipping, tax, total).
+ * @param {{ shippingMethod?: string, discountCode?: string }} params
+ * @returns {Promise<CheckoutPreviewResponse>}
+ */
+export function previewCheckout(params) {
+  return api.post('/api/orders/preview', params).then((res) => res.data)
+}

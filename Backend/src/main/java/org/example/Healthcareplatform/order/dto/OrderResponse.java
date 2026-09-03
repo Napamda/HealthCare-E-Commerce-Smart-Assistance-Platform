@@ -35,6 +35,7 @@ public class OrderResponse {
     private String shippingCity;
     private String shippingPhone;
     private String paymentMethod;
+    private String trackingNumber;
     private String notes;
     private int itemCount;
     private Instant createdAt;
@@ -76,6 +77,7 @@ public class OrderResponse {
                 .shippingCity(order.getShippingCity())
                 .shippingPhone(order.getShippingPhone())
                 .paymentMethod(order.getPaymentMethod())
+                .trackingNumber(order.getTrackingNumber())
                 .notes(order.getNotes())
                 .itemCount(order.getItems().stream()
                         .mapToInt(OrderItem::getQuantity).sum())

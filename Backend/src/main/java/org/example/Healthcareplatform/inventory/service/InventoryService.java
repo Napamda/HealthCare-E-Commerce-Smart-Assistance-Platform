@@ -3,6 +3,7 @@ package org.example.Healthcareplatform.inventory.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.inventory.dto.StockInfoResponse;
+import org.example.Healthcareplatform.inventory.dto.StockValidateResponse;
 import org.example.Healthcareplatform.inventory.entity.StockHistory;
 import org.example.Healthcareplatform.inventory.entity.StockReservation;
 import org.example.Healthcareplatform.inventory.repository.StockHistoryRepository;
@@ -32,6 +33,49 @@ public class InventoryService {
     public record ReserveItem(Long productId, Integer quantity) {}
 
     // ============ Stock read ============
+
+    @Transactional(readOnly = true)
+    public int getAvailableQuantity(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
+        Long reserved = reservationRepository.sumActiveReservedQuantity(productId);
+        return (int) Math.max(0, product.getStockQuantity() - reserved);
+    }
+
+    @Transactional(readOnly = true)
+    public StockValidateResponse validateStock(List<ReserveItem> items) {
+        List<StockValidateResponse.ValidationError> errors = new java.util.ArrayList<>();
+        for (ReserveItem item : items) {
+            Product product = productRepository.findById(item.productId()).orElse(null);
+            if (product == null) {
+                errors.add(StockValidateResponse.ValidationError.builder()
+                        .productId(item.productId())
+                        .productName("Unknown")
+                        .requested(item.quantity())
+                        .available(0)
+                        .message("Product not found")
+                        .build());
+                continue;
+            }
+            Long activeReserved = reservationRepository.sumActiveReservedQuantity(product.getId());
+            long available = product.getStockQuantity() - activeReserved;
+            if (available < item.quantity() || product.getStockQuantity() <= 0) {
+                errors.add(StockValidateResponse.ValidationError.builder()
+                        .productId(product.getId())
+                        .productName(product.getName())
+                        .requested(item.quantity())
+                        .available(Math.max(0, available))
+                        .message(product.getStockQuantity() <= 0
+                                ? product.getName() + " is out of stock"
+                                : "Only " + available + " units of " + product.getName() + " are available")
+                        .build());
+            }
+        }
+        return StockValidateResponse.builder()
+                .valid(errors.isEmpty())
+                .errors(errors)
+                .build();
+    }
 
     @Transactional(readOnly = true)
     public List<StockInfoResponse> getAllStockInfo() {
@@ -143,12 +187,28 @@ public class InventoryService {
 
     @Transactional
     public void confirmReservations(Long orderId) {
-        List<StockReservation> reservations = reservationRepository.findByOrderIdAndStatus(orderId, StockReservation.Status.ACTIVE);
-        if (reservations.isEmpty()) return;
-        for (StockReservation r : reservations) {
+        List<StockReservation> reservations = reservationRepository.findByOrderId(orderId);
+        List<StockReservation> toConfirm = reservations.stream()
+                .filter(r -> r.getStatus() == StockReservation.Status.ACTIVE
+                        || r.getStatus() == StockReservation.Status.EXPIRED)
+                .toList();
+        if (toConfirm.isEmpty()) return;
+
+        for (StockReservation r : toConfirm) {
             Product product = getProduct(r.getProductId());
-            if (r.getQuantity() > product.getStockQuantity()) {
-                throw new IllegalStateException("Stock already sold out for product " + product.getName());
+            if (r.getStatus() == StockReservation.Status.EXPIRED) {
+                // Reservation expired — re-validate available stock before deducting
+                Long activeReserved = reservationRepository.sumActiveReservedQuantity(product.getId());
+                long available = product.getStockQuantity() - activeReserved;
+                if (available < r.getQuantity()) {
+                    throw new IllegalStateException("Reservation for " + product.getName()
+                            + " has expired and stock is no longer available (requested "
+                            + r.getQuantity() + ", available " + available + ")");
+                }
+            } else {
+                if (r.getQuantity() > product.getStockQuantity()) {
+                    throw new IllegalStateException("Stock already sold out for product " + product.getName());
+                }
             }
             int before = product.getStockQuantity();
             product.setStockQuantity(before - r.getQuantity());
@@ -158,7 +218,7 @@ public class InventoryService {
             logHistory(product, StockHistory.ChangeType.SALE, -r.getQuantity(),
                     before - r.getQuantity(), r.getUserId(), orderId, "Order confirmed — payment received");
         }
-        log.info("Confirmed reservations for order={} — stock deducted", orderId);
+        log.info("Confirmed {} reservations for order={} — stock deducted", toConfirm.size(), orderId);
     }
 
     @Transactional

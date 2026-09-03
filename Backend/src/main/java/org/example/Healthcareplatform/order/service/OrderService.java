@@ -6,6 +6,8 @@ import org.example.Healthcareplatform.cart.entity.CartItem;
 import org.example.Healthcareplatform.cart.repository.CartItemRepository;
 import org.example.Healthcareplatform.discount.service.DiscountService;
 import org.example.Healthcareplatform.inventory.service.InventoryService;
+import org.example.Healthcareplatform.order.dto.CheckoutPreviewRequest;
+import org.example.Healthcareplatform.order.dto.CheckoutPreviewResponse;
 import org.example.Healthcareplatform.order.dto.OrderRequest;
 import org.example.Healthcareplatform.order.dto.OrderResponse;
 import org.example.Healthcareplatform.order.entity.Order;
@@ -127,6 +129,7 @@ public class OrderService {
                     .productImage(cart.getProductImage())
                     .quantity(cart.getQuantity())
                     .unitPrice(cart.getUnitPrice())
+                    .prescriptionRequired(cart.getPrescriptionRequired())
                     .subtotal(itemSubtotal)
                     .build();
         }).collect(Collectors.toList());
@@ -150,6 +153,67 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public CheckoutPreviewResponse previewCheckout(Long userId, CheckoutPreviewRequest request) {
+        List<CartItem> cartItems = cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        if (cartItems.isEmpty()) {
+            throw new IllegalArgumentException("Cart is empty");
+        }
+
+        String shippingMethod = resolveShippingMethod(request.getShippingMethod());
+
+        // Subtotal
+        BigDecimal subtotal = cartItems.stream()
+                .map(c -> c.getUnitPrice().multiply(BigDecimal.valueOf(c.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Discount
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        String discountCode = null;
+        boolean discountValid = false;
+        String discountError = null;
+        if (request.getDiscountCode() != null && !request.getDiscountCode().isBlank()) {
+            try {
+                DiscountService.DiscountCalculation calc = discountService.validate(request.getDiscountCode(), subtotal);
+                discountAmount = calc.discountAmount();
+                discountCode = calc.code();
+                discountValid = true;
+            } catch (IllegalArgumentException e) {
+                discountError = e.getMessage();
+            }
+        }
+
+        // Shipping
+        BigDecimal shippingAmount = computeShipping(shippingMethod, subtotal.subtract(discountAmount));
+
+        // Tax
+        BigDecimal taxable = subtotal.subtract(discountAmount);
+        BigDecimal taxAmount = taxable.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal total = taxable.add(shippingAmount).add(taxAmount);
+
+        // Prescription check
+        boolean hasPrescriptionRequired = cartItems.stream()
+                .anyMatch(c -> Boolean.TRUE.equals(c.getPrescriptionRequired()));
+
+        int itemCount = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
+
+        return CheckoutPreviewResponse.builder()
+                .subtotalAmount(subtotal)
+                .discountAmount(discountAmount)
+                .discountedSubtotal(taxable)
+                .shippingAmount(shippingAmount)
+                .taxAmount(taxAmount)
+                .totalAmount(total)
+                .shippingMethod(shippingMethod)
+                .discountCode(discountCode)
+                .hasPrescriptionRequired(hasPrescriptionRequired)
+                .discountValid(discountValid)
+                .discountError(discountError)
+                .itemCount(itemCount)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public Page<OrderResponse> getUserOrders(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
@@ -169,7 +233,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public Page<OrderResponse> getAllOrders(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return orderRepository.findAllByOrderByCreatedAtDesc(pageable).map(OrderResponse::fromEntity);
+        return orderRepository.findAll(pageable).map(OrderResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)
@@ -287,6 +351,7 @@ public class OrderService {
                             .productImage(product.getImageUrl())
                             .quantity(qty)
                             .unitPrice(product.getPrice())
+                            .prescriptionRequired(product.getPrescriptionRequired())
                             .build()));
             added += qty;
         }

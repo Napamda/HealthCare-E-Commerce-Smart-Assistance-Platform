@@ -42,6 +42,15 @@ export function getReservations() {
   return apiClient.get('/api/inventory/reservations').then((res) => res.data)
 }
 
+/**
+ * Validate stock availability for a list of items before checkout.
+ * @param {Array<{productId: number, quantity: number}>} items
+ * @returns {Promise<{valid: boolean, errors: Array}>} StockValidateResponse
+ */
+export function validateStock(items) {
+  return apiClient.post('/api/inventory/validate', { items }).then((res) => res.data)
+}
+
 function postAdjust(productId, action, quantity, note) {
   return apiClient
     .post(`/api/inventory/${productId}/${action}`, { quantity, note })

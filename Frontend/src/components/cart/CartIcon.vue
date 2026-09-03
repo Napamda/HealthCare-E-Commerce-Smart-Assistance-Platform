@@ -1,9 +1,13 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useCartStore } from '../../stores/cart.js'
 
 const cartStore = useCartStore()
 const count = computed(() => cartStore.itemCount)
+
+onMounted(() => {
+  cartStore.fetchCount()
+})
 </script>
 
 <template>

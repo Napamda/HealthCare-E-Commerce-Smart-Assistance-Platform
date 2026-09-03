@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.common.CurrentUser;
+import org.example.Healthcareplatform.order.dto.CheckoutPreviewRequest;
+import org.example.Healthcareplatform.order.dto.CheckoutPreviewResponse;
 import org.example.Healthcareplatform.order.dto.OrderRequest;
 import org.example.Healthcareplatform.order.dto.OrderResponse;
 import org.example.Healthcareplatform.order.service.OrderService;
@@ -45,6 +47,19 @@ public class OrderController {
         body.put("first", orderPage.isFirst());
         body.put("last", orderPage.isLast());
         return body;
+    }
+
+    @PostMapping("/preview")
+    public ResponseEntity<?> previewCheckout(@RequestBody CheckoutPreviewRequest request, Authentication auth) {
+        Long userId = getUserId(auth);
+        log.info("POST /api/orders/preview — userId={}, shipping={}, discount={}",
+                userId, request.getShippingMethod(), request.getDiscountCode());
+        try {
+            CheckoutPreviewResponse response = orderService.previewCheckout(userId, request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping
