@@ -53,7 +53,7 @@ export const useCartStore = defineStore('cart', () => {
       await fetchCart()
       return true
     } catch (e) {
-      error.value = 'Failed to add item'
+      error.value = e.response?.data?.error || 'Failed to add item'
       return false
     }
   }

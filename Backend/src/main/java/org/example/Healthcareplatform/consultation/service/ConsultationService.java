@@ -11,6 +11,8 @@ import org.example.Healthcareplatform.consultation.dto.EscalationRequest;
 import org.example.Healthcareplatform.consultation.entity.Consultation;
 import org.example.Healthcareplatform.consultation.event.ConsultationCreatedEvent;
 import org.example.Healthcareplatform.consultation.repository.ConsultationRepository;
+import org.example.Healthcareplatform.notification.entity.Notification;
+import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.user.entity.User;
 import org.example.Healthcareplatform.user.repository.UserRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,6 +33,7 @@ public class ConsultationService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final NotificationService notificationService;
 
     @Transactional
     public ConsultationResponse escalateFromChat(EscalationRequest request, Long patientUserId) {
@@ -111,6 +114,37 @@ public class ConsultationService {
         Consultation saved = consultationRepository.save(consultation);
         log.info("Consultation id={} status updated to {} by doctorUserId={}",
                 saved.getId(), saved.getStatus(), doctorUserId);
+
+        // Notify the patient when a doctor accepts or starts the consultation.
+        if (status == Consultation.ConsultationStatus.ACCEPTED
+                || status == Consultation.ConsultationStatus.IN_PROGRESS) {
+            String doctorName = doctorUserId != null
+                    ? userRepository.findById(doctorUserId)
+                            .map(u -> u.getFirstName() + " " + u.getLastName())
+                            .orElse("a doctor")
+                    : "a doctor";
+            String title = status == Consultation.ConsultationStatus.ACCEPTED
+                    ? "Consultation Accepted"
+                    : "Consultation In Progress";
+            String message = String.format(
+                    "Dr. %s has %s your consultation. Open your chat to continue the conversation.",
+                    doctorName,
+                    status == Consultation.ConsultationStatus.ACCEPTED ? "accepted" : "started");
+            Notification.NotificationType type = status == Consultation.ConsultationStatus.ACCEPTED
+                    ? Notification.NotificationType.CONSULTATION_ACCEPTED
+                    : Notification.NotificationType.CONSULTATION_IN_PROGRESS;
+            try {
+                notificationService.createNotification(
+                        saved.getPatientUserId(),
+                        title,
+                        message,
+                        type,
+                        saved.getId());
+            } catch (Exception e) {
+                log.warn("Failed to send consultation notification to patient userId={}: {}",
+                        saved.getPatientUserId(), e.getMessage());
+            }
+        }
 
         return toResponse(saved);
     }

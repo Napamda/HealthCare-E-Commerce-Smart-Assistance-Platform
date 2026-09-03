@@ -49,6 +49,8 @@ public class Notification {
     public enum NotificationType {
         PRESCRIPTION_APPROVED,
         PRESCRIPTION_REJECTED,
-        CONSULTATION_CREATED
+        CONSULTATION_CREATED,
+        CONSULTATION_ACCEPTED,
+        CONSULTATION_IN_PROGRESS
     }
 }

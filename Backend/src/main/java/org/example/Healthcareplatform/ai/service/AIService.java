@@ -7,6 +7,8 @@ import org.example.Healthcareplatform.ai.dto.ChatResponse;
 import org.example.Healthcareplatform.ai.entity.Conversation;
 import org.example.Healthcareplatform.ai.entity.ConversationMessage;
 import org.example.Healthcareplatform.ai.provider.AIProvider;
+import org.example.Healthcareplatform.consultation.entity.Consultation;
+import org.example.Healthcareplatform.consultation.repository.ConsultationRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,7 @@ public class AIService {
     private final PromptService promptService;
     private final ConversationService conversationService;
     private final ConversationSummaryService summaryService;
+    private final ConsultationRepository consultationRepository;
 
     @Value("${ai.memory.max-history:10}")
     private int maxHistory;
@@ -36,6 +39,29 @@ public class AIService {
 
         Conversation conversation = conversationService.findOrCreateConversation(
                 request.getConversationId(), userId, request.getMessage());
+
+        // If a doctor has accepted an escalation for this conversation, the AI
+        // steps back. The patient's message is persisted (the doctor sees it in
+        // their chat view) but no AI response is generated — the doctor replies
+        // directly. The frontend uses mode=DOCTOR_ACTIVE to skip the AI bubble.
+        var activeConsultation = consultationRepository.findFirstByConversationIdAndStatusIn(
+                conversation.getId(),
+                List.of(Consultation.ConsultationStatus.ACCEPTED,
+                        Consultation.ConsultationStatus.IN_PROGRESS));
+        if (activeConsultation.isPresent()) {
+            conversationService.saveUserMessage(conversation.getId(), request.getMessage());
+            log.info("Conversation id={} has an active doctor consultation — message forwarded, no AI response",
+                    conversation.getId());
+            return ChatResponse.builder()
+                    .conversationId(conversation.getId())
+                    .messageId(null)
+                    .response("")
+                    .provider("SYSTEM")
+                    .model("")
+                    .mode("DOCTOR_ACTIVE")
+                    .timestamp(Instant.now())
+                    .build();
+        }
 
         conversationService.saveUserMessage(conversation.getId(), request.getMessage());
 

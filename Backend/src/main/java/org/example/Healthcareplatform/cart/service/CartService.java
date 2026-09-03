@@ -6,6 +6,8 @@ import org.example.Healthcareplatform.cart.dto.CartRequest;
 import org.example.Healthcareplatform.cart.dto.CartResponse;
 import org.example.Healthcareplatform.cart.entity.CartItem;
 import org.example.Healthcareplatform.cart.repository.CartItemRepository;
+import org.example.Healthcareplatform.prescription.entity.Prescription;
+import org.example.Healthcareplatform.prescription.repository.PrescriptionItemRepository;
 import org.example.Healthcareplatform.product.entity.Product;
 import org.example.Healthcareplatform.product.repository.ProductRepository;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ public class CartService {
 
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
+    private final PrescriptionItemRepository prescriptionItemRepository;
 
     @Transactional(readOnly = true)
     public List<CartResponse> getCart(Long userId) {
@@ -54,6 +57,19 @@ public class CartService {
     public CartResponse addToCart(Long userId, CartRequest request) {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + request.getProductId()));
+
+        // Prescription-required medications can only be purchased once a
+        // pharmacist has approved a prescription that includes them.
+        if (Boolean.TRUE.equals(product.getPrescriptionRequired())) {
+            boolean covered = prescriptionItemRepository.existsApprovedForProduct(
+                    product.getId(), userId, Prescription.PrescriptionStatus.APPROVED);
+            if (!covered) {
+                throw new IllegalArgumentException(
+                        "\"" + product.getName() + "\" requires an approved prescription. "
+                                + "Please upload a prescription and wait for a pharmacist to approve it "
+                                + "with this medication selected.");
+            }
+        }
 
         var existing = cartItemRepository.findByUserIdAndProductId(userId, request.getProductId());
 

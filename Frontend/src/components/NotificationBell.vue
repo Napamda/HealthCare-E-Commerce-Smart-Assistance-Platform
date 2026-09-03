@@ -3,10 +3,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotificationStore } from '../stores/notification.js'
 
-const props = defineProps({
-  userId: { type: Number, required: true },
-})
-
 const router = useRouter()
 const notificationStore = useNotificationStore()
 const dropdownRef = ref(null)
@@ -29,32 +25,45 @@ function formatTime(dateStr) {
 }
 
 function typeLabel(type) {
-  return type === 'PRESCRIPTION_APPROVED' ? 'Approved' : 'Rejected'
+  if (type === 'PRESCRIPTION_APPROVED') return 'Rx Approved'
+  if (type === 'PRESCRIPTION_REJECTED') return 'Rx Rejected'
+  if (type === 'CONSULTATION_ACCEPTED') return 'Consultation'
+  if (type === 'CONSULTATION_IN_PROGRESS') return 'Consultation'
+  if (type === 'CONSULTATION_CREATED') return 'Consultation'
+  return type
 }
 
 function typeClass(type) {
-  return type === 'PRESCRIPTION_APPROVED' ? 'type-approved' : 'type-rejected'
+  if (type === 'PRESCRIPTION_APPROVED') return 'type-approved'
+  if (type === 'PRESCRIPTION_REJECTED') return 'type-rejected'
+  return 'type-consultation'
 }
 
 async function handleBellClick() {
   if (notificationStore.showDropdown) {
     notificationStore.closeDropdown()
   } else {
-    await notificationStore.fetchNotifications(props.userId)
+    await notificationStore.fetchNotifications()
     notificationStore.toggleDropdown()
   }
 }
 
 async function handleNotificationClick(notification) {
   if (!notification.isRead) {
-    await notificationStore.markNotificationRead(notification.id, props.userId)
+    await notificationStore.markNotificationRead(notification.id)
   }
   notificationStore.closeDropdown()
-  router.push(`/prescriptions/${notification.referenceId}`)
+  // Route to the right page based on notification type.
+  const type = notification.type
+  if (type && type.startsWith('CONSULTATION')) {
+    router.push('/consultations')
+  } else {
+    router.push(`/prescriptions/${notification.referenceId}`)
+  }
 }
 
 async function handleMarkAllRead() {
-  await notificationStore.markAllNotificationsRead(props.userId)
+  await notificationStore.markAllNotificationsRead()
 }
 
 function handleClickOutside(event) {
@@ -64,9 +73,9 @@ function handleClickOutside(event) {
 }
 
 onMounted(() => {
-  notificationStore.fetchUnreadCount(props.userId)
+  notificationStore.fetchUnreadCount()
   pollInterval = setInterval(() => {
-    notificationStore.fetchUnreadCount(props.userId)
+    notificationStore.fetchUnreadCount()
   }, 30000)
   document.addEventListener('click', handleClickOutside)
 })
@@ -132,5 +141,3 @@ onUnmounted(() => {
     </Transition>
   </div>
 </template>
-
-

@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  getPatientPrescriptions,
+  getMyPrescriptions,
   getPrescription,
   updateOcrText as updateOcrApi,
+  orderPrescription as orderPrescriptionApi,
 } from '../services/prescription.js'
 
 export const usePrescriptionStore = defineStore('prescription', () => {
@@ -11,19 +12,28 @@ export const usePrescriptionStore = defineStore('prescription', () => {
   const currentPrescription = ref(null)
   const loading = ref(false)
   const saving = ref(false)
+  const ordering = ref(false)
+  const orderSuccess = ref(false)
   const error = ref(null)
   const saveSuccess = ref(false)
 
-  async function fetchPatientPrescriptions(patientUserId) {
+  // Uses the authenticated user's session on the backend; no id needs to be
+  // supplied by the client, so we can't accidentally attach to the wrong patient.
+  async function fetchMyPrescriptions() {
     loading.value = true
     error.value = null
     try {
-      prescriptions.value = await getPatientPrescriptions(patientUserId)
+      prescriptions.value = await getMyPrescriptions()
     } catch (e) {
       error.value = e.response?.data?.error || 'Failed to load prescriptions'
     } finally {
       loading.value = false
     }
+  }
+
+  // Kept for backward compatibility; prefer fetchMyPrescriptions for patient UI.
+  async function fetchPatientPrescriptions() {
+    return fetchMyPrescriptions()
   }
 
   async function fetchPrescription(id) {
@@ -63,6 +73,30 @@ export const usePrescriptionStore = defineStore('prescription', () => {
     error.value = null
   }
 
+  // Patient adds all pharmacist-selected medications to their own cart.
+  async function orderMedications(id) {
+    ordering.value = true
+    error.value = null
+    orderSuccess.value = false
+    try {
+      const updated = await orderPrescriptionApi(id)
+      if (currentPrescription.value && currentPrescription.value.id === id) {
+        currentPrescription.value = updated
+      }
+      orderSuccess.value = true
+      return true
+    } catch (e) {
+      error.value = e.response?.data?.error || 'Failed to add medications to cart'
+      return false
+    } finally {
+      ordering.value = false
+    }
+  }
+
+  function clearOrderSuccess() {
+    orderSuccess.value = false
+  }
+
   function clearSaveSuccess() {
     saveSuccess.value = false
   }
@@ -76,11 +110,16 @@ export const usePrescriptionStore = defineStore('prescription', () => {
     currentPrescription,
     loading,
     saving,
+    ordering,
+    orderSuccess,
     error,
     saveSuccess,
+    fetchMyPrescriptions,
     fetchPatientPrescriptions,
     fetchPrescription,
     updateOcrText,
+    orderMedications,
+    clearOrderSuccess,
     clearError,
     clearSaveSuccess,
     clearCurrentPrescription,

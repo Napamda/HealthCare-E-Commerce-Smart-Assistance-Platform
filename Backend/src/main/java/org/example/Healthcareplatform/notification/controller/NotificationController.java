@@ -18,20 +18,26 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<List<NotificationResponse>> getNotifications(@PathVariable Long userId) {
+    /** Patient/doctor reads their own notifications — id from auth token. */
+    @GetMapping("/mine")
+    public ResponseEntity<List<NotificationResponse>> getMyNotifications(
+            org.springframework.security.core.Authentication auth) {
+        Long userId = Long.parseLong(auth.getName());
         log.info("Get all notifications — userId={}", userId);
         return ResponseEntity.ok(notificationService.getNotifications(userId));
     }
 
-    @GetMapping("/{userId}/unread")
-    public ResponseEntity<List<NotificationResponse>> getUnreadNotifications(@PathVariable Long userId) {
-        log.info("Get unread notifications — userId={}", userId);
+    @GetMapping("/mine/unread")
+    public ResponseEntity<List<NotificationResponse>> getMyUnreadNotifications(
+            org.springframework.security.core.Authentication auth) {
+        Long userId = Long.parseLong(auth.getName());
         return ResponseEntity.ok(notificationService.getUnreadNotifications(userId));
     }
 
-    @GetMapping("/{userId}/unread-count")
-    public ResponseEntity<Map<String, Long>> getUnreadCount(@PathVariable Long userId) {
+    @GetMapping("/mine/unread-count")
+    public ResponseEntity<Map<String, Long>> getMyUnreadCount(
+            org.springframework.security.core.Authentication auth) {
+        Long userId = Long.parseLong(auth.getName());
         long count = notificationService.getUnreadCount(userId);
         return ResponseEntity.ok(Map.of("count", count));
     }
@@ -42,11 +48,53 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.markAsRead(id));
     }
 
-    @PatchMapping("/{userId}/read-all")
-    public ResponseEntity<Map<String, String>> markAllAsRead(@PathVariable Long userId) {
+    @PatchMapping("/mine/read-all")
+    public ResponseEntity<Map<String, String>> markAllAsRead(
+            org.springframework.security.core.Authentication auth) {
+        Long userId = Long.parseLong(auth.getName());
         log.info("Mark all notifications as read — userId={}", userId);
         notificationService.markAllAsRead(userId);
         return ResponseEntity.ok(Map.of("message", "All notifications marked as read"));
     }
 
+    // Deprecated endpoints kept for backward compat — derive from auth now.
+    @Deprecated
+    @GetMapping("/{userId}")
+    public ResponseEntity<List<NotificationResponse>> getNotifications(
+            @PathVariable Long userId,
+            org.springframework.security.core.Authentication auth) {
+        Long callerId = Long.parseLong(auth.getName());
+        if (!userId.equals(callerId)) {
+            userId = callerId;
+        }
+        log.info("Get all notifications — userId={}", userId);
+        return ResponseEntity.ok(notificationService.getNotifications(userId));
+    }
+
+    @Deprecated
+    @GetMapping("/{userId}/unread-count")
+    public ResponseEntity<Map<String, Long>> getUnreadCount(
+            @PathVariable Long userId,
+            org.springframework.security.core.Authentication auth) {
+        Long callerId = Long.parseLong(auth.getName());
+        if (!userId.equals(callerId)) {
+            userId = callerId;
+        }
+        long count = notificationService.getUnreadCount(userId);
+        return ResponseEntity.ok(Map.of("count", count));
+    }
+
+    @Deprecated
+    @PatchMapping("/{userId}/read-all")
+    public ResponseEntity<Map<String, String>> markAllAsRead(
+            @PathVariable Long userId,
+            org.springframework.security.core.Authentication auth) {
+        Long callerId = Long.parseLong(auth.getName());
+        if (!userId.equals(callerId)) {
+            userId = callerId;
+        }
+        log.info("Mark all notifications as read — userId={}", userId);
+        notificationService.markAllAsRead(userId);
+        return ResponseEntity.ok(Map.of("message", "All notifications marked as read"));
+    }
 }

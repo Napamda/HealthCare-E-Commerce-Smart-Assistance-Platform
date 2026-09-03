@@ -105,7 +105,7 @@ async function handleLogout() {
       </template>
 
       <template v-else>
-        <NotificationBell :user-id="authStore.currentUser?.id" class="nav-notification-slot" />
+        <NotificationBell class="nav-notification-slot" />
 
         <div class="nav-dropdown-wrapper">
           <button class="nav-user-trigger" @click="toggleUserMenu">
