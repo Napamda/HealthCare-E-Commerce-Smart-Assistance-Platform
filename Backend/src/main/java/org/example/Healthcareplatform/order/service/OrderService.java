@@ -6,6 +6,8 @@ import org.example.Healthcareplatform.cart.entity.CartItem;
 import org.example.Healthcareplatform.cart.repository.CartItemRepository;
 import org.example.Healthcareplatform.discount.service.DiscountService;
 import org.example.Healthcareplatform.inventory.service.InventoryService;
+import org.example.Healthcareplatform.discount.service.DiscountService;
+import org.example.Healthcareplatform.inventory.service.InventoryService;
 import org.example.Healthcareplatform.order.dto.CheckoutPreviewRequest;
 import org.example.Healthcareplatform.order.dto.CheckoutPreviewResponse;
 import org.example.Healthcareplatform.order.dto.OrderRequest;
@@ -129,7 +131,6 @@ public class OrderService {
                     .productImage(cart.getProductImage())
                     .quantity(cart.getQuantity())
                     .unitPrice(cart.getUnitPrice())
-                    .prescriptionRequired(cart.getPrescriptionRequired())
                     .subtotal(itemSubtotal)
                     .build();
         }).collect(Collectors.toList());
@@ -233,7 +234,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public Page<OrderResponse> getAllOrders(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return orderRepository.findAll(pageable).map(OrderResponse::fromEntity);
+        return orderRepository.findAllByOrderByCreatedAtDesc(pageable).map(OrderResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)
@@ -351,7 +352,6 @@ public class OrderService {
                             .productImage(product.getImageUrl())
                             .quantity(qty)
                             .unitPrice(product.getPrice())
-                            .prescriptionRequired(product.getPrescriptionRequired())
                             .build()));
             added += qty;
         }

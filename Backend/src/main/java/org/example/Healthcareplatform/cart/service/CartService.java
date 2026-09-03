@@ -3,6 +3,7 @@ package org.example.Healthcareplatform.cart.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.cart.dto.CartMergeItem;
+import org.example.Healthcareplatform.cart.dto.CartMergeItem;
 import org.example.Healthcareplatform.cart.dto.CartRequest;
 import org.example.Healthcareplatform.cart.dto.CartResponse;
 import org.example.Healthcareplatform.cart.entity.CartItem;

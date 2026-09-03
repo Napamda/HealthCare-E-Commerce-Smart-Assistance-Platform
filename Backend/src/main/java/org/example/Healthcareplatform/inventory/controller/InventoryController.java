@@ -6,8 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.common.CurrentUser;
 import org.example.Healthcareplatform.inventory.dto.StockAdjustRequest;
 import org.example.Healthcareplatform.inventory.dto.StockInfoResponse;
-import org.example.Healthcareplatform.inventory.dto.StockValidateRequest;
-import org.example.Healthcareplatform.inventory.dto.StockValidateResponse;
 import org.example.Healthcareplatform.inventory.service.InventoryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,17 +51,6 @@ public class InventoryController {
     public ResponseEntity<List<StockInfoResponse.StockReservationDto>> getReservations() {
         log.info("GET /api/inventory/reservations");
         return ResponseEntity.ok(inventoryService.getReservations());
-    }
-
-    @PostMapping("/validate")
-    public ResponseEntity<StockValidateResponse> validateStock(
-            @Valid @RequestBody StockValidateRequest request) {
-        log.info("POST /api/inventory/validate — {} items", request.getItems().size());
-        List<InventoryService.ReserveItem> items = request.getItems().stream()
-                .map(i -> new InventoryService.ReserveItem(i.getProductId(), i.getQuantity()))
-                .toList();
-        StockValidateResponse response = inventoryService.validateStock(items);
-        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{productId}/increment")
