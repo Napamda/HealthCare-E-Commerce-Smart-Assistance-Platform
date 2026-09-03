@@ -83,6 +83,13 @@
               </svg>
               You are registered
             </span>
+            <span v-if="regStatus.volunteerRole" class="volunteer-badge" :class="'volunteer-' + regStatus.volunteerRole.toLowerCase()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z" />
+              </svg>
+              Volunteer · {{ regStatus.volunteerRole }}
+            </span>
             <button class="btn-danger" :disabled="actionLoading" @click="handleCancel">
               {{ actionLoading ? 'Cancelling...' : 'Cancel registration' }}
             </button>
@@ -94,9 +101,12 @@
               :disabled="actionLoading || !canRegister"
               @click="handleRegister"
             >
-              {{ actionLoading ? 'Registering...' : 'Register for this event' }}
+              {{ actionLoading ? 'Registering...' : registerCtaLabel }}
             </button>
-            <p v-if="!canRegister" class="registration-hint">{{ registerHint }}</p>
+            <p v-if="volunteerEligibleRole" class="registration-hint volunteer-hint">
+              You will be registered as a <strong>{{ volunteerEligibleRole }}</strong> volunteer for this event.
+            </p>
+            <p v-else-if="!canRegister" class="registration-hint">{{ registerHint }}</p>
           </template>
         </div>
       </div>
@@ -165,6 +175,21 @@ const registerHint = computed(() => {
   if (isPast.value) return 'This event has already started'
   if (spotsLeft.value === 0) return 'This event is full'
   return ''
+})
+
+// Doctors and pharmacists automatically register as volunteers (their role is
+// surfaced as a badge). Patients/vendors see the normal CTA.
+const volunteerEligibleRole = computed(() => {
+  const role = authStore.userRole
+  if (role === 'DOCTOR' || role === 'PHARMACIST') return role
+  return null
+})
+
+const registerCtaLabel = computed(() => {
+  if (volunteerEligibleRole.value) {
+    return `Register as ${volunteerEligibleRole.value} Volunteer`
+  }
+  return 'Register for this event'
 })
 
 async function loadEvent() {

@@ -122,6 +122,18 @@ const routes = [
     component: () => import('../pages/DoctorDashboardPage.vue'),
   },
   {
+    path: '/doctor/chat',
+    name: 'DoctorChatList',
+    meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
+    component: () => import('../pages/DoctorChatPage.vue'),
+  },
+  {
+    path: '/doctor/chat/:conversationId',
+    name: 'DoctorChatConversation',
+    meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
+    component: () => import('../pages/DoctorChatPage.vue'),
+  },
+  {
     path: '/prescriptions',
     name: 'PrescriptionList',
     meta: { requiresRole: [ROLES.PATIENT] },

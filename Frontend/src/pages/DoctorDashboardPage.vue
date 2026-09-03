@@ -424,6 +424,16 @@ function today() {
               >
                 Start Session
               </button>
+              <router-link
+                class="btn btn-chat"
+                :to="`/doctor/chat/${consultation.conversationId}`"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                Chat with Patient
+              </router-link>
               <button
                 class="btn btn-schedule"
                 :disabled="actionLoading === consultation.id"
@@ -433,6 +443,16 @@ function today() {
               </button>
             </template>
             <template v-else-if="consultation.status === 'IN_PROGRESS'">
+              <router-link
+                class="btn btn-chat"
+                :to="`/doctor/chat/${consultation.conversationId}`"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                Chat with Patient
+              </router-link>
               <button
                 class="btn btn-close"
                 :disabled="actionLoading === consultation.id"
@@ -500,6 +520,13 @@ function today() {
             >
               Start
             </button>
+            <router-link
+              v-if="['ACCEPTED', 'IN_PROGRESS'].includes(consultation.status)"
+              class="btn btn-chat btn-sm"
+              :to="`/doctor/chat/${consultation.conversationId}`"
+            >
+              Chat
+            </router-link>
             <button
               v-else-if="consultation.status === 'IN_PROGRESS'"
               class="btn btn-close btn-sm"
@@ -1461,6 +1488,27 @@ function today() {
 
 .btn-primary:hover:not(:disabled) {
   opacity: 0.9;
+}
+
+.btn-chat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #10b981;
+  background: #10b981;
+  color: white;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.btn-chat:hover {
+  background: #059669;
+  border-color: #059669;
 }
 
 .btn-close {

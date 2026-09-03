@@ -19,4 +19,10 @@ public class ConversationResponse {
     private Instant updatedAt;
     private String status;
     private long messageCount;
+
+    // Doctor chat fields — populated only when conversation is rendered for a doctor
+    private Long consultationId;
+    private String patientName;
+    private String consultationStatus;
+    private String priority;
 }

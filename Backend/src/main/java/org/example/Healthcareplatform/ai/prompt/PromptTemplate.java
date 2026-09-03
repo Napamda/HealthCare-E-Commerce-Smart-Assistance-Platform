@@ -55,6 +55,7 @@ public class PromptTemplate {
         String prefix = switch (msg.getRole()) {
             case USER -> "USER: ";
             case ASSISTANT -> "ASSISTANT: ";
+            case DOCTOR -> "DOCTOR: ";
             case SYSTEM -> "SYSTEM: ";
         };
         return prefix + msg.getContent();

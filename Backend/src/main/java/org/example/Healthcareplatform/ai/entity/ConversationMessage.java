@@ -51,6 +51,7 @@ public class ConversationMessage {
     public enum MessageRole {
         USER,
         ASSISTANT,
+        DOCTOR,
         SYSTEM
     }
 }

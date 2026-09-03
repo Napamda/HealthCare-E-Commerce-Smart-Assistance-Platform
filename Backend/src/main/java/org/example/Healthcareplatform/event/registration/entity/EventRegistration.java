@@ -34,6 +34,15 @@ public class EventRegistration {
     @Builder.Default
     private RegistrationStatus status = RegistrationStatus.CONFIRMED;
 
+    /**
+     * When a doctor or pharmacist registers for an event, they are automatically
+     * marked as a volunteer. This field stores their professional role (DOCTOR,
+     * PHARMACIST) so the badge can be rendered in the UI. Null means a regular
+     * attendee with no volunteer role.
+     */
+    @Column(name = "volunteer_role", length = 20)
+    private String volunteerRole;
+
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
