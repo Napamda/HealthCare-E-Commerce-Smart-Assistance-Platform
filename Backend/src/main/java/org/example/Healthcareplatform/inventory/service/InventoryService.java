@@ -48,33 +48,33 @@ public class InventoryService {
         for (ReserveItem item : items) {
             Product product = productRepository.findById(item.productId()).orElse(null);
             if (product == null) {
-                errors.add(StockValidateResponse.ValidationError.builder()
-                        .productId(item.productId())
-                        .productName("Unknown")
-                        .requested(item.quantity())
-                        .available(0)
-                        .message("Product not found")
-                        .build());
+                StockValidateResponse.ValidationError err = new StockValidateResponse.ValidationError();
+                err.setProductId(item.productId());
+                err.setProductName("Unknown");
+                err.setRequested(item.quantity());
+                err.setAvailable(0);
+                err.setMessage("Product not found");
+                errors.add(err);
                 continue;
             }
             Long activeReserved = reservationRepository.sumActiveReservedQuantity(product.getId());
             long available = product.getStockQuantity() - activeReserved;
             if (available < item.quantity() || product.getStockQuantity() <= 0) {
-                errors.add(StockValidateResponse.ValidationError.builder()
-                        .productId(product.getId())
-                        .productName(product.getName())
-                        .requested(item.quantity())
-                        .available(Math.max(0, available))
-                        .message(product.getStockQuantity() <= 0
-                                ? product.getName() + " is out of stock"
-                                : "Only " + available + " units of " + product.getName() + " are available")
-                        .build());
+                StockValidateResponse.ValidationError err = new StockValidateResponse.ValidationError();
+                err.setProductId(product.getId());
+                err.setProductName(product.getName());
+                err.setRequested(item.quantity());
+                err.setAvailable(Math.max(0, available));
+                err.setMessage(product.getStockQuantity() <= 0
+                        ? product.getName() + " is out of stock"
+                        : "Only " + available + " units of " + product.getName() + " are available");
+                errors.add(err);
             }
         }
-        return StockValidateResponse.builder()
-                .valid(errors.isEmpty())
-                .errors(errors)
-                .build();
+        StockValidateResponse response = new StockValidateResponse();
+        response.setValid(errors.isEmpty());
+        response.setErrors(errors);
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -275,49 +275,49 @@ public class InventoryService {
     private StockInfoResponse toStockInfo(Product p) {
         Long reserved = reservationRepository.sumReservedQuantity(p.getId());
         long available = p.getStockQuantity() - reserved;
-        return StockInfoResponse.builder()
-                .productId(p.getId())
-                .productName(p.getName())
-                .category(p.getCategory().name())
-                .stockQuantity(p.getStockQuantity())
-                .lowStockThreshold(p.getLowStockThreshold())
-                .reservedQuantity(reserved)
-                .availableQuantity(Math.max(0, available))
-                .lowStock(p.getStockQuantity() <= p.getLowStockThreshold())
-                .outOfStock(p.getStockQuantity() <= 0)
-                .history(stockHistoryRepository.findByProductIdOrderByCreatedAtDesc(p.getId()).stream()
-                        .limit(50).map(this::toHistoryDto).collect(Collectors.toList()))
-                .reservations(reservationRepository.findAll().stream()
-                        .filter(r -> r.getProductId().equals(p.getId()))
-                        .map(this::toReservationDto).collect(Collectors.toList()))
-                .build();
+        StockInfoResponse info = new StockInfoResponse();
+        info.setProductId(p.getId());
+        info.setProductName(p.getName());
+        info.setCategory(p.getCategory().name());
+        info.setStockQuantity(p.getStockQuantity());
+        info.setLowStockThreshold(p.getLowStockThreshold());
+        info.setReservedQuantity(reserved);
+        info.setAvailableQuantity(Math.max(0, available));
+        info.setLowStock(p.getStockQuantity() <= p.getLowStockThreshold());
+        info.setOutOfStock(p.getStockQuantity() <= 0);
+        info.setHistory(stockHistoryRepository.findByProductIdOrderByCreatedAtDesc(p.getId()).stream()
+                .limit(50).map(this::toHistoryDto).collect(Collectors.toList()));
+        info.setReservations(reservationRepository.findAll().stream()
+                .filter(r -> r.getProductId().equals(p.getId()))
+                .map(this::toReservationDto).collect(Collectors.toList()));
+        return info;
     }
 
     private StockInfoResponse.StockHistoryDto toHistoryDto(StockHistory h) {
-        return StockInfoResponse.StockHistoryDto.builder()
-                .id(h.getId())
-                .productId(h.getProductId())
-                .productName(h.getProductName())
-                .changeType(h.getChangeType())
-                .quantityChange(h.getQuantityChange())
-                .stockAfter(h.getStockAfter())
-                .orderId(h.getOrderId())
-                .note(h.getNote())
-                .createdAt(h.getCreatedAt())
-                .build();
+        StockInfoResponse.StockHistoryDto dto = new StockInfoResponse.StockHistoryDto();
+        dto.setId(h.getId());
+        dto.setProductId(h.getProductId());
+        dto.setProductName(h.getProductName());
+        dto.setChangeType(h.getChangeType());
+        dto.setQuantityChange(h.getQuantityChange());
+        dto.setStockAfter(h.getStockAfter());
+        dto.setOrderId(h.getOrderId());
+        dto.setNote(h.getNote());
+        dto.setCreatedAt(h.getCreatedAt());
+        return dto;
     }
 
     private StockInfoResponse.StockReservationDto toReservationDto(StockReservation r) {
-        return StockInfoResponse.StockReservationDto.builder()
-                .id(r.getId())
-                .productId(r.getProductId())
-                .userId(r.getUserId())
-                .quantity(r.getQuantity())
-                .orderId(r.getOrderId())
-                .status(r.getStatus())
-                .expiresAt(r.getExpiresAt())
-                .createdAt(r.getCreatedAt())
-                .build();
+        StockInfoResponse.StockReservationDto dto = new StockInfoResponse.StockReservationDto();
+        dto.setId(r.getId());
+        dto.setProductId(r.getProductId());
+        dto.setUserId(r.getUserId());
+        dto.setQuantity(r.getQuantity());
+        dto.setOrderId(r.getOrderId());
+        dto.setStatus(r.getStatus());
+        dto.setExpiresAt(r.getExpiresAt());
+        dto.setCreatedAt(r.getCreatedAt());
+        return dto;
     }
 
     @Transactional(readOnly = true)

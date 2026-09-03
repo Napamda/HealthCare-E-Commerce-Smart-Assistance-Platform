@@ -1,9 +1,6 @@
 package org.example.Healthcareplatform.inventory.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.example.Healthcareplatform.inventory.entity.StockHistory;
 import org.example.Healthcareplatform.inventory.entity.StockReservation;
 
@@ -11,9 +8,6 @@ import java.time.Instant;
 import java.util.List;
 
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class StockInfoResponse {
 
     private Long productId;
@@ -29,9 +23,6 @@ public class StockInfoResponse {
     private List<StockReservationDto> reservations;
 
     @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class StockHistoryDto {
         private Long id;
         private Long productId;
@@ -45,9 +36,6 @@ public class StockInfoResponse {
     }
 
     @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class StockReservationDto {
         private Long id;
         private Long productId;

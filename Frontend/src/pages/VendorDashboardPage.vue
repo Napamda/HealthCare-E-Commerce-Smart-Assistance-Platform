@@ -1,9 +1,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth.js'
 import { getDashboardStats, getVendorOrders, updateOrderStatus, shipOrder } from '../services/vendor.js'
 
 const router = useRouter()
+const auth = useAuthStore()
+
+const isVendor = computed(() => auth.hasRole('VENDOR') || auth.hasRole('ADMIN'))
 
 // ============ State ============
 const activeTab = ref('overview') // overview | orders | shipments
@@ -162,8 +166,10 @@ async function doCancelOrder(order) {
 
 // ============ Init ============
 onMounted(() => {
-  fetchStats()
-  fetchOrders()
+  if (isVendor.value) {
+    fetchStats()
+    fetchOrders()
+  }
 })
 </script>
 
@@ -180,8 +186,23 @@ onMounted(() => {
       </button>
     </header>
 
+    <!-- Non-Vendor Warning -->
+    <div v-if="!isVendor" class="vd-banner vd-banner-warning">
+      <div class="vd-banner-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="vd-banner-text">
+        <strong>Vendor access required.</strong>
+        You are logged in as <em>{{ auth.userRole || 'unknown' }}</em>. Only vendor and admin accounts can access this dashboard.
+      </div>
+      <div class="vd-banner-actions">
+        <button class="vd-btn vd-btn-sm vd-btn-outline" @click="auth.logout(); router.push('/login')">Log out</button>
+        <button class="vd-btn vd-btn-sm vd-btn-primary" @click="router.push('/register')">Register as Vendor</button>
+      </div>
+    </div>
+
     <!-- Tabs -->
-    <div class="vd-tabs">
+    <div class="vd-tabs" v-if="isVendor">
       <button class="vd-tab" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button>
       <button class="vd-tab" :class="{ active: activeTab === 'orders' }" @click="activeTab = 'orders'">Orders</button>
       <button class="vd-tab" :class="{ active: activeTab === 'shipments' }" @click="activeTab = 'shipments'; orderStatusFilter = 'PROCESSING'; fetchOrders(0)">Shipments</button>
@@ -697,6 +718,23 @@ onMounted(() => {
 /* Banner */
 .vd-banner { padding: 10px 14px; border-radius: var(--radius-md); font-size: 13px; margin-bottom: 16px; }
 .vd-banner-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+.vd-banner-warning {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  flex-wrap: wrap;
+}
+.vd-banner-icon { flex-shrink: 0; color: #d97706; }
+.vd-banner-text { flex: 1; font-size: 13px; line-height: 1.5; }
+.vd-banner-text em { font-weight: 600; font-style: normal; }
+.vd-banner-actions { display: flex; gap: 8px; margin-left: auto; }
+.vd-btn-sm { padding: 6px 12px; font-size: 12px; }
+.vd-btn-outline { background: transparent; border: 1px solid #d97706; color: #92400e; }
+.vd-btn-outline:hover { background: #fef3c7; }
 
 /* Buttons */
 .vd-btn {
