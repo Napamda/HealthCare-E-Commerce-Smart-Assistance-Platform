@@ -1,0 +1,329 @@
+.notification-log-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.notification-log-page .page-header h1 {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+  color: #1e293b;
+}
+
+.notification-log-page .subtitle {
+  margin: 0 0 24px;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.notification-log-page .tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 0;
+}
+
+.notification-log-page .tabs button {
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #64748b;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+
+.notification-log-page .tabs button.active {
+  color: #1e40af;
+  border-bottom-color: #1e40af;
+  font-weight: 600;
+}
+
+.notification-log-page .tabs .test-btn {
+  margin-left: auto;
+  background: #1e40af;
+  color: white;
+  border-radius: 6px;
+  padding: 8px 16px;
+  border-bottom: none;
+}
+
+.notification-log-page .tabs .test-btn:hover {
+  background: #1e3a8a;
+}
+
+.notification-log-page .tab-content {
+  padding: 20px 0;
+}
+
+.notification-log-page .filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.notification-log-page .filter-bar select {
+  padding: 6px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.notification-log-page .filter-bar button {
+  padding: 6px 16px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.notification-log-page .filter-bar button:hover {
+  background: #e2e8f0;
+}
+
+.notification-log-page .log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.notification-log-page .log-table th {
+  background: #f1f5f9;
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.notification-log-page .log-table td {
+  padding: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.notification-log-page .log-table tr:hover {
+  background: #f8fafc;
+}
+
+.notification-log-page .msg-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-log-page .type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.notification-log-page .status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.notification-log-page .status-sent {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.notification-log-page .status-failed {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.notification-log-page .status-queued {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.notification-log-page .view-btn {
+  padding: 4px 12px;
+  background: #1e40af;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.notification-log-page .view-btn:hover {
+  background: #1e3a8a;
+}
+
+.notification-log-page .loading,
+.notification-log-page .empty {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+/* Test form */
+.notification-log-page .test-form {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.notification-log-page .test-form h3 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  color: #1e293b;
+}
+
+.notification-log-page .form-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.notification-log-page .form-row label {
+  min-width: 100px;
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.notification-log-page .form-row input,
+.notification-log-page .form-row select {
+  padding: 6px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  flex: 1;
+  min-width: 150px;
+}
+
+.notification-log-page .send-btn {
+  padding: 8px 24px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.notification-log-page .send-btn:hover {
+  background: #15803d;
+}
+
+.notification-log-page .test-message {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #e0e7ff;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #4338ca;
+}
+
+/* Modal */
+.notification-log-page .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.notification-log-page .modal {
+  background: white;
+  border-radius: 8px;
+  max-width: 700px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.notification-log-page .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.notification-log-page .modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.notification-log-page .close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #94a3b8;
+}
+
+.notification-log-page .modal-body {
+  padding: 20px;
+}
+
+.notification-log-page .detail-row {
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.notification-log-page .detail-row.error {
+  color: #dc2626;
+}
+
+.notification-log-page .detail-body {
+  margin-top: 16px;
+}
+
+.notification-log-page .content-preview {
+  margin-top: 8px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  overflow-x: auto;
+}
+
+/* Transitions */
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.2s ease;
+  max-height: 600px;
+  overflow: hidden;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}

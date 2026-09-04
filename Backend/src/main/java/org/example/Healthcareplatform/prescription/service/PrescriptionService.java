@@ -6,6 +6,7 @@ import org.example.Healthcareplatform.cart.dto.CartRequest;
 import org.example.Healthcareplatform.cart.service.CartService;
 import org.example.Healthcareplatform.notification.entity.Notification;
 import org.example.Healthcareplatform.notification.service.NotificationService;
+import org.example.Healthcareplatform.messaging.publisher.HealthcareEventPublisher;
 import org.example.Healthcareplatform.prescription.dto.DownloadResource;
 import org.example.Healthcareplatform.prescription.dto.PrescriptionItemRequest;
 import org.example.Healthcareplatform.prescription.dto.PrescriptionItemResponse;
@@ -48,6 +49,10 @@ public class PrescriptionService {
     private final OCRService ocrService;
     private final ProductRepository productRepository;
     private final CartService cartService;
+    private final org.example.Healthcareplatform.user.repository.UserRepository userRepository;
+    private final org.example.Healthcareplatform.notification.service.EmailNotificationService emailNotificationService;
+    private final org.example.Healthcareplatform.notification.service.SmsSimulationService smsSimulationService;
+    private final HealthcareEventPublisher eventPublisher;
 
     @Value("${prescription.storage-root:${user.home}/Desktop/HealthCare/healthcare-uploads/prescriptions}")
     private String storageRoot;
@@ -79,13 +84,21 @@ public class PrescriptionService {
                                OCRService ocrService,
                                PrescriptionItemRepository prescriptionItemRepository,
                                ProductRepository productRepository,
-                               CartService cartService) {
+                               CartService cartService,
+                               org.example.Healthcareplatform.user.repository.UserRepository userRepository,
+                               org.example.Healthcareplatform.notification.service.EmailNotificationService emailNotificationService,
+                               org.example.Healthcareplatform.notification.service.SmsSimulationService smsSimulationService,
+                               HealthcareEventPublisher eventPublisher) {
         this.prescriptionRepository = prescriptionRepository;
         this.notificationService = notificationService;
         this.ocrService = ocrService;
         this.prescriptionItemRepository = prescriptionItemRepository;
         this.productRepository = productRepository;
         this.cartService = cartService;
+        this.userRepository = userRepository;
+        this.emailNotificationService = emailNotificationService;
+        this.smsSimulationService = smsSimulationService;
+        this.eventPublisher = eventPublisher;
     }
 
     public UploadResponse uploadPrescription(Long patientUserId, MultipartFile file) {
@@ -304,6 +317,38 @@ public class PrescriptionService {
 
         notificationService.createNotification(
                 prescription.getPatientUserId(), title, message, notificationType, prescription.getId());
+
+        // Send email + SMS notifications
+        final Prescription.PrescriptionStatus finalStatus = newStatus;
+        final String comments = request.getPharmacistComments();
+        final Long prescriptionIdFinal = prescription.getId();
+        final Long patientUserId = prescription.getPatientUserId();
+        userRepository.findById(patientUserId).ifPresent(patient -> {
+            String patientName = patient.getFirstName() + " " + patient.getLastName();
+            String prescriptionUrl = "http://localhost:5173/prescriptions/" + prescriptionIdFinal;
+            String statusStr = finalStatus.name();
+            try {
+                emailNotificationService.sendPrescriptionStatusEmail(
+                        patient.getEmail(), patientName, prescriptionIdFinal,
+                        statusStr, comments, prescriptionUrl);
+            } catch (Exception e) {
+                log.warn("Failed to send prescription email to {}: {}", patient.getEmail(), e.getMessage());
+            }
+            try {
+                smsSimulationService.simulatePrescriptionSms(
+                        "+0000000000", patientName, prescriptionIdFinal,
+                        statusStr, comments, prescriptionUrl);
+            } catch (Exception e) {
+                log.warn("Failed to simulate prescription SMS: {}", e.getMessage());
+            }
+        });
+
+        // Publish prescription.approved event to RabbitMQ
+        eventPublisher.publishPrescriptionApproved(
+                prescription.getId(), patientUserId,
+                userRepository.findById(patientUserId).map(u -> u.getEmail()).orElse(""),
+                userRepository.findById(patientUserId).map(u -> u.getFirstName() + " " + u.getLastName()).orElse(""),
+                finalStatus.name(), comments);
 
         return toResponse(prescription);
     }

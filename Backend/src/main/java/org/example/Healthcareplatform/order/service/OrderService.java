@@ -6,6 +6,7 @@ import org.example.Healthcareplatform.cart.entity.CartItem;
 import org.example.Healthcareplatform.cart.repository.CartItemRepository;
 import org.example.Healthcareplatform.order.dto.OrderRequest;
 import org.example.Healthcareplatform.order.dto.OrderResponse;
+import org.example.Healthcareplatform.messaging.publisher.HealthcareEventPublisher;
 import org.example.Healthcareplatform.order.entity.Order;
 import org.example.Healthcareplatform.order.entity.OrderItem;
 import org.example.Healthcareplatform.order.repository.OrderRepository;
@@ -30,6 +31,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final CartItemRepository cartItemRepository;
     private final UserRepository userRepository;
+    private final HealthcareEventPublisher eventPublisher;
 
     @Transactional
     public OrderResponse createOrder(Long userId, OrderRequest request) {
@@ -80,6 +82,10 @@ public class OrderService {
 
         log.info("Order created: id={}, userId={}, total={}, items={}",
                 saved.getId(), userId, total, orderItems.size());
+
+        eventPublisher.publishOrderCreated(saved.getId(), userId, saved.getUserEmail(),
+                saved.getUserName(), total.toPlainString(), orderItems.size());
+
         return OrderResponse.fromEntity(saved);
     }
 

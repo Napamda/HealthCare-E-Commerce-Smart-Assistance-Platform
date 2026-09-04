@@ -73,6 +73,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/prescriptions/pharmacist/**").hasAnyRole("PHARMACIST", "ADMIN")
                         .requestMatchers("/api/prescriptions/doctor/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers("/api/prescriptions/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/notifications/test/**").hasAnyRole("ADMIN", "DOCTOR")
+                        .requestMatchers("/api/notifications/emails/**", "/api/notifications/sms/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form.disable())

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: #ea580c; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+    <h1 style="color: white; margin: 0;">Event Reminder</h1>
+  </div>
+  <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0;">
+    <h2>Hi <span th:text="${name}">User</span>,</h2>
+    <p>This is a reminder for the health event you registered for:</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+      <tr style="background: #e2e8f0;">
+        <th style="padding: 10px; text-align: left;">Event</th>
+        <td style="padding: 10px;" th:text="${eventTitle}">Event</td>
+      </tr>
+      <tr>
+        <th style="padding: 10px; text-align: left;">Date & Time</th>
+        <td style="padding: 10px;" th:text="${eventDate}">TBD</td>
+      </tr>
+      <tr th:if="${venue}">
+        <th style="padding: 10px; text-align: left;">Venue</th>
+        <td style="padding: 10px;" th:text="${venue}">N/A</td>
+      </tr>
+    </table>
+    <p>We look forward to seeing you there!</p>
+    <a th:href="${eventUrl}" style="display: inline-block; padding: 12px 24px; background: #ea580c; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">View Event Details</a>
+  </div>
+</body>
+</html>

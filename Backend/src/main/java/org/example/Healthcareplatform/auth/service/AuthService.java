@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.auth.dto.*;
 import org.example.Healthcareplatform.auth.util.JwtUtil;
+import org.example.Healthcareplatform.messaging.publisher.HealthcareEventPublisher;
+import org.example.Healthcareplatform.notification.service.EmailNotificationService;
 import org.example.Healthcareplatform.user.entity.User;
 import org.example.Healthcareplatform.user.entity.UserRole;
 import org.example.Healthcareplatform.user.repository.UserRepository;
@@ -25,6 +27,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final EmailNotificationService emailNotificationService;
+    private final HealthcareEventPublisher eventPublisher;
 
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
@@ -54,6 +58,18 @@ public class AuthService {
 
         user = userRepository.save(user);
         log.info("User registered — id={}, email={}, role={}", user.getId(), user.getEmail(), user.getRole());
+
+        // Send welcome email (async, non-blocking)
+        String dashboardUrl = "http://localhost:5173/products";
+        String fullName = user.getFirstName() + " " + user.getLastName();
+        try {
+            emailNotificationService.sendWelcomeEmail(user.getEmail(), fullName, dashboardUrl);
+        } catch (Exception e) {
+            log.warn("Failed to send welcome email to {}: {}", user.getEmail(), e.getMessage());
+        }
+
+        // Publish user.registered event to RabbitMQ
+        eventPublisher.publishUserRegistered(user.getId(), user.getEmail(), fullName);
 
         String verificationLink = "http://localhost:8080/api/auth/verify-email?token=" + verificationToken;
         log.info("Verification link for user {}: {}", user.getEmail(), verificationLink);

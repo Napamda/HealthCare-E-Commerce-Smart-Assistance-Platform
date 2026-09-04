@@ -1,0 +1,1 @@
+Hi [(${name})], your order #[(${orderId})] has been confirmed. Total: [(${total})]. Track your order at [(${trackingUrl})]. Thank you for choosing HealthCare Platform!
