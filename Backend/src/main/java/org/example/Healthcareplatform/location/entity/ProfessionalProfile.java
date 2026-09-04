@@ -6,7 +6,9 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "professional_profiles")
+@Table(name = "professional_profiles", indexes = {
+    @Index(name = "idx_active_lat_lng", columnList = "active, latitude, longitude")
+})
 @Getter
 @Setter
 @NoArgsConstructor

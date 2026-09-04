@@ -56,45 +56,4 @@ public class NotificationController {
         notificationService.markAllAsRead(userId);
         return ResponseEntity.ok(Map.of("message", "All notifications marked as read"));
     }
-
-    // Deprecated endpoints kept for backward compat — derive from auth now.
-    @Deprecated
-    @GetMapping("/{userId}")
-    public ResponseEntity<List<NotificationResponse>> getNotifications(
-            @PathVariable Long userId,
-            org.springframework.security.core.Authentication auth) {
-        Long callerId = Long.parseLong(auth.getName());
-        if (!userId.equals(callerId)) {
-            userId = callerId;
-        }
-        log.info("Get all notifications — userId={}", userId);
-        return ResponseEntity.ok(notificationService.getNotifications(userId));
-    }
-
-    @Deprecated
-    @GetMapping("/{userId}/unread-count")
-    public ResponseEntity<Map<String, Long>> getUnreadCount(
-            @PathVariable Long userId,
-            org.springframework.security.core.Authentication auth) {
-        Long callerId = Long.parseLong(auth.getName());
-        if (!userId.equals(callerId)) {
-            userId = callerId;
-        }
-        long count = notificationService.getUnreadCount(userId);
-        return ResponseEntity.ok(Map.of("count", count));
-    }
-
-    @Deprecated
-    @PatchMapping("/{userId}/read-all")
-    public ResponseEntity<Map<String, String>> markAllAsRead(
-            @PathVariable Long userId,
-            org.springframework.security.core.Authentication auth) {
-        Long callerId = Long.parseLong(auth.getName());
-        if (!userId.equals(callerId)) {
-            userId = callerId;
-        }
-        log.info("Mark all notifications as read — userId={}", userId);
-        notificationService.markAllAsRead(userId);
-        return ResponseEntity.ok(Map.of("message", "All notifications marked as read"));
-    }
 }

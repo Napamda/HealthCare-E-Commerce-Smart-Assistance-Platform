@@ -35,7 +35,7 @@ public class AvatarController {
             "gif", MediaType.IMAGE_GIF_VALUE
     );
 
-    @Value("${user.avatar.storage-root:${user.home}/Desktop/HealthCare/healthcare-uploads/avatars}")
+    @Value("${user.avatar.storage-root}")
     private String avatarStorageRoot;
 
     @GetMapping("/api/avatars/{filename}")

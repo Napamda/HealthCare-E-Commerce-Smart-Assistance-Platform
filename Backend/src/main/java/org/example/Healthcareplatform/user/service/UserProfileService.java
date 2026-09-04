@@ -41,7 +41,7 @@ public class UserProfileService {
     private final HealthProfileRepository healthProfileRepository;
     private final AddressRepository addressRepository;
 
-    @Value("${user.avatar.storage-root:${user.home}/Desktop/HealthCare/healthcare-uploads/avatars}")
+    @Value("${user.avatar.storage-root}")
     private String avatarStorageRoot;
 
     private static final long MAX_AVATAR_SIZE = 2 * 1024 * 1024; // 2MB

@@ -29,6 +29,7 @@ export function getMyPrescriptions() {
 export function getPatientPrescriptions(patientUserId) {
   // Used by doctor/pharmacist UI when looking up a specific patient's list.
   // For a patient listing their own list, prefer getMyPrescriptions().
+  // Note: This endpoint now requires proper authorization checks on the backend
   return apiClient
     .get(`/api/prescriptions/patient/${patientUserId}`)
     .then((res) => res.data)

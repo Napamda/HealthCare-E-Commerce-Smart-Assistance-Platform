@@ -167,16 +167,20 @@ async function handleAvatarChange(event) {
 // Task 2.2 — Health Profile
 // =====================================================================
 
-function addChip(listName, inputRef) {
-  const value = inputRef.value.trim()
+function addChip(listName, inputValue) {
+  const value = inputValue.trim()
   if (!value) return
   const list = healthForm.value[listName]
   if (list.some((v) => v.toLowerCase() === value.toLowerCase())) {
-    inputRef.value = ''
     return
   }
   list.push(value)
-  inputRef.value = ''
+  // Clear the input
+  if (listName === 'allergies') {
+    allergyInput.value = ''
+  } else if (listName === 'chronicConditions') {
+    conditionInput.value = ''
+  }
 }
 
 function removeChip(listName, index) {
@@ -441,7 +445,7 @@ async function makeDefault(address) {
                 v-model="allergyInput"
                 type="text"
                 placeholder="Type an allergy and press Enter"
-                @keydown.enter.prevent="addChip('allergies')"
+                @keydown.enter.prevent="addChip('allergies', allergyInput)"
               />
             </div>
           </div>
@@ -460,7 +464,7 @@ async function makeDefault(address) {
                 v-model="conditionInput"
                 type="text"
                 placeholder="Type a condition and press Enter"
-                @keydown.enter.prevent="addChip('chronicConditions')"
+                @keydown.enter.prevent="addChip('chronicConditions', conditionInput)"
               />
             </div>
           </div>

@@ -54,7 +54,7 @@ public class PrescriptionService {
     private final org.example.Healthcareplatform.notification.service.SmsSimulationService smsSimulationService;
     private final HealthcareEventPublisher eventPublisher;
 
-    @Value("${prescription.storage-root:${user.home}/Desktop/HealthCare/healthcare-uploads/prescriptions}")
+    @Value("${prescription.storage-root}")
     private String storageRoot;
 
     @Value("${prescription.max-file-size:10485760}")
