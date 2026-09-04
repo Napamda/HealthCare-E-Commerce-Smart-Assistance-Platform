@@ -49,4 +49,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Object[]> countProductsByCategory();
 
     long countByCategory(Product.ProductCategory category);
+
+    @Query("SELECT p FROM Product p WHERE p.category.name IN :categories")
+    Page<Product> findByCategoryNames(List<String> categories, Pageable pageable);
 }

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth.js'
 import { useCartStore } from './stores/cart.js'
 import CartIcon from './components/cart/CartIcon.vue'
+import NotificationContainer from './components/NotificationContainer.vue'
 import { ROLE_LABELS, ROLE_DASHBOARD } from './config/permissions.js'
 
 const router = useRouter()
@@ -42,6 +43,7 @@ onMounted(() => {
         <router-link to="/chat" class="nav-link">Chat</router-link>
         <router-link to="/consultations" class="nav-link">Consultations</router-link>
         <router-link to="/products" class="nav-link">Products</router-link>
+        <router-link to="/recommendations" class="nav-link">Recommendations</router-link>
         <router-link
           v-if="authStore.hasRole('VENDOR')"
           to="/inventory"
@@ -77,6 +79,7 @@ onMounted(() => {
         <template v-if="authStore.isAuthenticated">
           <CartIcon />
           <router-link to="/orders" class="nav-link">Orders</router-link>
+          <router-link to="/profile" class="nav-link">Profile</router-link>
           <span class="nav-user">
             {{ authStore.currentUser?.firstName }}
             <span class="nav-role-badge">{{ roleLabel }}</span>
@@ -92,5 +95,6 @@ onMounted(() => {
     <main class="app-main">
       <router-view />
     </main>
+    <NotificationContainer />
   </div>
 </template>

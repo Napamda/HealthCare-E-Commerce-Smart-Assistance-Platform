@@ -117,6 +117,11 @@ const routes = [
     name: 'Register',
     component: () => import('../pages/RegisterPage.vue'),
   },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../pages/ProfilePage.vue'),
+  },
   
   {
     path: '/admin',

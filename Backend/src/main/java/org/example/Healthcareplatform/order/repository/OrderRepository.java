@@ -44,4 +44,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.userId = :userId AND o.status != :cancelledStatus")
     Double sumTotalAmountByUserId(@Param("userId") Long userId, @Param("cancelledStatus") Order.OrderStatus cancelledStatus);
+
+    @Query("SELECT DISTINCT p.category FROM Order o JOIN o.items i JOIN org.example.Healthcareplatform.product.entity.Product p ON i.productId = p.id WHERE o.userId = :userId AND o.status != :cancelledStatus")
+    List<String> findCategoriesByUserId(@Param("userId") Long userId, @Param("cancelledStatus") Order.OrderStatus cancelledStatus);
 }
