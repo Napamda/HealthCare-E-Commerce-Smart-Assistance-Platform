@@ -2,6 +2,7 @@ package org.example.Healthcareplatform.product.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.Healthcareplatform.order.entity.Order;
 import org.example.Healthcareplatform.order.repository.OrderRepository;
 import org.example.Healthcareplatform.product.dto.CategoryCountResponse;
 import org.example.Healthcareplatform.product.dto.ProductRequest;
