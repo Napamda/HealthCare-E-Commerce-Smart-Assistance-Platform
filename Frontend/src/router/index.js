@@ -24,6 +24,11 @@ const routes = [
     component: () => import('../pages/chat/ChatPage.vue'),
   },
   {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../pages/profile/ProfilePage.vue'),
+  },
+  {
     path: '/consultations',
     name: 'Consultations',
     meta: { requiresRole: [ROLES.PATIENT] },

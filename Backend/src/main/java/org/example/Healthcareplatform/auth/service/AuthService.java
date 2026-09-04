@@ -121,6 +121,7 @@ public class AuthService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .role(user.getRole().name())
+                .avatarUrl(user.getAvatarUrl())
                 .rememberMe(request.isRememberMe())
                 .build();
     }
@@ -167,6 +168,7 @@ public class AuthService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .role(user.getRole().name())
+                .avatarUrl(user.getAvatarUrl())
                 .rememberMe(rememberMe)
                 .build();
     }

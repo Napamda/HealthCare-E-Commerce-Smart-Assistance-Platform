@@ -75,6 +75,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/prescriptions/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/notifications/test/**").hasAnyRole("ADMIN", "DOCTOR")
                         .requestMatchers("/api/notifications/emails/**", "/api/notifications/sms/**").authenticated()
+                        // User management: everything scoped to the authenticated user.
+                        // Avatar images are served publicly (UUID filenames, unguessable)
+                        // so <img> tags can display them without auth headers.
+                        .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/avatars/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form.disable())

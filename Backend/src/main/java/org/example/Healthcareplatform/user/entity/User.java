@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -56,6 +57,18 @@ public class User implements UserDetails {
     @Column(nullable = false)
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    // ---- Profile fields (Task 2.1) ----
+    @Column(length = 30)
+    private String phone;
+
+    @Column(length = 512)
+    private String avatarUrl;
+
+    private LocalDate dateOfBirth;
+
+    @Column(length = 20)
+    private String gender;
 
     @PreUpdate
     protected void onUpdate() {

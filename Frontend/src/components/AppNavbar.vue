@@ -109,7 +109,14 @@ async function handleLogout() {
 
         <div class="nav-dropdown-wrapper">
           <button class="nav-user-trigger" @click="toggleUserMenu">
-            <span class="nav-user-avatar">{{ authStore.currentUser?.firstName?.[0] || '?' }}</span>
+            <span class="nav-user-avatar">
+              <img
+                v-if="authStore.currentUser?.avatarUrl"
+                :src="authStore.currentUser.avatarUrl"
+                alt="Avatar"
+              />
+              <template v-else>{{ authStore.currentUser?.firstName?.[0] || '?' }}</template>
+            </span>
             <span class="nav-user-name">{{ authStore.currentUser?.firstName }}</span>
             <span class="nav-chevron">▾</span>
           </button>
@@ -118,6 +125,9 @@ async function handleLogout() {
             <div class="nav-user-menu-header">
               <span class="nav-role-badge">{{ roleLabel }}</span>
             </div>
+            <button class="nav-dropdown-item" @click="navigate('/profile')">
+              My Profile
+            </button>
             <button class="nav-dropdown-item nav-logout-item" @click="handleLogout">
               Sign out
             </button>

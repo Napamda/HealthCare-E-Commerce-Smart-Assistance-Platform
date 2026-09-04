@@ -57,6 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
       firstName: data.firstName,
       lastName: data.lastName,
       role: data.role,
+      avatarUrl: data.avatarUrl || null,
     }
     currentUser.value = user
     localStorage.setItem('user', JSON.stringify(user))
@@ -114,6 +115,16 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
+  /**
+   * Merge editable profile fields (from the profile page) into the
+   * current user snapshot and localStorage so the navbar stays in sync.
+   */
+  function setUserFields(fields) {
+    if (!currentUser.value) return
+    currentUser.value = { ...currentUser.value, ...fields }
+    localStorage.setItem('user', JSON.stringify(currentUser.value))
+  }
+
   return {
     currentUser,
     accessToken,
@@ -131,5 +142,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     tryRestoreSession,
     clearError,
+    setUserFields,
   }
 })
