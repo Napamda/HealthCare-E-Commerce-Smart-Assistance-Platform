@@ -31,6 +31,7 @@ export const NAV_ITEMS = {
 
   [ROLES.ADMIN]: [
     { to: '/admin', label: 'Dashboard' },
+    { to: '/admin/users', label: 'Manage Users' },
     { to: '/admin/products', label: 'Manage Products' },
     { to: '/events/manage', label: 'Manage Events' },
     {

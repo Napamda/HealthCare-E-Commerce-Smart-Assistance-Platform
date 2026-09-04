@@ -40,6 +40,17 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
+    // ---- Admin moderation (Task 3.1) ----
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private UserStatus status = UserStatus.ACTIVE;
+
+    @Column(length = 255)
+    private String suspendedReason;
+
+    private LocalDateTime suspendedAt;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean emailVerified = false;
@@ -102,6 +113,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return emailVerified;
+        return emailVerified && status == UserStatus.ACTIVE;
     }
 }

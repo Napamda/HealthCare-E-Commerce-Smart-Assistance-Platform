@@ -122,6 +122,12 @@ const routes = [
     component: () => import('../pages/admin/AdminDashboardPage.vue'),
   },
   {
+    path: '/admin/users',
+    name: 'AdminUsers',
+    meta: { requiresRole: [ROLES.ADMIN] },
+    component: () => import('../pages/admin/AdminUsersPage.vue'),
+  },
+  {
     path: '/admin/notifications',
     name: 'NotificationLogs',
     meta: { requiresRole: [ROLES.ADMIN, ROLES.DOCTOR] },

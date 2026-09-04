@@ -2,6 +2,7 @@ package org.example.Healthcareplatform.product.repository;
 
 import org.example.Healthcareplatform.product.dto.ProductRef;
 import org.example.Healthcareplatform.product.entity.Product;
+import org.example.Healthcareplatform.product.entity.ProductStatus;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,4 +42,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Object[]> countProductsByCategory();
 
     long countByCategory(Product.ProductCategory category);
+
+    // ---- Task 3.3 — Moderation queries ----
+    List<Product> findByStatusOrderByCreatedAtDesc(ProductStatus status);
+
+    Page<Product> findByStatus(ProductStatus status, Pageable pageable);
+
+    long countByStatus(ProductStatus status);
 }

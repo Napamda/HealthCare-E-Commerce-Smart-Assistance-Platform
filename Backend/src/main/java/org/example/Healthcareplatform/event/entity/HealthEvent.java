@@ -60,6 +60,12 @@ public class HealthEvent {
     @Builder.Default
     private EventStatus status = EventStatus.PUBLISHED;
 
+    // ---- Moderation (Task 3.4) ----
+    @Column(length = 500)
+    private String moderationReason;
+
+    private Long moderatedBy;
+
     private Long createdBy;
 
     @Column(nullable = false, updatable = false)
