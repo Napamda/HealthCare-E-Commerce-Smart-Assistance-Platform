@@ -43,7 +43,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleMaxUpload(MaxUploadSizeExceededException ex) {
-        return build(HttpStatus.PAYLOAD_TOO_LARGE, "File too large — maximum upload size exceeded", null);
+        return build(HttpStatus.valueOf(413), "File too large — maximum upload size exceeded", null);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

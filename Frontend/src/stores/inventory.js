@@ -79,6 +79,25 @@ export const useInventoryStore = defineStore('inventory', () => {
     return inventoryApi.adjustStock(productId, quantity, note)
   }
 
+  async function setThreshold({ productId, threshold }) {
+    updating.value = true
+    clearMessages()
+    try {
+      const updated = await inventoryApi.setThreshold(productId, threshold)
+      const idx = stock.value.findIndex((item) => item.productId === updated.productId)
+      if (idx !== -1) {
+        stock.value[idx] = updated
+      }
+      success.value = `Low stock threshold updated for "${updated.productName}"`
+      return true
+    } catch (e) {
+      error.value = extractError(e)
+      return false
+    } finally {
+      updating.value = false
+    }
+  }
+
   async function openHistory(item) {
     historyProduct.value = item
     history.value = []
@@ -125,6 +144,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     outOfStockCount,
     fetchStock,
     adjust,
+    setThreshold,
     openHistory,
     closeHistory,
     clearMessages,

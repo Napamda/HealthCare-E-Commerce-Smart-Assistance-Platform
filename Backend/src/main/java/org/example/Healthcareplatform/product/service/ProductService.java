@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -269,11 +270,18 @@ public class ProductService {
             return getPopularProducts(limit);
         }
 
-        // Get products from categories the user has purchased from
+        // Get products by checking each category individually
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "ratings"));
-        return productRepository.findAll(pageable).stream()
-                .filter(p -> categoryEnums.contains(p.getCategory()))
-                .map(ProductResponse::fromEntity)
+        List<ProductResponse> allProducts = new ArrayList<>();
+        
+        for (Product.ProductCategory category : categoryEnums) {
+            Page<Product> categoryProducts = productRepository.findByCategory(category, pageable);
+            categoryProducts.getContent().forEach(product -> allProducts.add(ProductResponse.fromEntity(product)));
+        }
+        
+        // Limit to requested number
+        return allProducts.stream()
+                .limit(limit)
                 .collect(Collectors.toList());
     }
 
@@ -289,13 +297,5 @@ public class ProductService {
             log.warn("Invalid category for recommendations: {}", category);
             return getPopularProducts(limit);
         }
-    }
-
-    @Transactional(readOnly = true)
-    public List<ProductResponse> findByCategoryNames(List<String> categoryNames, int limit) {
-        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "ratings"));
-        return productRepository.findByCategoryNames(categoryNames, pageable).stream()
-                .map(ProductResponse::fromEntity)
-                .collect(Collectors.toList());
     }
 }

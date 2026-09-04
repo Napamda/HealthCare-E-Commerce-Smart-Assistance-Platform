@@ -13,13 +13,13 @@ api.interceptors.request.use((config) => {
 })
 
 export function getRecommendations() {
-  return api.get('/api/recommendations').then((res) => res.data)
+  return api.get('/api/products/recommendations').then((res) => res.data)
 }
 
 export function getPersonalizedRecommendations() {
-  return api.get('/api/recommendations/personalized').then((res) => res.data)
+  return api.get('/api/products/recommendations/personalized').then((res) => res.data)
 }
 
 export function getRecommendationsByCategory(category) {
-  return api.get(`/api/recommendations/category/${category}`).then((res) => res.data)
+  return api.get(`/api/products/recommendations/category/${category}`).then((res) => res.data)
 }

@@ -10,6 +10,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -29,7 +32,9 @@ public class UserService {
         response.setFirstName(user.getFirstName());
         response.setLastName(user.getLastName());
         response.setPhone(user.getPhone());
-        response.setDateOfBirth(user.getDateOfBirth() != null ? user.getDateOfBirth().toString() : null);
+        if (user.getDateOfBirth() != null) {
+            response.setDateOfBirth(user.getDateOfBirth().format(DateTimeFormatter.ISO_LOCAL_DATE));
+        }
         response.setRole(user.getRole().name());
         
         return response;
@@ -51,7 +56,7 @@ public class UserService {
         }
         if (request.getDateOfBirth() != null && !request.getDateOfBirth().isBlank()) {
             try {
-                user.setDateOfBirth(java.time.LocalDate.parse(request.getDateOfBirth()));
+                user.setDateOfBirth(LocalDate.parse(request.getDateOfBirth(), DateTimeFormatter.ISO_LOCAL_DATE));
             } catch (Exception e) {
                 log.warn("Invalid date format: {}", request.getDateOfBirth());
             }
