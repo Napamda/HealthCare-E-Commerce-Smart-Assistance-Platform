@@ -42,6 +42,14 @@ export function getReservations() {
   return apiClient.get('/api/inventory/reservations').then((res) => res.data)
 }
 
+/**
+ * Fetch recent stock movements across all products.
+ * @returns {Promise<Array>} StockHistoryDto[]
+ */
+export function getRecentActivity() {
+  return apiClient.get('/api/inventory/activity').then((res) => res.data)
+}
+
 function postAdjust(productId, action, quantity, note) {
   return apiClient
     .post(`/api/inventory/${productId}/${action}`, { quantity, note })
@@ -76,4 +84,16 @@ export function decrementStock(productId, quantity, note) {
  */
 export function adjustStock(productId, quantity, note) {
   return postAdjust(productId, 'adjust', quantity, note)
+}
+
+/**
+ * Update the low-stock warning threshold for a product.
+ * @param {number} productId
+ * @param {number} threshold
+ * @returns {Promise<object>} StockInfoResponse
+ */
+export function setThreshold(productId, threshold) {
+  return apiClient
+    .put(`/api/inventory/${productId}/threshold`, { threshold })
+    .then((res) => res.data)
 }

@@ -1,479 +1,439 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useAuthorization } from '../composables/useAuthorization.js'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { useInventoryStore } from '../stores/inventory.js'
 
-const auth = useAuthorization()
+const router = useRouter()
 const inventoryStore = useInventoryStore()
+const {
+  loading,
+  updating,
+  error,
+  success,
+  totalProducts,
+  totalUnits,
+  totalAvailable,
+  totalReservedUnits,
+  lowStockCount,
+  outOfStockCount,
+  reservedCount,
+  stockHealthScore,
+  activeReservations,
+  attentionItems,
+  categoryBreakdown,
+  recentMovements,
+  stock,
+} = storeToRefs(inventoryStore)
 
-const stats = ref({
-  totalProducts: 0,
-  totalUnits: 0,
-  lowStock: 0,
-  outOfStock: 0,
-  pendingOrders: 0,
-  recentActivity: []
-})
-
-const loading = ref(true)
+const ready = ref(false)
+const restockingId = ref(null)
+const searchQuery = ref('')
+const now = ref(Date.now())
+let tickTimer = null
 
 onMounted(async () => {
-  try {
-    await inventoryStore.fetchStock()
-    stats.value.totalProducts = inventoryStore.totalProducts
-    stats.value.totalUnits = inventoryStore.totalUnits
-    stats.value.lowStock = inventoryStore.lowStockCount
-    stats.value.outOfStock = inventoryStore.outOfStockCount
-  } catch (error) {
-    console.error('Failed to load dashboard data:', error)
-  } finally {
-    loading.value = false
-  }
+  await inventoryStore.refreshAll()
+  ready.value = true
+  tickTimer = setInterval(() => {
+    now.value = Date.now()
+  }, 1000)
 })
+
+onUnmounted(() => {
+  if (tickTimer) clearInterval(tickTimer)
+})
+
+const hasAlerts = computed(() => lowStockCount.value > 0 || outOfStockCount.value > 0)
+
+const healthTone = computed(() => {
+  if (stockHealthScore.value >= 85) return 'good'
+  if (stockHealthScore.value >= 60) return 'warn'
+  return 'bad'
+})
+
+const searchResults = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return []
+  return stock.value
+    .filter(
+      (i) =>
+        (i.productName || '').toLowerCase().includes(q) ||
+        categoryLabel(i.category).toLowerCase().includes(q),
+    )
+    .slice(0, 6)
+})
+
+const expiringReservations = computed(() =>
+  activeReservations.value
+    .slice()
+    .sort((a, b) => new Date(a.expiresAt || 0) - new Date(b.expiresAt || 0))
+    .slice(0, 5),
+)
+
+function goInventory(filter = 'all') {
+  router.push({ path: '/inventory', query: filter === 'all' ? {} : { filter } })
+}
+
+function openProduct(item) {
+  router.push({
+    path: '/inventory',
+    query: {
+      focus: item.productId,
+      ...(item.outOfStock ? { filter: 'out' } : item.lowStock ? { filter: 'low' } : {}),
+    },
+  })
+}
+
+function categoryLabel(cat) {
+  if (!cat) return ''
+  return cat
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function typeLabel(t) {
+  const labels = {
+    INIT: 'Initial',
+    PURCHASE: 'Restocked',
+    SALE: 'Sale',
+    RESERVED: 'Reserved',
+    RESERVATION_RELEASED: 'Released',
+    RESERVATION_EXPIRED: 'Expired',
+    ADJUSTMENT: 'Adjusted',
+    CANCELLATION: 'Cancelled',
+    REFUND: 'Refund',
+  }
+  return labels[t] || String(t || '').replace(/_/g, ' ').toLowerCase()
+}
+
+function signedDelta(delta) {
+  return (delta > 0 ? '+' : '') + delta
+}
+
+function formatDate(iso) {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleString()
+  } catch {
+    return iso
+  }
+}
+
+function countdown(expiresAt) {
+  if (!expiresAt) return '—'
+  const ms = new Date(expiresAt).getTime() - now.value
+  if (ms <= 0) return 'Expired'
+  const totalSec = Math.floor(ms / 1000)
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  return `${m}m ${String(s).padStart(2, '0')}s`
+}
+
+function productName(productId) {
+  return stock.value.find((i) => i.productId === productId)?.productName || `Product #${productId}`
+}
+
+async function quickRestock(item) {
+  restockingId.value = item.productId
+  await inventoryStore.restockToSafeLevel(item)
+  restockingId.value = null
+}
+
+async function restockAllLow() {
+  const targets = attentionItems.value
+  if (!targets.length) return
+  await inventoryStore.bulkRestock(targets, 'Bulk restock from vendor dashboard')
+}
+
+function exportCsv() {
+  const headers = [
+    'Product',
+    'Category',
+    'Stock',
+    'Threshold',
+    'Reserved',
+    'Available',
+    'Status',
+  ]
+  const rows = stock.value.map((item) => [
+    item.productName,
+    categoryLabel(item.category),
+    item.stockQuantity,
+    item.lowStockThreshold,
+    item.reservedQuantity,
+    item.availableQuantity,
+    item.outOfStock ? 'Out of stock' : item.lowStock ? 'Low stock' : 'In stock',
+  ])
+  const csv = [headers, ...rows]
+    .map((row) =>
+      row
+        .map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`)
+        .join(','),
+    )
+    .join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `inventory-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
-  <div class="vendor-dashboard">
-    <!-- Header -->
-    <div class="dashboard-header">
-      <div class="header-content">
-        <h1 class="header-title">Vendor Dashboard</h1>
-        <p class="header-subtitle">Manage your inventory, track orders, and monitor stock levels</p>
+  <div class="page-wrap vendor-hub">
+    <header class="vendor-hero">
+      <div class="vendor-hero-copy">
+        <h1 class="vendor-title">Vendor workspace</h1>
+        <p class="vendor-lead">
+          Monitor stock health, restock low items quickly, and keep an eye on checkout holds.
+        </p>
+        <div class="vendor-hero-actions">
+          <button class="btn btn-primary" type="button" @click="goInventory()">
+            Open inventory
+          </button>
+          <button
+            class="btn btn-secondary"
+            type="button"
+            :disabled="loading || !attentionItems.length || updating"
+            @click="restockAllLow"
+          >
+            {{ updating ? 'Restocking…' : 'Restock all low' }}
+          </button>
+          <button class="btn btn-secondary" type="button" @click="exportCsv">
+            Export CSV
+          </button>
+        </div>
       </div>
-      <div class="header-actions">
-        <button class="btn btn-primary" @click="$router.push('/inventory')">
-          <span class="btn-icon">📦</span>
-          Manage Inventory
+
+      <div class="vendor-hero-panel">
+        <div class="vendor-panel-label">Stock health</div>
+        <div class="vendor-health-ring" :class="`health-${healthTone}`">
+          <span class="vendor-health-score">{{ stockHealthScore }}%</span>
+          <span class="vendor-health-caption">healthy SKUs</span>
+        </div>
+        <div class="vendor-panel-grid vendor-panel-grid-compact">
+          <div>
+            <span class="vendor-panel-value">{{ totalAvailable }}</span>
+            <span class="vendor-panel-meta">Available</span>
+          </div>
+          <div>
+            <span class="vendor-panel-value">{{ totalReservedUnits }}</span>
+            <span class="vendor-panel-meta">Reserved units</span>
+          </div>
+        </div>
+        <button
+          class="btn-link"
+          type="button"
+          :disabled="loading"
+          @click="inventoryStore.refreshAll()"
+        >
+          {{ loading ? 'Refreshing…' : 'Refresh data' }}
         </button>
       </div>
+    </header>
+
+    <div v-if="error" class="alert alert-error inv-alert">
+      <span>{{ error }}</span>
+      <button class="banner-close" type="button" @click="inventoryStore.clearMessages()">×</button>
+    </div>
+    <div v-if="success" class="alert alert-success inv-alert">
+      <span>{{ success }}</span>
+      <button class="banner-close" type="button" @click="inventoryStore.clearMessages()">×</button>
     </div>
 
-    <!-- Stats Grid -->
-    <div class="stats-section">
-      <h2 class="section-title">Overview</h2>
-      <div class="stats-grid">
-        <div class="stat-card stat-primary">
-          <div class="stat-icon">📦</div>
-          <div class="stat-content">
-            <div class="stat-label">Total Products</div>
-            <div class="stat-value">{{ stats.totalProducts }}</div>
-            <div class="stat-trend">Active inventory items</div>
-          </div>
-        </div>
-        <div class="stat-card stat-success">
-          <div class="stat-icon">📊</div>
-          <div class="stat-content">
-            <div class="stat-label">Units in Stock</div>
-            <div class="stat-value">{{ stats.totalUnits }}</div>
-            <div class="stat-trend">Total available units</div>
-          </div>
-        </div>
-        <div class="stat-card stat-warning">
-          <div class="stat-icon">⚠️</div>
-          <div class="stat-content">
-            <div class="stat-label">Low Stock</div>
-            <div class="stat-value">{{ stats.lowStock }}</div>
-            <div class="stat-trend">Products below threshold</div>
-          </div>
-        </div>
-        <div class="stat-card stat-danger">
-          <div class="stat-icon">🚨</div>
-          <div class="stat-content">
-            <div class="stat-label">Out of Stock</div>
-            <div class="stat-value">{{ stats.outOfStock }}</div>
-            <div class="stat-trend">Products unavailable</div>
-          </div>
-        </div>
+    <div v-if="hasAlerts" class="vendor-alert" role="status">
+      <div>
+        <strong>Attention needed.</strong>
+        {{ outOfStockCount }} out of stock · {{ lowStockCount }} below threshold.
       </div>
+      <button class="btn-link" type="button" @click="goInventory(outOfStockCount ? 'out' : 'low')">
+        Review items
+      </button>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="actions-section">
-      <h2 class="section-title">Quick Actions</h2>
-      <div class="actions-grid">
-        <router-link to="/inventory" class="action-card">
-          <div class="action-icon">📦</div>
-          <div class="action-content">
-            <h3 class="action-title">Inventory Management</h3>
-            <p class="action-description">Monitor stock levels, update quantities, and view stock history</p>
-          </div>
-          <div class="action-arrow">→</div>
-        </router-link>
-        <div class="action-card action-disabled">
-          <div class="action-icon">🛒</div>
-          <div class="action-content">
-            <h3 class="action-title">Order Management</h3>
-            <p class="action-description">Process incoming orders and manage fulfillment</p>
-          </div>
-          <div class="action-badge">Coming Soon</div>
-        </div>
-        <div class="action-card action-disabled">
-          <div class="action-icon">🚚</div>
-          <div class="action-content">
-            <h3 class="action-title">Shipments</h3>
-            <p class="action-description">Track deliveries and shipping status</p>
-          </div>
-          <div class="action-badge">Coming Soon</div>
-        </div>
-        <div class="action-card action-disabled">
-          <div class="action-icon">📈</div>
-          <div class="action-content">
-            <h3 class="action-title">Analytics</h3>
-            <p class="action-description">View sales reports and performance metrics</p>
-          </div>
-          <div class="action-badge">Coming Soon</div>
-        </div>
+    <section class="vendor-metrics" aria-label="Inventory metrics">
+      <button class="vendor-metric" type="button" @click="goInventory('all')">
+        <span class="vendor-metric-label">Products</span>
+        <span class="vendor-metric-value">{{ totalProducts }}</span>
+        <span class="vendor-metric-hint">{{ totalUnits }} total units</span>
+      </button>
+      <button class="vendor-metric metric-warn" type="button" @click="goInventory('low')">
+        <span class="vendor-metric-label">Low stock</span>
+        <span class="vendor-metric-value">{{ lowStockCount }}</span>
+        <span class="vendor-metric-hint">Below threshold</span>
+      </button>
+      <button class="vendor-metric metric-danger" type="button" @click="goInventory('out')">
+        <span class="vendor-metric-label">Out of stock</span>
+        <span class="vendor-metric-value">{{ outOfStockCount }}</span>
+        <span class="vendor-metric-hint">Unavailable</span>
+      </button>
+      <button class="vendor-metric metric-info" type="button" @click="goInventory('reserved')">
+        <span class="vendor-metric-label">Reserved SKUs</span>
+        <span class="vendor-metric-value">{{ reservedCount }}</span>
+        <span class="vendor-metric-hint">{{ activeReservations.length }} active holds</span>
+      </button>
+    </section>
+
+    <section class="vendor-search-block">
+      <div class="inv-search-wrap vendor-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          v-model="searchQuery"
+          class="inv-search"
+          type="search"
+          placeholder="Jump to a product…"
+        />
       </div>
+      <ul v-if="searchResults.length" class="vendor-search-results">
+        <li v-for="item in searchResults" :key="item.productId">
+          <button type="button" @click="openProduct(item)">
+            <span>
+              <strong>{{ item.productName }}</strong>
+              <small>{{ categoryLabel(item.category) }} · {{ item.stockQuantity }} on hand</small>
+            </span>
+            <span
+              class="inv-status"
+              :class="item.outOfStock ? 'status-out' : item.lowStock ? 'status-low' : 'status-ok'"
+            >
+              {{ item.outOfStock ? 'Out' : item.lowStock ? 'Low' : 'OK' }}
+            </span>
+          </button>
+        </li>
+      </ul>
+    </section>
+
+    <div class="vendor-split">
+      <section class="vendor-attention">
+        <div class="vendor-section-head">
+          <div>
+            <h2>Needs restock</h2>
+            <p>Quick-restock brings items back above a safe level.</p>
+          </div>
+          <button class="btn-link" type="button" @click="goInventory('low')">Open list</button>
+        </div>
+
+        <div v-if="!ready || loading" class="loading-state">Loading inventory…</div>
+        <div v-else-if="attentionItems.length === 0" class="empty-state vendor-empty">
+          All stock levels look healthy.
+        </div>
+        <ul v-else class="vendor-attention-list">
+          <li v-for="item in attentionItems.slice(0, 8)" :key="item.productId">
+            <div>
+              <div class="vendor-item-name">{{ item.productName }}</div>
+              <div class="vendor-item-meta">
+                {{ categoryLabel(item.category) }} · {{ item.stockQuantity }} on hand · threshold
+                {{ item.lowStockThreshold }}
+              </div>
+            </div>
+            <span
+              class="inv-status"
+              :class="item.outOfStock ? 'status-out' : 'status-low'"
+            >
+              {{ item.outOfStock ? 'Out of stock' : 'Low stock' }}
+            </span>
+            <div class="vendor-item-actions">
+              <button
+                class="act act-inc"
+                type="button"
+                :disabled="updating"
+                @click="quickRestock(item)"
+              >
+                {{ restockingId === item.productId ? '…' : `+${inventoryStore.suggestedRestockQty(item)}` }}
+              </button>
+              <button class="btn-link" type="button" @click="openProduct(item)">Edit</button>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="vendor-side-stack">
+        <article class="vendor-card">
+          <div class="vendor-section-head">
+            <div>
+              <h2>By category</h2>
+              <p>Where your units are concentrated.</p>
+            </div>
+          </div>
+          <div v-if="!categoryBreakdown.length" class="empty-state vendor-empty">No categories yet.</div>
+          <ul v-else class="vendor-category-list">
+            <li v-for="row in categoryBreakdown.slice(0, 6)" :key="row.category">
+              <div class="vendor-category-top">
+                <strong>{{ categoryLabel(row.category) }}</strong>
+                <span>{{ row.units }} units</span>
+              </div>
+              <div class="inv-health-bar">
+                <div
+                  class="inv-health-fill"
+                  :class="row.out || row.low ? 'health-warning' : 'health-success'"
+                  :style="{ width: `${Math.min(100, (row.units / Math.max(totalUnits, 1)) * 100)}%` }"
+                ></div>
+              </div>
+              <div class="vendor-category-meta">
+                {{ row.products }} products
+                <template v-if="row.low"> · {{ row.low }} low</template>
+                <template v-if="row.out"> · {{ row.out }} out</template>
+              </div>
+            </li>
+          </ul>
+        </article>
+
+        <article class="vendor-card">
+          <div class="vendor-section-head">
+            <div>
+              <h2>Checkout holds</h2>
+              <p>Reserved stock with live countdown.</p>
+            </div>
+            <button class="btn-link" type="button" @click="goInventory('reserved')">View</button>
+          </div>
+          <div v-if="!expiringReservations.length" class="empty-state vendor-empty">
+            No active reservations.
+          </div>
+          <ul v-else class="vendor-reservation-list">
+            <li v-for="r in expiringReservations" :key="r.id">
+              <div>
+                <div class="vendor-item-name">{{ productName(r.productId) }}</div>
+                <div class="vendor-item-meta">
+                  {{ r.quantity }} units
+                  <template v-if="r.orderId"> · order #{{ r.orderId }}</template>
+                </div>
+              </div>
+              <span class="vendor-countdown" :class="{ urgent: countdown(r.expiresAt) === 'Expired' || countdown(r.expiresAt).startsWith('0m') }">
+                {{ countdown(r.expiresAt) }}
+              </span>
+            </li>
+          </ul>
+        </article>
+      </section>
     </div>
 
-    <!-- Recent Activity -->
-    <div class="activity-section">
-      <h2 class="section-title">System Status</h2>
-      <div class="activity-grid">
-        <div class="activity-item">
-          <div class="activity-icon activity-success">✓</div>
-          <div class="activity-content">
-            <div class="activity-title">Inventory System</div>
-            <div class="activity-description">Stock tracking and management active</div>
-          </div>
-          <div class="activity-status">Operational</div>
-        </div>
-        <div class="activity-item">
-          <div class="activity-icon activity-pending">⏳</div>
-          <div class="activity-content">
-            <div class="activity-title">Order Processing</div>
-            <div class="activity-description">Automatic stock validation enabled</div>
-          </div>
-          <div class="activity-status">Configured</div>
-        </div>
-        <div class="activity-item">
-          <div class="activity-icon activity-info">ℹ</div>
-          <div class="activity-content">
-            <div class="activity-title">Stock Reservations</div>
-            <div class="activity-description">Checkout stock reservation active</div>
-          </div>
-          <div class="activity-status">Active</div>
+    <section class="vendor-card vendor-activity">
+      <div class="vendor-section-head">
+        <div>
+          <h2>Recent stock activity</h2>
+          <p>Latest restocks, sales, reservations, and adjustments.</p>
         </div>
       </div>
-    </div>
+      <div v-if="!recentMovements.length" class="empty-state vendor-empty">
+        No recent movements yet.
+      </div>
+      <ul v-else class="vendor-activity-list">
+        <li v-for="entry in recentMovements" :key="`${entry.id}-${entry.productId}`">
+          <div>
+            <div class="vendor-item-name">{{ entry.productName }}</div>
+            <div class="vendor-item-meta">{{ typeLabel(entry.changeType) }} · {{ formatDate(entry.createdAt) }}</div>
+          </div>
+          <span class="h-delta" :class="entry.quantityChange > 0 ? 'delta-up' : entry.quantityChange < 0 ? 'delta-down' : 'delta-zero'">
+            {{ signedDelta(entry.quantityChange) }}
+          </span>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
-
-<style scoped>
-.vendor-dashboard {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 32px 24px 48px;
-}
-
-/* Header */
-.dashboard-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 40px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.header-content {
-  flex: 1;
-}
-
-.header-title {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 8px;
-  color: var(--color-text);
-}
-
-.header-subtitle {
-  margin: 0;
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
-}
-
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-}
-
-.btn-icon {
-  font-size: 16px;
-}
-
-/* Sections */
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 20px;
-  color: var(--color-text);
-}
-
-.stats-section,
-.actions-section,
-.activity-section {
-  margin-bottom: 40px;
-}
-
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-}
-
-.stat-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.stat-icon {
-  font-size: 32px;
-  line-height: 1;
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1;
-  margin-bottom: 4px;
-}
-
-.stat-trend {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-
-.stat-primary .stat-icon { filter: hue-rotate(210deg); }
-.stat-success .stat-icon { filter: hue-rotate(140deg); }
-.stat-warning .stat-icon { filter: hue-rotate(30deg); }
-.stat-danger .stat-icon { filter: hue-rotate(0deg); }
-
-/* Actions Grid */
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.action-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  text-decoration: none;
-  color: inherit;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-
-.action-card:hover:not(.action-disabled) {
-  border-color: var(--color-primary);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.action-card.action-disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.action-icon {
-  font-size: 28px;
-  line-height: 1;
-}
-
-.action-content {
-  flex: 1;
-}
-
-.action-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 4px;
-  color: var(--color-text);
-}
-
-.action-description {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.action-arrow {
-  font-size: 20px;
-  color: var(--color-primary);
-  font-weight: 700;
-}
-
-.action-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: var(--color-bg);
-  color: var(--color-text-muted);
-  font-size: 10px;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: var(--radius-full);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Activity Grid */
-.activity-grid {
-  display: grid;
-  gap: 12px;
-}
-
-.activity-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 16px 20px;
-}
-
-.activity-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.activity-success {
-  background: rgba(22, 163, 74, 0.1);
-  color: var(--color-success);
-}
-
-.activity-pending {
-  background: rgba(217, 119, 6, 0.1);
-  color: var(--color-warning);
-}
-
-.activity-info {
-  background: rgba(37, 99, 235, 0.1);
-  color: var(--color-primary);
-}
-
-.activity-content {
-  flex: 1;
-}
-
-.activity-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 2px;
-}
-
-.activity-description {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.activity-status {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-success);
-  padding: 4px 12px;
-  background: rgba(22, 163, 74, 0.1);
-  border-radius: var(--radius-full);
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .header-actions {
-    width: 100%;
-  }
-
-  .header-actions .btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .actions-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
-

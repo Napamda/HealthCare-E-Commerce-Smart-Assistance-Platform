@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.example.Healthcareplatform.inventory.entity.StockHistory;
-import org.example.Healthcareplatform.inventory.entity.StockReservation;
 
 import java.time.Instant;
 import java.util.List;
@@ -36,7 +34,7 @@ public class StockInfoResponse {
         private Long id;
         private Long productId;
         private String productName;
-        private StockHistory.ChangeType changeType;
+        private String changeType;
         private Integer quantityChange;
         private Integer stockAfter;
         private Long orderId;
@@ -54,7 +52,7 @@ public class StockInfoResponse {
         private Long userId;
         private Integer quantity;
         private Long orderId;
-        private StockReservation.Status status;
+        private String status;
         private Instant expiresAt;
         private Instant createdAt;
     }
