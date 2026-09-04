@@ -65,6 +65,11 @@ const routes = [
     component: () => import('../pages/ProductDetailPage.vue'),
   },
   {
+    path: '/recommendations',
+    name: 'Recommendations',
+    component: () => import('../pages/RecommendationsPage.vue'),
+  },
+  {
     path: '/cart',
     name: 'Cart',
     component: () => import('../pages/CartPage.vue'),
@@ -73,6 +78,11 @@ const routes = [
     path: '/checkout',
     name: 'Checkout',
     component: () => import('../pages/CheckoutPage.vue'),
+  },
+  {
+    path: '/payment/:orderId',
+    name: 'Payment',
+    component: () => import('../pages/PaymentPage.vue'),
   },
   {
     path: '/orders',

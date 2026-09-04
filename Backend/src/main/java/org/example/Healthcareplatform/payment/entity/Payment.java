@@ -82,6 +82,17 @@ public class Payment {
     @Column(name = "billing_name", length = 150)
     private String billingName;
 
+    @Column(name = "retry_count")
+    @Builder.Default
+    private Integer retryCount = 0;
+
+    @Column(name = "last_retry_at")
+    private Instant lastRetryAt;
+
+    @Column(name = "max_retries")
+    @Builder.Default
+    private Integer maxRetries = 3;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

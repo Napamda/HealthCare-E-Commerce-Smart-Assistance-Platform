@@ -27,3 +27,7 @@ export function getOrderById(orderId) {
 export function cancelOrder(orderId) {
   return api.post(`/api/orders/${orderId}/cancel`).then((res) => res.data)
 }
+
+export function reorder(orderId) {
+  return api.post(`/api/orders/${orderId}/reorder`).then((res) => res.data)
+}

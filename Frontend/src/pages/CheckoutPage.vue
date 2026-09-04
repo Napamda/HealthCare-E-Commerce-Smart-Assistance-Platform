@@ -36,9 +36,8 @@ async function placeOrder() {
   submitting.value = true
   try {
     const order = await orderStore.placeOrder(form.value)
-    orderPlaced.value = order
-    cartStore.itemCount = 0
-    cartStore.items = []
+    // Redirect to payment page instead of showing success
+    router.push(`/payment/${order.id}`)
   } catch (_) {
     // error shown via store
   } finally {
