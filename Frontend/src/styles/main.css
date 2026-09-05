@@ -17,6 +17,7 @@
 /* 4. Component Stylesheets */
 @import './components/navbar.css';
 @import './components/auth.css';
+@import './components/cart.css';
 @import './components/chat.css';
 @import './components/consultations.css';
 @import './components/dashboard.css';

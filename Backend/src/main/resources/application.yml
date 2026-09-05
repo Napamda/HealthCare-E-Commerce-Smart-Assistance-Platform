@@ -17,26 +17,27 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-  ai:
-    openai:
-      api-key: ${OPENROUTER_API_KEY}
-      base-url: https://openrouter.ai/api/v1
-      chat:
-        enabled: true
-        options:
-          model: ${OPENROUTER_MODEL:openrouter/free}
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 # =====================================================
 # AI Configuration — OpenRouter via custom provider
 # =====================================================
 ai:
-  # Active provider: openrouter | mock
-  provider: ${AI_PROVIDER:openrouter}
   openrouter:
     api-key: ${OPENROUTER_API_KEY}
     base-url: https://openrouter.ai/api/v1
     model: ${OPENROUTER_MODEL:openrouter/free}
     timeout-seconds: 60
+  memory:
+    max-history: 10
+    summary-threshold: 30
+  ocr:
+    enabled: ${AI_OCR_ENABLED:true}
+    model: ${AI_OCR_MODEL:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}
 
 # =====================================================
 # JWT Configuration
@@ -65,13 +66,13 @@ geocoding:
 
 #logging:
  # level:
-#    root: INFO
- #  com.yourpackage: DEBUG
-  #  org.springframework: INFO
-   # org.hibernate: DEBUG
+  #  root: INFO
+   # com.yourpackage: DEBUG
+    #org.springframework: INFO
+    #org.hibernate: DEBUG
   #file:
    # name: application.log
-    #path: ${user.home}/Desktop/ME
+    #path: ${user.home}/Desktop/HealthCare/logs/
   #pattern:
    # console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     #file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

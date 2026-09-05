@@ -60,6 +60,12 @@ public class Consultation {
     @Column(name = "doctor_notes", columnDefinition = "TEXT")
     private String doctorNotes;
 
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
+    @Column(name = "scheduled_at")
+    private Instant scheduledAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

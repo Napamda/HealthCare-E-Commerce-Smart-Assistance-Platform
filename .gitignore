@@ -17,11 +17,9 @@ Member division.md
 .codebuddy/memory/2026-07-07.md
 .codebuddy/memory/2026-07-08.md
 .codebuddy/plans/product-feature-implementation_ff426b2c.md
-.codebuddy/memory/2026-07-09.md
+.codebuddy/
 healthcare-uploads/prescriptions/
-.codebuddy/memory
-testcase/
-Backend/application.log.2026-07-10.0.gz
-Frontend/dist/images
+Frontend/dist/
 Frontend/public/images
 Backend/application.log.2026-08-29.0.gz
+testcase/

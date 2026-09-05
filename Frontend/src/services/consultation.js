@@ -1,18 +1,4 @@
-import axios from 'axios'
-
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-})
-
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+import apiClient from './api.js'
 
 export function escalateToDoctor({ conversationId, reason, priority = 'NORMAL' }) {
   return apiClient
@@ -34,10 +20,31 @@ export function getPatientConsultations(patientUserId) {
     .then((res) => res.data)
 }
 
-export function updateConsultationStatus(id, status) {
+export function updateConsultationStatus(id, status, { rejectionReason, scheduledAt } = {}) {
+  const params = { status }
+  if (rejectionReason) params.rejectionReason = rejectionReason
+  if (scheduledAt) params.scheduledAt = scheduledAt
   return apiClient
-    .patch(`/api/consultations/${id}/status`, null, {
-      params: { status },
+    .patch(`/api/consultations/${id}/status`, null, { params })
+    .then((res) => res.data)
+}
+
+export function getDoctorQueue() {
+  return apiClient
+    .get('/api/consultations/doctor/queue')
+    .then((res) => res.data)
+}
+
+export function getDoctorUpcoming() {
+  return apiClient
+    .get('/api/consultations/doctor/upcoming')
+    .then((res) => res.data)
+}
+
+export function updateConsultationPriority(id, priority) {
+  return apiClient
+    .patch(`/api/consultations/${id}/priority`, null, {
+      params: { priority },
     })
     .then((res) => res.data)
 }

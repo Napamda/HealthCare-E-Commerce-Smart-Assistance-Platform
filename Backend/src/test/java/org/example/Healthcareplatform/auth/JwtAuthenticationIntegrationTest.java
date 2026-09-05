@@ -16,6 +16,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -53,5 +61,9 @@ class JwtAuthenticationIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"message\":\"Hello\"}"))
                 .andExpect(status().is4xxClientError());
+    @Test
+    void shouldRejectProtectedRequestWhenJwtIsMissing() throws Exception {
+        mockMvc.perform(get("/api/chat/conversations"))
+                .andExpect(status().isUnauthorized());
     }
 }
