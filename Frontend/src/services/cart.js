@@ -38,3 +38,12 @@ export function removeFromCart(cartItemId) {
 export function clearCart() {
   return api.delete('/api/cart/clear')
 }
+
+/**
+ * Merge guest (localStorage) cart items into the server cart after login.
+ * @param {Array<{productId: number, quantity: number}>} items
+ * @returns {Promise<object>} cart summary
+ */
+export function mergeGuestCart(items) {
+  return api.post('/api/cart/merge', items).then((res) => res.data)
+}

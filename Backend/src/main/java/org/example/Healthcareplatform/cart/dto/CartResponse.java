@@ -20,6 +20,7 @@ public class CartResponse {
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal subtotal;
+    private Boolean prescriptionRequired;
 
     public static CartResponse fromEntity(CartItem item) {
         return CartResponse.builder()
@@ -30,6 +31,7 @@ public class CartResponse {
                 .quantity(item.getQuantity())
                 .unitPrice(item.getUnitPrice())
                 .subtotal(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .prescriptionRequired(item.getPrescriptionRequired())
                 .build();
     }
 }
