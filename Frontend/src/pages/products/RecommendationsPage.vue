@@ -261,6 +261,11 @@ onMounted(restoreCachedSearch)
       <p>Analyzing your request and browsing the catalog…</p>
     </div>
 
+    <div v-else-if="!result" class="empty-state">
+      <h3>No recommendations yet</h3>
+      <p>Describe what you're looking for above to get personalized product recommendations and health tips.</p>
+    </div>
+
     <div v-else-if="result" class="rec-results">
       <div v-if="resultSource === 'cache'" class="rec-cached-banner">
         Showing saved results from {{ formatCachedAt(resultCachedAt) }}. Run a new search to get fresh recommendations.

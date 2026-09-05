@@ -29,7 +29,7 @@
           AND longitude BETWEEN #{lng} - (#{radiusKm} / (111.0 * COS(RADIANS(#{lat})))) 
                                AND #{lng} + (#{radiusKm} / (111.0 * COS(RADIANS(#{lat}))))
           AND (#{specialty} IS NULL OR LOWER(specialty) LIKE CONCAT('%', LOWER(#{specialty}), '%'))
-        HAVING distance_km <= #{radiusKm}
+        HAVING distance_km &lt;= #{radiusKm}
         ORDER BY distance_km ASC
     </select>
 

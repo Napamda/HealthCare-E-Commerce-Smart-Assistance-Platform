@@ -29,6 +29,18 @@ const routes = [
     component: () => import('../pages/profile/ProfilePage.vue'),
   },
   {
+    path: '/doctor/profile',
+    name: 'DoctorProfile',
+    meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
+    component: () => import('../pages/doctor/DoctorProfilePage.vue'),
+  },
+  {
+    path: '/pharmacist/profile',
+    name: 'PharmacistProfile',
+    meta: { requiresRole: [ROLES.PHARMACIST, ROLES.ADMIN] },
+    component: () => import('../pages/pharmacist/PharmacistProfilePage.vue'),
+  },
+  {
     path: '/consultations',
     name: 'Consultations',
     meta: { requiresRole: [ROLES.PATIENT] },

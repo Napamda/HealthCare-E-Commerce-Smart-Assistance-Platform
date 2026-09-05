@@ -23,6 +23,15 @@ const navItems = computed(() => {
   return getNavItems(authStore.userRole)
 })
 
+// Role to profile route mapping
+const profileRoutes = {
+  DOCTOR: '/doctor/profile',
+  ADMIN: '/admin/profile',
+  PATIENT: '/patient/profile',
+  PHARMACIST: '/pharmacist/profile',
+  // Add other roles as needed
+}
+
 function isDropdown(item) {
   return item.children && item.children.length > 0
 }
@@ -40,6 +49,13 @@ function navigate(path) {
   closeAllMenus()
   mobileNavOpen.value = false
   router.push(path)
+}
+
+// NEW: Role-based profile navigation
+function navigateToProfile() {
+  const role = authStore.userRole
+  const profilePath = profileRoutes[role] || '/profile' // fallback to default
+  navigate(profilePath)
 }
 
 function toggleUserMenu() {
@@ -125,7 +141,7 @@ async function handleLogout() {
             <div class="nav-user-menu-header">
               <span class="nav-role-badge">{{ roleLabel }}</span>
             </div>
-            <button class="nav-dropdown-item" @click="navigate('/profile')">
+            <button class="nav-dropdown-item" @click="navigateToProfile()">
               My Profile
             </button>
             <button class="nav-dropdown-item nav-logout-item" @click="handleLogout">
