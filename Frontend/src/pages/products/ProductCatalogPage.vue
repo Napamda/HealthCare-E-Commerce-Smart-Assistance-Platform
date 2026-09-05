@@ -1,11 +1,15 @@
-﻿<script setup>
-import { ref, onMounted, watch } from 'vue'
+<script setup>
+import { ref, computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useProductStore } from '../../stores/product.js'
-import ProductCard from '../../components/product/ProductCard.vue'
-import ProductFilters from '../../components/product/ProductFilters.vue'
+import { useProductStore } from '../stores/product.js'
+import { useCategoryStore } from '../stores/category.js'
+import { categoryToFilterValue, flattenCategoryTree } from '../services/category.js'
+import ProductCard from '../components/product/ProductCard.vue'
+import ProductFilters from '../components/product/ProductFilters.vue'
+import CategoryTree from '../components/category/CategoryTree.vue'
 
 const store = useProductStore()
+const categoryStore = useCategoryStore()
 const {
   products,
   categories,
@@ -19,11 +23,58 @@ const {
 
 const searchInput = ref('')
 const showFilters = ref(false)
+const sortValue = ref('newest')
+
+// Keep the local sort select in sync with the store (e.g. after clearing filters)
+watch(
+  () => filters.value.sort,
+  (val) => {
+    sortValue.value = val || 'newest'
+  },
+)
+
+// Icons per category (inline SVG)
+const categoryMeta = {
+  VITAMINS:          { label: 'Vitamins',       icon: 'pill-vitamin',  color: '#f59e0b' },
+  PAIN_RELIEF:       { label: 'Pain Relief',     icon: 'pain',         color: '#ef4444' },
+  SKIN_CARE:         { label: 'Skin Care',       icon: 'skin',         color: '#ec4899' },
+  DIGESTIVE_HEALTH:  { label: 'Digestive Health',icon: 'digestive',    color: '#10b981' },
+  RESPIRATORY:       { label: 'Respiratory',     icon: 'lungs',        color: '#06b6d4' },
+  HEART_HEALTH:      { label: 'Heart Health',    icon: 'heart',        color: '#dc2626' },
+  DIABETES_CARE:     { label: 'Diabetes Care',   icon: 'blood',        color: '#7c3aed' },
+  FIRST_AID:         { label: 'First Aid',       icon: 'cross',        color: '#0891b2' },
+  MEDICAL_DEVICES:   { label: 'Devices',         icon: 'device',       color: '#6366f1' },
+  PERSONAL_CARE:     { label: 'Personal Care',   icon: 'hands',        color: '#14b8a6' },
+  WELLNESS:          { label: 'Wellness',        icon: 'leaf',         color: '#22c55e' },
+  BABY_CARE:         { label: 'Baby Care',       icon: 'baby',         color: '#f472b6' },
+  ELDERLY_CARE:      { label: 'Elderly Care',    icon: 'senior',       color: '#8b5cf6' },
+  OTHER:             { label: 'Other',           icon: 'package',      color: '#6b7280' },
+}
+
+const hasTreeCategories = computed(() => categoryStore.tree.length > 0)
+
+const treeIcons = computed(() =>
+  Object.fromEntries(
+    Object.entries(categoryMeta).map(([key, meta]) => [
+      key,
+      { label: meta.label, color: meta.color },
+    ]),
+  ),
+)
+
+// name of the currently selected category (from tree, else legacy meta)
+const selectedCategoryLabel = computed(() => {
+  const flat = flattenCategoryTree(categoryStore.tree)
+  const match = flat.find((n) => categoryToFilterValue(n.name) === filters.value.category)
+  if (match) return match.name
+  return categoryMeta[filters.value.category]?.label || filters.value.category
+})
 
 onMounted(async () => {
   await Promise.all([
     store.fetchCategories(),
     store.fetchCategoryCounts(),
+    categoryStore.fetchTree(),
     store.fetchProducts(),
   ])
 })
@@ -55,22 +106,9 @@ function selectCategory(cat) {
   store.applyFilters({ category: newCat })
 }
 
-// Icons per category (inline SVG)
-const categoryMeta = {
-  VITAMINS:          { label: 'Vitamins',       icon: 'pill-vitamin',  color: '#f59e0b' },
-  PAIN_RELIEF:       { label: 'Pain Relief',     icon: 'pain',         color: '#ef4444' },
-  SKIN_CARE:         { label: 'Skin Care',       icon: 'skin',         color: '#ec4899' },
-  DIGESTIVE_HEALTH:  { label: 'Digestive Health',icon: 'digestive',    color: '#10b981' },
-  RESPIRATORY:       { label: 'Respiratory',     icon: 'lungs',        color: '#06b6d4' },
-  HEART_HEALTH:      { label: 'Heart Health',    icon: 'heart',        color: '#dc2626' },
-  DIABETES_CARE:     { label: 'Diabetes Care',   icon: 'blood',        color: '#7c3aed' },
-  FIRST_AID:         { label: 'First Aid',       icon: 'cross',        color: '#0891b2' },
-  MEDICAL_DEVICES:   { label: 'Devices',         icon: 'device',       color: '#6366f1' },
-  PERSONAL_CARE:     { label: 'Personal Care',   icon: 'hands',        color: '#14b8a6' },
-  WELLNESS:          { label: 'Wellness',        icon: 'leaf',         color: '#22c55e' },
-  BABY_CARE:         { label: 'Baby Care',       icon: 'baby',         color: '#f472b6' },
-  ELDERLY_CARE:      { label: 'Elderly Care',    icon: 'senior',       color: '#8b5cf6' },
-  OTHER:             { label: 'Other',           icon: 'package',      color: '#6b7280' },
+// Category tree — select ('' clears the filter)
+function onTreeSelect(value) {
+  store.applyFilters({ category: value })
 }
 
 function getCategoryCount(name) {
@@ -94,12 +132,23 @@ function getCategoryCount(name) {
         <button
           v-if="filters.category"
           class="btn-clear-cat"
-          @click="selectCategory(filters.category)"
+          @click="onTreeSelect('')"
         >
           Clear category &times;
         </button>
       </div>
-      <div class="category-scroll">
+
+      <!-- Category tree (hierarchy) -->
+      <CategoryTree
+        v-if="hasTreeCategories"
+        :categories="categoryStore.tree"
+        :value="filters.category"
+        :icons="treeIcons"
+        @select="onTreeSelect"
+      />
+
+      <!-- Legacy enum cards fallback (no managed categories yet) -->
+      <div v-else class="category-scroll">
         <button
           v-for="cat in categories"
           :key="cat"
@@ -239,8 +288,8 @@ function getCategoryCount(name) {
     <div v-if="filters.category || filters.minPrice !== null || filters.maxPrice !== null" class="active-filters">
       <span class="filter-tag-label">Active filters:</span>
       <span v-if="filters.category" class="filter-tag">
-        {{ categoryMeta[filters.category]?.label || filters.category }}
-        <button @click="selectCategory(filters.category)">&times;</button>
+        {{ selectedCategoryLabel }}
+        <button @click="onTreeSelect('')">&times;</button>
       </span>
       <span v-if="filters.minPrice !== null || filters.maxPrice !== null" class="filter-tag">
         ${{ filters.minPrice || 0 }} — ${{ filters.maxPrice || '∞' }}
@@ -288,6 +337,25 @@ function getCategoryCount(name) {
           <button class="btn-clear-link" @click="onClearFilters">Clear all filters</button>
         </div>
 
+        <!-- Results toolbar -->
+        <div v-if="products.length > 0" class="results-toolbar">
+          <div class="results-count">
+            {{ products.length }} of {{ pagination.totalElements }} products
+          </div>
+          <label class="sort-control">
+            <span>Sort by</span>
+            <select v-model="sortValue" class="sort-select" @change="onSortChange">
+              <option value="newest">Newest</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="name_asc">Name: A to Z</option>
+              <option value="name_desc">Name: Z to A</option>
+              <option value="popular">Most Popular</option>
+              <option value="stock_asc">Low Stock First</option>
+            </select>
+          </label>
+        </div>
+
         <!-- Grid -->
         <div v-if="products.length > 0" class="product-grid">
           <ProductCard
@@ -305,10 +373,6 @@ function getCategoryCount(name) {
           </button>
         </div>
 
-        <!-- Count -->
-        <div v-if="products.length > 0" class="results-count">
-          Showing {{ products.length }} of {{ pagination.totalElements }} products
-        </div>
       </div>
     </div>
   </div>
@@ -694,11 +758,40 @@ function getCategoryCount(name) {
   cursor: not-allowed;
 }
 
+/* Results toolbar */
+.results-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
 .results-count {
-  text-align: center;
   font-size: 12px;
   color: var(--color-text-muted);
-  padding-bottom: 16px;
+}
+.sort-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.sort-select {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.sort-select:focus {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .spinner {

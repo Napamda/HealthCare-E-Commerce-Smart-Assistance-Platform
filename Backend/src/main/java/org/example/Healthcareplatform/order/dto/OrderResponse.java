@@ -22,12 +22,20 @@ public class OrderResponse {
     private String userEmail;
     private String userName;
     private List<OrderItemResponse> items;
+    private String orderNumber;
+    private BigDecimal subtotalAmount;
+    private BigDecimal shippingAmount;
+    private BigDecimal taxAmount;
+    private BigDecimal discountAmount;
     private BigDecimal totalAmount;
+    private String shippingMethod;
+    private String discountCode;
     private String status;
     private String shippingAddress;
     private String shippingCity;
     private String shippingPhone;
     private String paymentMethod;
+    private String trackingNumber;
     private String notes;
     private int itemCount;
     private Instant createdAt;
@@ -56,12 +64,20 @@ public class OrderResponse {
                 .items(order.getItems().stream()
                         .map(OrderResponse::toItemResponse)
                         .collect(Collectors.toList()))
+                .orderNumber(order.getOrderNumber())
+                .subtotalAmount(order.getSubtotalAmount())
+                .shippingAmount(order.getShippingAmount())
+                .taxAmount(order.getTaxAmount())
+                .discountAmount(order.getDiscountAmount())
                 .totalAmount(order.getTotalAmount())
+                .shippingMethod(order.getShippingMethod())
+                .discountCode(order.getDiscountCode())
                 .status(order.getStatus().name())
                 .shippingAddress(order.getShippingAddress())
                 .shippingCity(order.getShippingCity())
                 .shippingPhone(order.getShippingPhone())
                 .paymentMethod(order.getPaymentMethod())
+                .trackingNumber(order.getTrackingNumber())
                 .notes(order.getNotes())
                 .itemCount(order.getItems().stream()
                         .mapToInt(OrderItem::getQuantity).sum())

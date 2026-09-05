@@ -95,7 +95,19 @@ const routes = [
     path: '/admin/products',
     name: 'AdminProducts',
     meta: { requiresRole: [ROLES.ADMIN] },
-    component: () => import('../pages/products/AdminProductPage.vue'),
+    component: () => import('../pages/AdminProductPage.vue'),
+  },
+  {
+    path: '/admin/categories',
+    name: 'AdminCategories',
+    meta: { requiresRole: [ROLES.ADMIN] },
+    component: () => import('../pages/AdminCategoryPage.vue'),
+  },
+  {
+    path: '/inventory',
+    name: 'InventoryManagement',
+    meta: { requiresRole: [ROLES.VENDOR, ROLES.ADMIN] },
+    component: () => import('../pages/InventoryManagementPage.vue'),
   },
   {
     path: '/register',

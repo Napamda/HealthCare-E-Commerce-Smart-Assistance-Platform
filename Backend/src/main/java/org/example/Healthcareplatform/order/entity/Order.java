@@ -38,8 +38,33 @@ public class Order {
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
 
+    @Column(name = "order_number", nullable = false, unique = true, length = 40)
+    private String orderNumber;
+
+    @Column(name = "subtotal_amount", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal subtotalAmount = BigDecimal.ZERO;
+
+    @Column(name = "shipping_amount", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal shippingAmount = BigDecimal.ZERO;
+
+    @Column(name = "tax_amount", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal taxAmount = BigDecimal.ZERO;
+
+    @Column(name = "discount_amount", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
+
+    @Column(name = "shipping_method", length = 30)
+    private String shippingMethod;
+
+    @Column(name = "discount_code", length = 50)
+    private String discountCode;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -56,6 +81,9 @@ public class Order {
 
     @Column(name = "payment_method", length = 30)
     private String paymentMethod;
+
+    @Column(name = "tracking_number", length = 100)
+    private String trackingNumber;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

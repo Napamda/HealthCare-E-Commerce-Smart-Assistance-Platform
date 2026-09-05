@@ -2,6 +2,7 @@ package org.example.Healthcareplatform.cart.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.Healthcareplatform.cart.dto.CartMergeItem;
 import org.example.Healthcareplatform.cart.dto.CartRequest;
 import org.example.Healthcareplatform.cart.dto.CartResponse;
 import org.example.Healthcareplatform.cart.service.CartService;
@@ -36,6 +37,15 @@ public class CartController {
         Long userId = getUserId(auth);
         int count = cartService.getCartCount(userId);
         return ResponseEntity.ok(Map.of("count", count));
+    }
+
+    @PostMapping("/merge")
+    public ResponseEntity<Map<String, Object>> mergeCart(@RequestBody List<CartMergeItem> items,
+                                                         Authentication auth) {
+        Long userId = getUserId(auth);
+        log.info("POST /api/cart/merge — userId={}, items={}", userId, items.size());
+        Map<String, Object> summary = cartService.mergeCartItems(userId, items);
+        return ResponseEntity.ok(summary);
     }
 
     @PostMapping("/add")

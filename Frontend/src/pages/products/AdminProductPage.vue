@@ -39,6 +39,11 @@ function onFormClose() {
   editingProduct.value = null
 }
 
+async function onImagesChanged() {
+  // refresh the table so primary image / thumbnails stay in sync
+  await store.fetchProducts(0, 50)
+}
+
 async function onFormSave(payload) {
   try {
     if (editingProduct.value?.id) {
@@ -210,6 +215,7 @@ const filteredProducts = computed(() => {
       :categories="categories"
       @save="onFormSave"
       @close="onFormClose"
+      @images-changed="onImagesChanged"
     />
 
     <!-- Delete Confirmation -->
