@@ -1,44 +1,53 @@
-import axios from 'axios'
+import apiClient from './api.js'
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
-  timeout: 15000,
-  headers: { 'Content-Type': 'application/json' },
-})
+// ---- Task 2.1 — Profile ----
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
-
-export function getUserProfile() {
-  return api.get('/api/users/profile').then((res) => res.data)
+export function getProfile() {
+  return apiClient.get('/api/users/me').then((res) => res.data)
 }
 
-export function updateUserProfile(profileData) {
-  return api.put('/api/users/profile', profileData).then((res) => res.data)
+export function updateProfile(data) {
+  return apiClient.put('/api/users/me', data).then((res) => res.data)
 }
 
-export function changePassword(currentPassword, newPassword) {
-  return api.post('/api/users/change-password', {
-    currentPassword,
-    newPassword
-  }).then((res) => res.data)
+export function uploadAvatar(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiClient
+    .post('/api/users/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    .then((res) => res.data)
 }
 
-export function getUserAddresses() {
-  return api.get('/api/users/addresses').then((res) => res.data)
+// ---- Task 2.2 — Health Profile ----
+
+export function getHealthProfile() {
+  return apiClient.get('/api/users/me/health-profile').then((res) => res.data)
 }
 
-export function addAddress(addressData) {
-  return api.post('/api/users/addresses', addressData).then((res) => res.data)
+export function updateHealthProfile(data) {
+  return apiClient.put('/api/users/me/health-profile', data).then((res) => res.data)
 }
 
-export function updateAddress(addressId, addressData) {
-  return api.put(`/api/users/addresses/${addressId}`, addressData).then((res) => res.data)
+// ---- Task 2.3 — Address Management ----
+
+export function getAddresses() {
+  return apiClient.get('/api/users/me/addresses').then((res) => res.data)
 }
 
-export function deleteAddress(addressId) {
-  return api.delete(`/api/users/addresses/${addressId}`).then((res) => res.data)
+export function addAddress(data) {
+  return apiClient.post('/api/users/me/addresses', data).then((res) => res.data)
+}
+
+export function updateAddress(id, data) {
+  return apiClient.put(`/api/users/me/addresses/${id}`, data).then((res) => res.data)
+}
+
+export function deleteAddress(id) {
+  return apiClient.delete(`/api/users/me/addresses/${id}`).then((res) => res.data)
+}
+
+export function setDefaultAddress(id) {
+  return apiClient.put(`/api/users/me/addresses/${id}/default`).then((res) => res.data)
 }

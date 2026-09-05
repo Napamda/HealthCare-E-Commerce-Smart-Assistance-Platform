@@ -17,6 +17,10 @@ public interface HealthEventRepository extends JpaRepository<HealthEvent, Long> 
 
     List<HealthEvent> findByStatusOrderByStartDateTimeAsc(EventStatus status);
 
+    List<HealthEvent> findByStatusOrderByCreatedAtDesc(EventStatus status);
+
+    long countByStatus(EventStatus status);
+
     List<HealthEvent> findByCategoryIgnoreCaseOrderByStartDateTimeAsc(String category);
 
     List<HealthEvent> findByStatusAndCategoryIgnoreCaseOrderByStartDateTimeAsc(EventStatus status, String category);

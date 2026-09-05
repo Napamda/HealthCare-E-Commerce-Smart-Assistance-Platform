@@ -79,6 +79,9 @@ public class Notification {
         PRESCRIPTION_REJECTED,
         CONSULTATION_CREATED,
         CONSULTATION_ACCEPTED,
-        CONSULTATION_IN_PROGRESS
+        CONSULTATION_IN_PROGRESS,
+        ORDER_CREATED,
+        EVENT_REMINDER,
+        WELCOME
     }
 }

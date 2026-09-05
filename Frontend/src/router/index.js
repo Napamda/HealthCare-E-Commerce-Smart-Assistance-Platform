@@ -24,6 +24,23 @@ const routes = [
     component: () => import('../pages/chat/ChatPage.vue'),
   },
   {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../pages/profile/ProfilePage.vue'),
+  },
+  {
+    path: '/doctor/profile',
+    name: 'DoctorProfile',
+    meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
+    component: () => import('../pages/doctor/DoctorProfilePage.vue'),
+  },
+  {
+    path: '/pharmacist/profile',
+    name: 'PharmacistProfile',
+    meta: { requiresRole: [ROLES.PHARMACIST, ROLES.ADMIN] },
+    component: () => import('../pages/pharmacist/PharmacistProfilePage.vue'),
+  },
+  {
     path: '/consultations',
     name: 'Consultations',
     meta: { requiresRole: [ROLES.PATIENT] },
@@ -142,6 +159,18 @@ const routes = [
     name: 'AdminDashboard',
     meta: { requiresRole: [ROLES.ADMIN] },
     component: () => import('../pages/admin/AdminDashboardPage.vue'),
+  },
+  {
+    path: '/admin/users',
+    name: 'AdminUsers',
+    meta: { requiresRole: [ROLES.ADMIN] },
+    component: () => import('../pages/admin/AdminUsersPage.vue'),
+  },
+  {
+    path: '/admin/notifications',
+    name: 'NotificationLogs',
+    meta: { requiresRole: [ROLES.ADMIN, ROLES.DOCTOR] },
+    component: () => import('../pages/admin/NotificationLogPage.vue'),
   },
   {
     path: '/doctor',

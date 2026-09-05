@@ -11,6 +11,7 @@ import org.example.Healthcareplatform.consultation.dto.EscalationRequest;
 import org.example.Healthcareplatform.consultation.entity.Consultation;
 import org.example.Healthcareplatform.consultation.event.ConsultationCreatedEvent;
 import org.example.Healthcareplatform.consultation.repository.ConsultationRepository;
+import org.example.Healthcareplatform.messaging.publisher.HealthcareEventPublisher;
 import org.example.Healthcareplatform.notification.entity.Notification;
 import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.user.entity.User;
@@ -34,6 +35,7 @@ public class ConsultationService {
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final NotificationService notificationService;
+    private final HealthcareEventPublisher eventPublisher;
 
     @Transactional
     public ConsultationResponse escalateFromChat(EscalationRequest request, Long patientUserId) {
@@ -144,6 +146,15 @@ public class ConsultationService {
                 log.warn("Failed to send consultation notification to patient userId={}: {}",
                         saved.getPatientUserId(), e.getMessage());
             }
+
+            // Publish consultation.scheduled event to RabbitMQ
+            String patientEmail = userRepository.findById(saved.getPatientUserId())
+                    .map(User::getEmail).orElse("");
+            String patientName = userRepository.findById(saved.getPatientUserId())
+                    .map(u -> u.getFirstName() + " " + u.getLastName()).orElse("");
+            eventPublisher.publishConsultationScheduled(
+                    saved.getId(), saved.getPatientUserId(), patientEmail, patientName,
+                    doctorUserId, doctorName);
         }
 
         return toResponse(saved);

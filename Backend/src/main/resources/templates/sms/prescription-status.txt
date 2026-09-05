@@ -1,0 +1,1 @@
+Hi [(${name})], your prescription #[(${prescriptionId})] has been [(${status})]. [(${comments})] View details at [(${prescriptionUrl})].

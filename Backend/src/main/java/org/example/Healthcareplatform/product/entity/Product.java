@@ -73,6 +73,17 @@ public class Product {
     @Builder.Default
     private Boolean prescriptionRequired = false;
 
+    // ---- Moderation (Task 3.3) ----
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private ProductStatus status = ProductStatus.APPROVED;
+
+    @Column(length = 500)
+    private String moderationReason;
+
+    private Long moderatedBy;
+
     @Column(name = "side_effects", columnDefinition = "TEXT")
     private String sideEffects;
 
