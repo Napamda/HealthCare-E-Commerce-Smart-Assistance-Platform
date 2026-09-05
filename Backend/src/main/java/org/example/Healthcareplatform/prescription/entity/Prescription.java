@@ -43,7 +43,7 @@ public class Prescription {
     @Enumerated(EnumType.STRING)
     private PrescriptionStatus status;
 
-    @Column(length = 2000)
+    @Column(columnDefinition = "TEXT")
     private String ocrText;
 
     @Column(length = 500)

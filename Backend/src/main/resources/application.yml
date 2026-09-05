@@ -17,14 +17,19 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-  ai:
-    openai:
-      api-key: ${OPENROUTER_API_KEY:}
-      base-url: https://openrouter.ai/api/v1
-      chat:
-        enabled: true
-        options:
-          model: ${OPENROUTER_MODEL:openrouter/free}
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+  cache:
+    type: caffeine
+    cache-names:
+      - products
+      - geocode
+      - reverseGeocode
+    caffeine:
+      spec: maximumSize=2000,expireAfterWrite=24h
 
 # =====================================================
 # AI Configuration — OpenRouter via custom provider
@@ -65,15 +70,11 @@ geocoding:
   base-url: ${GEOCODING_BASE_URL:https://nominatim.openstreetmap.org}
   user-agent: ${GEOCODING_USER_AGENT:HealthCarePlatform/1.0 (https://localhost)}
 
-#logging:
- # level:
-  #  root: INFO
-   # com.yourpackage: DEBUG
-    #org.springframework: INFO
-    #org.hibernate: DEBUG
-  #file:
-   # name: application.log
-    #path: ${user.home}/Desktop/HealthCare/logs/
-  #pattern:
-   # console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    #file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+mybatis:
+  mapper-locations: classpath:mappers/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  file:
+    name: app_logs/application.log

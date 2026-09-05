@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ConsultationRepository extends JpaRepository<Consultation, Long> {
@@ -30,4 +31,10 @@ public interface ConsultationRepository extends JpaRepository<Consultation, Long
 
     List<Consultation> findByStatusInAndDoctorUserIdOrderByScheduledAtAscCreatedAtDesc(
             List<Consultation.ConsultationStatus> statuses, Long doctorUserId);
+
+    Optional<Consultation> findFirstByConversationIdAndStatusIn(
+            Long conversationId, List<Consultation.ConsultationStatus> statuses);
+
+    List<Consultation> findByDoctorUserIdAndStatusInOrderByUpdatedAtDesc(
+            Long doctorUserId, List<Consultation.ConsultationStatus> statuses);
 }

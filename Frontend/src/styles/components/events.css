@@ -405,6 +405,11 @@
   color: var(--color-text-muted);
 }
 
+.capacity-text.capacity-full {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
 .event-card-title {
   font-size: 17px;
   font-weight: 700;
@@ -612,6 +617,41 @@
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* Volunteer badge — shown on registrations made by doctors/pharmacists */
+.volunteer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #c7d2fe;
+  color: #3730a3;
+  border: 1px solid #a5b4fc;
+}
+
+.volunteer-badge.volunteer-doctor {
+  background: #dbeafe;
+  color: #1e3a8a;
+  border-color: #93c5fd;
+}
+
+.volunteer-badge.volunteer-pharmacist {
+  background: #fae8ff;
+  color: #86198f;
+  border-color: #e9aaf6;
+}
+
+.registration-hint.volunteer-hint {
+  color: #3730a3;
+}
+
+.registration-hint.volunteer-hint strong {
+  color: #1e3a8a;
 }
 
 .btn-danger {

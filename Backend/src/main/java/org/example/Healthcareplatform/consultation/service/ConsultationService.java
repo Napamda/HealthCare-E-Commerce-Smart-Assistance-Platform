@@ -11,8 +11,11 @@ import org.example.Healthcareplatform.consultation.dto.EscalationRequest;
 import org.example.Healthcareplatform.consultation.entity.Consultation;
 import org.example.Healthcareplatform.consultation.event.ConsultationCreatedEvent;
 import org.example.Healthcareplatform.consultation.repository.ConsultationRepository;
+import org.example.Healthcareplatform.notification.entity.Notification;
+import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.user.entity.User;
 import org.example.Healthcareplatform.user.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,8 @@ public class ConsultationService {
     private final ConversationService conversationService;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final NotificationService notificationService;
 
     @Transactional
     public ConsultationResponse escalateFromChat(EscalationRequest request, Long patientUserId) {
@@ -60,7 +65,14 @@ public class ConsultationService {
         log.info("Consultation created — id={}, conversationId={}, patientUserId={}, priority={}",
                 saved.getId(), saved.getConversationId(), saved.getPatientUserId(), saved.getPriority());
 
-        publishNotification(saved);
+        applicationEventPublisher.publishEvent(ConsultationCreatedEvent.builder()
+                .consultationId(saved.getId())
+                .conversationId(saved.getConversationId())
+                .patientUserId(saved.getPatientUserId())
+                .reason(saved.getReason())
+                .priority(saved.getPriority().name())
+                .createdAt(Instant.now())
+                .build());
 
         return toResponse(saved, messages);
     }
@@ -103,6 +115,37 @@ public class ConsultationService {
         log.info("Consultation id={} status updated to {} by doctorUserId={}",
                 saved.getId(), saved.getStatus(), doctorUserId);
 
+        // Notify the patient when a doctor accepts or starts the consultation.
+        if (status == Consultation.ConsultationStatus.ACCEPTED
+                || status == Consultation.ConsultationStatus.IN_PROGRESS) {
+            String doctorName = doctorUserId != null
+                    ? userRepository.findById(doctorUserId)
+                            .map(u -> u.getFirstName() + " " + u.getLastName())
+                            .orElse("a doctor")
+                    : "a doctor";
+            String title = status == Consultation.ConsultationStatus.ACCEPTED
+                    ? "Consultation Accepted"
+                    : "Consultation In Progress";
+            String message = String.format(
+                    "Dr. %s has %s your consultation. Open your chat to continue the conversation.",
+                    doctorName,
+                    status == Consultation.ConsultationStatus.ACCEPTED ? "accepted" : "started");
+            Notification.NotificationType type = status == Consultation.ConsultationStatus.ACCEPTED
+                    ? Notification.NotificationType.CONSULTATION_ACCEPTED
+                    : Notification.NotificationType.CONSULTATION_IN_PROGRESS;
+            try {
+                notificationService.createNotification(
+                        saved.getPatientUserId(),
+                        title,
+                        message,
+                        type,
+                        saved.getId());
+            } catch (Exception e) {
+                log.warn("Failed to send consultation notification to patient userId={}: {}",
+                        saved.getPatientUserId(), e.getMessage());
+            }
+        }
+
         return toResponse(saved);
     }
 
@@ -140,20 +183,6 @@ public class ConsultationService {
         log.info("Consultation id={} priority updated to {}", saved.getId(), saved.getPriority());
 
         return toResponse(saved);
-    }
-
-    private void publishNotification(Consultation consultation) {
-        ConsultationCreatedEvent event = ConsultationCreatedEvent.builder()
-                .consultationId(consultation.getId())
-                .conversationId(consultation.getConversationId())
-                .patientUserId(consultation.getPatientUserId())
-                .reason(consultation.getReason())
-                .priority(consultation.getPriority().name())
-                .createdAt(Instant.now())
-                .build();
-
-        log.info("Notification event published — consultationId={}, patientUserId={}, priority={}",
-                event.getConsultationId(), event.getPatientUserId(), event.getPriority());
     }
 
     private String serializeChatContext(List<ConversationMessage> messages) {

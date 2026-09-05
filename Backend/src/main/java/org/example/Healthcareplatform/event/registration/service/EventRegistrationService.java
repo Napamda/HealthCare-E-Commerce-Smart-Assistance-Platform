@@ -37,6 +37,10 @@ public class EventRegistrationService {
         if (event.getStartDateTime() != null && event.getStartDateTime().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Event has already started");
         }
+        // Doctors and pharmacists register as volunteers; their professional role
+        // is stored so it can be surfaced as a badge in the UI.
+        String volunteerRole = resolveVolunteerRole();
+
         EventRegistration existing = registrationRepository.findByEventIdAndUserId(eventId, userId).orElse(null);
         if (existing != null && existing.getStatus() == RegistrationStatus.CONFIRMED) {
             throw new IllegalArgumentException("You are already registered for this event");
@@ -48,6 +52,7 @@ public class EventRegistrationService {
         EventRegistration registration;
         if (existing != null) {
             existing.setStatus(RegistrationStatus.CONFIRMED);
+            existing.setVolunteerRole(volunteerRole);
             existing.setUpdatedAt(LocalDateTime.now());
             registration = registrationRepository.save(existing);
         } else {
@@ -55,9 +60,10 @@ public class EventRegistrationService {
                     .event(event)
                     .userId(userId)
                     .status(RegistrationStatus.CONFIRMED)
+                    .volunteerRole(volunteerRole)
                     .build());
         }
-        log.info("Event registered — eventId={}, userId={}", eventId, userId);
+        log.info("Event registered — eventId={}, userId={}, volunteerRole={}", eventId, userId, volunteerRole);
         return toResponse(registration);
     }
 
@@ -98,7 +104,21 @@ public class EventRegistrationService {
                 .capacity(event.getCapacity())
                 .registered(registered)
                 .registrationId(registered ? existing.getId() : null)
+                .volunteerRole(registered ? existing.getVolunteerRole() : null)
                 .build();
+    }
+
+    /**
+     * Returns the current user's professional role (DOCTOR or PHARMACIST) when
+     * they should be flagged as a volunteer at registration time. Other roles
+     * (PATIENT, VENDOR, ADMIN) return null.
+     */
+    private String resolveVolunteerRole() {
+        String role = securityContextUtil.getCurrentUserRole();
+        if ("DOCTOR".equals(role) || "PHARMACIST".equals(role)) {
+            return role;
+        }
+        return null;
     }
 
     private EventRegistrationResponse toResponse(EventRegistration registration) {
@@ -114,6 +134,7 @@ public class EventRegistrationService {
                 .organizer(event.getOrganizer())
                 .status(registration.getStatus())
                 .registeredAt(registration.getCreatedAt())
+                .volunteerRole(registration.getVolunteerRole())
                 .build();
     }
 }

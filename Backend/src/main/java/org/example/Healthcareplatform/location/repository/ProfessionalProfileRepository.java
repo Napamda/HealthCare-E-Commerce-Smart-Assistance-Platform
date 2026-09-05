@@ -14,8 +14,6 @@ public interface ProfessionalProfileRepository extends JpaRepository<Professiona
 
     List<ProfessionalProfile> findBySpecialtyContainingIgnoreCaseAndActiveTrueOrderByLastNameAsc(String specialty);
 
-    List<ProfessionalProfile> findByActiveTrueAndLatitudeIsNotNullAndLongitudeIsNotNull();
-
     Optional<ProfessionalProfile> findByUserId(Long userId);
 
     List<String> findDistinctSpecialtyByActiveTrueOrderBySpecialtyAsc();

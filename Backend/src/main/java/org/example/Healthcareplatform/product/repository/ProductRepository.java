@@ -1,6 +1,8 @@
 package org.example.Healthcareplatform.product.repository;
 
+import org.example.Healthcareplatform.product.dto.ProductRef;
 import org.example.Healthcareplatform.product.entity.Product;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,18 +16,6 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-
-    Page<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
-
-    Page<Product> findByCategory(Product.ProductCategory category, Pageable pageable);
-
-    Page<Product> findByCategoryAndPriceBetween(
-            Product.ProductCategory category,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            Pageable pageable);
-
-    Page<Product> findByPriceBetween(BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable);
 
     @Query("SELECT p FROM Product p WHERE " +
             "(:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
@@ -43,7 +33,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByNameInIgnoreCase(List<String> names);
 
-    List<Product> findAllByOrderByNameAsc();
+    @Query("SELECT new org.example.Healthcareplatform.product.dto.ProductRef(p.id, p.name) FROM Product p ORDER BY p.name ASC")
+    @Cacheable(cacheNames = "products")
+    List<ProductRef> findAllProductRefs();
 
     @Query("SELECT p.category as category, COUNT(p) as count FROM Product p GROUP BY p.category")
     List<Object[]> countProductsByCategory();

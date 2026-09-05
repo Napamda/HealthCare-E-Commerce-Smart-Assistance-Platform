@@ -47,9 +47,4 @@ public class EventRegistrationController {
         return ResponseEntity.ok(Map.of("message", "Registration cancelled"));
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleValidationError(IllegalArgumentException e) {
-        log.warn("Event registration error: {}", e.getMessage());
-        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-    }
 }

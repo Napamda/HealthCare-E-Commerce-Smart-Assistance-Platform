@@ -15,15 +15,17 @@ public class RecommendationRequest {
 
     private String query;
 
-    private String symptom;
+    private List<String> symptoms;
 
-    private String condition;
+    private List<String> currentConditions;
 
-    private String category;
+    private List<String> previousConditions;
+
+    private String preferredCategory;
 
     private List<String> allergies;
 
-    private List<String> recentProductCategories;
+    private List<String> recentlyBrowsedCategories;
 
     private Integer maxResults;
 }

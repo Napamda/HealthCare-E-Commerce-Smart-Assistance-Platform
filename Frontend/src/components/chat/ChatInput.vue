@@ -1,6 +1,17 @@
 <script setup>
 import { ref, nextTick } from 'vue'
 
+const props = defineProps({
+  placeholder: {
+    type: String,
+    default: 'Describe your symptoms or ask a health question...',
+  },
+  hint: {
+    type: String,
+    default: 'AI responses are for informational purposes only.',
+  },
+})
+
 const emit = defineEmits(['send'])
 
 const inputText = ref('')
@@ -40,7 +51,7 @@ defineExpose({ focus: () => textareaRef.value?.focus() })
         ref="textareaRef"
         v-model="inputText"
         class="input-field"
-        placeholder="Describe your symptoms or ask a health question..."
+        :placeholder="props.placeholder"
         rows="1"
         @keydown="onKeydown"
         @input="autoResize"
@@ -60,7 +71,7 @@ defineExpose({ focus: () => textareaRef.value?.focus() })
     </div>
     <p class="input-hint">
       Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line.
-      AI responses are for informational purposes only.
+      {{ props.hint }}
     </p>
   </form>
 </template>

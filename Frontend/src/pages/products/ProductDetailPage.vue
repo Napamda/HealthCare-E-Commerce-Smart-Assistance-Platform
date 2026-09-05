@@ -1,0 +1,499 @@
+﻿<script setup>
+import { onMounted, computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useProductStore } from '../stores/product.js'
+import { useCartStore } from '../stores/cart.js'
+import { getProductImages } from '../services/product.js'
+import ImageGallery from '../components/product/ImageGallery.vue'
+
+const route = useRoute()
+const router = useRouter()
+const store = useProductStore()
+const cartStore = useCartStore()
+const { selectedProduct, isLoading, error } = storeToRefs(store)
+
+const activeTab = ref('ingredients')
+const addingToCart = ref(false)
+const addedToCart = ref(false)
+const images = ref([])
+
+const productId = computed(() => Number(route.params.id))
+
+function categoryLabel(cat) {
+  const labels = {
+    VITAMINS: 'Vitamins', PAIN_RELIEF: 'Pain Relief', SKIN_CARE: 'Skin Care',
+    DIGESTIVE_HEALTH: 'Digestive Health', RESPIRATORY: 'Respiratory', HEART_HEALTH: 'Heart Health',
+    DIABETES_CARE: 'Diabetes Care', FIRST_AID: 'First Aid', MEDICAL_DEVICES: 'Medical Devices',
+    PERSONAL_CARE: 'Personal Care', WELLNESS: 'Wellness', BABY_CARE: 'Baby Care',
+    ELDERLY_CARE: 'Elderly Care', OTHER: 'Other',
+  }
+  return labels[cat] || cat
+}
+
+function formatPrice(price) {
+  if (price == null) return '$0.00'
+  return '$' + Number(price).toFixed(2)
+}
+
+function renderStars(rating) {
+  return '★'.repeat(Math.floor(rating || 0)) + '☆'.repeat(5 - Math.floor(rating || 0))
+}
+
+function formatDate(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function goBack() {
+  router.push('/products')
+}
+
+onMounted(async () => {
+  await Promise.all([
+    store.fetchProductById(productId.value),
+    getProductImages(productId.value).then((imgs) => { images.value = imgs }).catch(() => { images.value = [] }),
+  ])
+})
+
+async function handleAddToCart() {
+  if (!selectedProduct.value || addingToCart.value) return
+  addingToCart.value = true
+  const success = await cartStore.addItem(selectedProduct.value)
+  addingToCart.value = false
+  if (success) {
+    addedToCart.value = true
+    setTimeout(() => { addedToCart.value = false }, 2500)
+  }
+}
+</script>
+
+<template>
+  <div class="detail-page">
+    <!-- Loading -->
+    <div v-if="isLoading" class="loading-state">
+      <div class="dot-typing"><span></span><span></span><span></span></div>
+      <p>Loading product details...</p>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="error" class="error-state">
+      <h2>Failed to load product</h2>
+      <p>{{ error }}</p>
+      <button class="btn-back" @click="goBack">Back to Products</button>
+    </div>
+
+    <!-- Not found -->
+    <div v-else-if="!selectedProduct" class="error-state">
+      <h2>Product Not Found</h2>
+      <button class="btn-back" @click="goBack">Back to Products</button>
+    </div>
+
+    <!-- Detail content -->
+    <template v-else>
+      <button class="btn-back-link" @click="goBack">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
+        Back to Products
+      </button>
+
+      <div class="detail-layout">
+        <!-- Image gallery -->
+        <div class="detail-image-section">
+          <ImageGallery
+            :images="images"
+            :fallback-url="selectedProduct.imageUrl"
+            :alt="selectedProduct.name"
+          />
+        </div>
+
+        <!-- Info -->
+        <div class="detail-info">
+          <span class="detail-category">{{ categoryLabel(selectedProduct.category) }}</span>
+          <h1 class="detail-name">{{ selectedProduct.name }}</h1>
+
+          <div v-if="selectedProduct.manufacturer" class="detail-manufacturer">
+            by {{ selectedProduct.manufacturer }}
+          </div>
+
+          <div class="detail-price-row">
+            <span class="detail-price">{{ formatPrice(selectedProduct.price) }}</span>
+            <span v-if="selectedProduct.stockQuantity > 0" class="in-stock">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              In Stock ({{ selectedProduct.stockQuantity }})
+            </span>
+            <span v-else class="out-of-stock">Out of Stock</span>
+          </div>
+
+          <div class="detail-actions">
+            <button
+              class="btn-add-cart"
+              :class="{ 'btn-added': addedToCart }"
+              :disabled="addingToCart || selectedProduct.stockQuantity <= 0"
+              @click="handleAddToCart"
+            >
+              <svg v-if="addedToCart" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              <span v-if="addingToCart">Adding...</span>
+              <span v-else-if="addedToCart">Added to Cart!</span>
+              <span v-else>Add to Cart</span>
+            </button>
+            <router-link to="/cart" class="btn-view-cart" v-if="addedToCart">View Cart</router-link>
+          </div>
+
+          <div class="rating-row">
+            <span class="stars-big">{{ renderStars(selectedProduct.ratings) }}</span>
+            <span class="rating-num">{{ (selectedProduct.ratings || 0).toFixed(1) }} / 5</span>
+          </div>
+
+          <div v-if="selectedProduct.prescriptionRequired" class="rx-alert">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            This product requires a valid prescription
+          </div>
+
+          <div v-if="selectedProduct.dosage" class="detail-field">
+            <span class="field-label">Dosage:</span>
+            <span>{{ selectedProduct.dosage }}</span>
+          </div>
+
+          <!-- Tabs -->
+          <div class="tabs">
+            <button
+              class="tab-btn"
+              :class="{ active: activeTab === 'description' }"
+              @click="activeTab = 'description'"
+            >Description</button>
+            <button
+              class="tab-btn"
+              :class="{ active: activeTab === 'ingredients' }"
+              @click="activeTab = 'ingredients'"
+            >Ingredients</button>
+            <button
+              v-if="selectedProduct.sideEffects"
+              class="tab-btn"
+              :class="{ active: activeTab === 'sideEffects' }"
+              @click="activeTab = 'sideEffects'"
+            >Side Effects</button>
+            <button
+              class="tab-btn"
+              :class="{ active: activeTab === 'reviews' }"
+              @click="activeTab = 'reviews'"
+            >Reviews</button>
+          </div>
+
+          <div class="tab-content">
+            <div v-if="activeTab === 'description'" class="tab-pane">
+              <p>{{ selectedProduct.description || 'No description available.' }}</p>
+            </div>
+            <div v-else-if="activeTab === 'ingredients'" class="tab-pane">
+              <p>{{ selectedProduct.ingredients || 'No ingredient information available.' }}</p>
+            </div>
+            <div v-else-if="activeTab === 'sideEffects'" class="tab-pane">
+              <p>{{ selectedProduct.sideEffects }}</p>
+            </div>
+            <div v-else-if="activeTab === 'reviews'" class="tab-pane">
+              <div v-if="selectedProduct.reviews?.length > 0" class="reviews-list">
+                <div v-for="(review, i) in selectedProduct.reviews" :key="i" class="review-item">
+                  <div class="review-header">
+                    <span class="reviewer-name">{{ review.reviewerName || 'Anonymous' }}</span>
+                    <span class="review-stars">{{ '★'.repeat(review.rating) }}{{ '☆'.repeat(5 - review.rating) }}</span>
+                  </div>
+                  <p class="review-comment">{{ review.comment }}</p>
+                  <span class="review-date">{{ formatDate(review.createdAt) }}</span>
+                </div>
+              </div>
+              <p v-else class="no-reviews">No reviews yet. Be the first to review!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>
+
+<style scoped>
+.detail-page {
+  min-height: 100vh;
+  background: var(--color-bg);
+  padding: 32px 24px;
+}
+
+.loading-state, .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 20px;
+  color: var(--color-text-secondary);
+}
+.error-state h2 {
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+.btn-back-link, .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 24px;
+  transition: background 0.15s;
+}
+.btn-back-link:hover, .btn-back:hover { background: var(--color-surface); }
+
+/* Layout */
+.detail-layout {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .detail-layout { grid-template-columns: 1fr; }
+}
+
+.detail-image-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  min-height: 400px;
+}
+
+.detail-info {
+  padding: 32px;
+}
+
+.detail-category {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  border: 1px solid var(--color-primary-light);
+  margin-bottom: 12px;
+}
+
+.detail-name {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.detail-manufacturer {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+}
+
+.detail-price-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.detail-price {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.in-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-success);
+  font-weight: 500;
+}
+.out-of-stock {
+  font-size: 13px;
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.btn-add-cart {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-add-cart:hover:not(:disabled) { background: #1d4ed8; }
+.btn-add-cart:disabled { opacity: 0.5; cursor: default; }
+.btn-add-cart.btn-added { background: #16a34a; }
+.btn-view-cart {
+  padding: 12px 20px;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.btn-view-cart:hover { background: var(--color-primary-bg); }
+
+/* Add to Cart */
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.btn-add-cart {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-add-cart:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.btn-add-cart:disabled { opacity: 0.6; cursor: default; }
+.btn-added {
+  background: #16a34a !important;
+}
+.btn-view-cart {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.btn-view-cart:hover { background: var(--color-primary-bg); }
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.stars-big { color: #f59e0b; font-size: 20px; letter-spacing: 2px; }
+.rating-num { font-size: 13px; color: var(--color-text-muted); }
+
+.rx-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fef2f2;
+  color: var(--color-danger);
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.detail-field {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.field-label {
+  font-weight: 600;
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--color-border);
+  margin-top: 20px;
+}
+.tab-btn {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--color-text); }
+.tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.tab-content { padding: 16px 0; }
+.tab-pane { font-size: 14px; color: var(--color-text-secondary); line-height: 1.7; }
+
+/* Reviews */
+.reviews-list { display: flex; flex-direction: column; gap: 16px; }
+.review-item {
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+.review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.reviewer-name { font-size: 13px; font-weight: 600; color: var(--color-text); }
+.review-stars { color: #f59e0b; font-size: 12px; }
+.review-comment { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 6px; }
+.review-date { font-size: 11px; color: var(--color-text-muted); }
+.no-reviews { font-style: italic; color: var(--color-text-muted); }
+</style>

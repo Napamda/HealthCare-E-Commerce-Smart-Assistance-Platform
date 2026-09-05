@@ -14,20 +14,20 @@ export const useNotificationStore = defineStore('notification', () => {
   const error = ref(null)
   const showDropdown = ref(false)
 
-  async function fetchUnreadCount(userId) {
+  async function fetchUnreadCount() {
     try {
-      const result = await getUnreadCount(userId)
+      const result = await getUnreadCount()
       unreadCount.value = result.count
     } catch (e) {
       console.error('Failed to fetch unread count:', e)
     }
   }
 
-  async function fetchNotifications(userId) {
+  async function fetchNotifications() {
     loading.value = true
     error.value = null
     try {
-      notifications.value = await getNotifications(userId)
+      notifications.value = await getNotifications()
     } catch (e) {
       error.value = e.response?.data?.error || 'Failed to load notifications'
     } finally {
@@ -35,7 +35,7 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
-  async function markNotificationRead(notificationId, userId) {
+  async function markNotificationRead(notificationId) {
     try {
       await markAsRead(notificationId)
       unreadCount.value = Math.max(0, unreadCount.value - 1)
@@ -48,9 +48,9 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
-  async function markAllNotificationsRead(userId) {
+  async function markAllNotificationsRead() {
     try {
-      await markAllAsRead(userId)
+      await markAllAsRead()
       notifications.value.forEach((n) => (n.isRead = true))
       unreadCount.value = 0
     } catch (e) {

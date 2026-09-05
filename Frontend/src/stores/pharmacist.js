@@ -17,6 +17,19 @@ export const usePharmacistStore = defineStore('pharmacist', () => {
   const reviewSuccess = ref(false)
   const reviewMessage = ref('')
 
+  async function fetchAllPrescriptions() {
+    loading.value = true
+    error.value = null
+    try {
+      prescriptions.value = await searchPrescriptions({ status: '' })
+      activeFilter.value = 'ALL'
+    } catch (e) {
+      error.value = e.response?.data?.error || 'Failed to load prescriptions'
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function fetchPendingPrescriptions() {
     loading.value = true
     error.value = null
@@ -55,7 +68,7 @@ export const usePharmacistStore = defineStore('pharmacist', () => {
     }
   }
 
-  async function submitReview(id, status, pharmacistId, comments = '') {
+  async function submitReview(id, status, pharmacistId, comments = '', items = []) {
     submitting.value = true
     error.value = null
     reviewSuccess.value = false
@@ -65,11 +78,13 @@ export const usePharmacistStore = defineStore('pharmacist', () => {
         status,
         pharmacistId,
         pharmacistComments: comments,
+        // Only send medications along with an approval.
+        items: status === 'APPROVED' ? items : [],
       })
       currentPrescription.value = result
       reviewSuccess.value = true
       reviewMessage.value = status === 'APPROVED'
-        ? 'Prescription approved successfully. Patient has been notified.'
+        ? 'Prescription approved successfully. Patient has been notified and can order the selected medications.'
         : 'Prescription rejected. Patient has been notified.'
       const index = prescriptions.value.findIndex((p) => p.id === id)
       if (index !== -1) {
@@ -109,6 +124,7 @@ export const usePharmacistStore = defineStore('pharmacist', () => {
     submitting,
     reviewSuccess,
     reviewMessage,
+    fetchAllPrescriptions,
     fetchPendingPrescriptions,
     fetchSearchPrescriptions,
     fetchPrescription,

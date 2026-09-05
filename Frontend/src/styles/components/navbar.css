@@ -41,6 +41,8 @@
   gap: 2px;
   flex: 1;
   justify-content: center;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .nav-right {
@@ -195,6 +197,16 @@
   background: #fef2f2;
 }
 
+.nav-logout-link {
+  color: var(--color-text-muted);
+}
+
+.nav-logout-link:hover,
+.nav-logout-link:focus-visible {
+  color: var(--color-danger);
+  background: var(--color-bg);
+}
+
 /* ---- user menu (replaces the old always-visible nav-user + nav-logout pair) ---- */
 
 .nav-user-trigger {
@@ -308,7 +320,7 @@
    the hamburger drawer instead of wrapping/overflowing.
    ================================================================ */
 
-@media (max-width: 860px) {
+@media (max-width: 1200px) {
   .nav-center {
     display: none;
   }
@@ -319,6 +331,10 @@
 
   .nav-orders-link {
     display: none; /* Orders moves into the mobile drawer below */
+  }
+
+  .nav-logout-link {
+    display: none; /* Sign out moves into the mobile drawer below */
   }
 
   .nav-hamburger {
@@ -370,6 +386,13 @@
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.4px;
+  }
+
+  .nav-mobile-signout {
+    margin-top: 4px;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+    color: var(--color-danger);
   }
 }
 

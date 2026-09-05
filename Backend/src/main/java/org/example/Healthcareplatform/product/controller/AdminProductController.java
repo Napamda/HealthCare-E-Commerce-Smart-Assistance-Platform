@@ -40,7 +40,13 @@ public class AdminProductController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         log.info("DELETE /api/admin/products/{}", id);
-        productService.deleteProduct(id);
-        return ResponseEntity.noContent().build();
+
+        try {
+            productService.deleteProduct(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
+
 }

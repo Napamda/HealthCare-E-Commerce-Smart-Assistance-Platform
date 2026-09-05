@@ -23,3 +23,4 @@ Frontend/dist/
 Frontend/public/images
 Backend/application.log.2026-08-29.0.gz
 testcase/
+Backend/app_logs/

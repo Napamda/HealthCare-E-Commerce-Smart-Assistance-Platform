@@ -2,26 +2,28 @@ package org.example.Healthcareplatform.location.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.location.dto.NearbyProfessionalResponse;
+import org.example.Healthcareplatform.location.dto.NearbyProfessionalRow;
 import org.example.Healthcareplatform.location.dto.ProfessionalProfileRequest;
 import org.example.Healthcareplatform.location.dto.ProfessionalProfileResponse;
 import org.example.Healthcareplatform.location.entity.ProfessionalProfile;
+import org.example.Healthcareplatform.location.mapper.ProfessionalProfileGeoMapper;
 import org.example.Healthcareplatform.location.repository.ProfessionalProfileRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 
 @Service
 @Slf4j
 public class ProfessionalProfileService {
 
-    private static final double EARTH_RADIUS_KM = 6371.0;
-
     private final ProfessionalProfileRepository profileRepository;
+    private final ProfessionalProfileGeoMapper professionalProfileGeoMapper;
 
-    public ProfessionalProfileService(ProfessionalProfileRepository profileRepository) {
+    public ProfessionalProfileService(ProfessionalProfileRepository profileRepository,
+                                      ProfessionalProfileGeoMapper professionalProfileGeoMapper) {
         this.profileRepository = profileRepository;
+        this.professionalProfileGeoMapper = professionalProfileGeoMapper;
     }
 
     @Transactional(readOnly = true)
@@ -115,29 +117,37 @@ public class ProfessionalProfileService {
             throw new IllegalArgumentException("Search radius must be greater than 0");
         }
 
-        List<ProfessionalProfile> candidates = (specialty == null || specialty.isBlank())
-                ? profileRepository.findByActiveTrueAndLatitudeIsNotNullAndLongitudeIsNotNull()
-                : profileRepository.findBySpecialtyContainingIgnoreCaseAndActiveTrueOrderByLastNameAsc(specialty)
-                        .stream()
-                        .filter(p -> p.getLatitude() != null && p.getLongitude() != null)
-                        .toList();
-
-        return candidates.stream()
-                .map(p -> new NearbyProfessionalResponse(toResponse(p),
-                        haversineKm(latitude, longitude, p.getLatitude(), p.getLongitude())))
-                .filter(n -> n.getDistanceKm() <= radiusKm)
-                .sorted(Comparator.comparingDouble(NearbyProfessionalResponse::getDistanceKm))
+        String normalizedSpecialty = (specialty == null || specialty.isBlank()) ? null : specialty;
+        return professionalProfileGeoMapper
+                .findNearby(latitude, longitude, radiusKm, normalizedSpecialty)
+                .stream()
+                .map(this::toResponse)
                 .toList();
     }
 
-    private double haversineKm(double lat1, double lon1, double lat2, double lon2) {
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return EARTH_RADIUS_KM * c;
+    private NearbyProfessionalResponse toResponse(NearbyProfessionalRow row) {
+        ProfessionalProfileResponse profile = ProfessionalProfileResponse.builder()
+                .id(row.getId())
+                .userId(row.getUserId())
+                .firstName(row.getFirstName())
+                .lastName(row.getLastName())
+                .fullName(row.getFirstName() + " " + row.getLastName())
+                .title(row.getTitle())
+                .specialty(row.getSpecialty())
+                .bio(row.getBio())
+                .phone(row.getPhone())
+                .address(row.getAddress())
+                .city(row.getCity())
+                .latitude(row.getLatitude())
+                .longitude(row.getLongitude())
+                .active(row.isActive())
+                .createdAt(row.getCreatedAt())
+                .updatedAt(row.getUpdatedAt())
+                .build();
+        return NearbyProfessionalResponse.builder()
+                .profile(profile)
+                .distanceKm(row.getDistanceKm())
+                .build();
     }
 
     private ProfessionalProfileResponse toResponse(ProfessionalProfile p) {
