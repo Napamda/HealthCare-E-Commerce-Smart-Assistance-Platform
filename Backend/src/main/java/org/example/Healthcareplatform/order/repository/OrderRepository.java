@@ -23,15 +23,30 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByOrderNumber(String orderNumber);
 
-    Page<Order> findByStatusOrderByCreatedAtDesc(OrderStatus status, Pageable pageable);
+    Page<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-    long countByStatus(OrderStatus status);
+    Page<Order> findByUserIdAndStatus(Long userId, Order.OrderStatus status, Pageable pageable);
 
-    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = :status")
-    BigDecimal sumTotalByStatus(@Param("status") OrderStatus status);
+    @Query("SELECT o FROM Order o WHERE o.userId = :userId AND " +
+           "(:status IS NULL OR o.status = :status) AND " +
+           "(:startDate IS NULL OR o.createdAt >= :startDate) AND " +
+           "(:endDate IS NULL OR o.createdAt <= :endDate)")
+    Page<Order> findUserOrdersWithFilters(
+            @Param("userId") Long userId,
+            @Param("status") Order.OrderStatus status,
+            @Param("startDate") Instant startDate,
+            @Param("endDate") Instant endDate,
+            Pageable pageable);
 
-    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.createdAt >= :since")
-    BigDecimal sumTotalSince(@Param("since") Instant since);
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.userId = :userId")
+    long countByUserId(@Param("userId") Long userId);
 
-    long countByCreatedAtAfter(Instant since);
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.userId = :userId AND o.status = :status")
+    long countByUserIdAndStatus(@Param("userId") Long userId, @Param("status") Order.OrderStatus status);
+
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.userId = :userId AND o.status != :cancelledStatus")
+    Double sumTotalAmountByUserId(@Param("userId") Long userId, @Param("cancelledStatus") Order.OrderStatus cancelledStatus);
+
+    @Query("SELECT DISTINCT p.category FROM Order o JOIN o.items i JOIN org.example.Healthcareplatform.product.entity.Product p ON i.productId = p.id WHERE o.userId = :userId AND o.status != :cancelledStatus")
+    List<String> findCategoriesByUserId(@Param("userId") Long userId, @Param("cancelledStatus") Order.OrderStatus cancelledStatus);
 }

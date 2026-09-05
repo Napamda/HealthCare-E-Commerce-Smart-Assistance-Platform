@@ -27,6 +27,9 @@ public class PaymentResponse {
     private Instant paidAt;
     private String errorMessage;
     private String billingName;
+    private Integer retryCount;
+    private Instant lastRetryAt;
+    private Integer maxRetries;
     private Instant createdAt;
 
     public static PaymentResponse fromEntity(Payment p) {
@@ -43,6 +46,9 @@ public class PaymentResponse {
                 .paidAt(p.getPaidAt())
                 .errorMessage(p.getErrorMessage())
                 .billingName(p.getBillingName())
+                .retryCount(p.getRetryCount())
+                .lastRetryAt(p.getLastRetryAt())
+                .maxRetries(p.getMaxRetries())
                 .createdAt(p.getCreatedAt())
                 .build();
     }

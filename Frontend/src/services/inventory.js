@@ -43,6 +43,13 @@ export function getReservations() {
 }
 
 /**
+ * Fetch recent stock movements across all products.
+ * @returns {Promise<Array>} StockHistoryDto[]
+ */
+export function getRecentActivity() {
+  return apiClient.get('/api/inventory/activity').then((res) => res.data)
+}
+/**
  * Validate stock availability for a list of items before checkout.
  * @param {Array<{productId: number, quantity: number}>} items
  * @returns {Promise<{valid: boolean, errors: Array}>} StockValidateResponse
@@ -85,4 +92,16 @@ export function decrementStock(productId, quantity, note) {
  */
 export function adjustStock(productId, quantity, note) {
   return postAdjust(productId, 'adjust', quantity, note)
+}
+
+/**
+ * Update the low-stock warning threshold for a product.
+ * @param {number} productId
+ * @param {number} threshold
+ * @returns {Promise<object>} StockInfoResponse
+ */
+export function setThreshold(productId, threshold) {
+  return apiClient
+    .put(`/api/inventory/${productId}/threshold`, { threshold })
+    .then((res) => res.data)
 }

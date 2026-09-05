@@ -29,6 +29,7 @@ const form = ref({
   category: '',
   imageUrl: '',
   stockQuantity: 0,
+  lowStockThreshold: 5,
   manufacturer: '',
   dosage: '',
   ingredients: '',
@@ -56,6 +57,7 @@ watch(
         category: p.category || '',
         imageUrl: p.imageUrl || '',
         stockQuantity: p.stockQuantity ?? 0,
+        lowStockThreshold: p.lowStockThreshold ?? 5,
         manufacturer: p.manufacturer || '',
         dosage: p.dosage || '',
         ingredients: p.ingredients || '',
@@ -131,6 +133,7 @@ function resetForm() {
     category: '',
     imageUrl: '',
     stockQuantity: 0,
+    lowStockThreshold: 5,
     manufacturer: '',
     dosage: '',
     ingredients: '',
@@ -185,6 +188,7 @@ async function onSubmit() {
       ...form.value,
       price: Number(form.value.price),
       stockQuantity: Number(form.value.stockQuantity),
+      lowStockThreshold: Number(form.value.lowStockThreshold),
     }
     emit('save', payload)
   } finally {
@@ -247,9 +251,21 @@ function onCancel() {
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="prod-image">Image URL</label>
-            <input id="prod-image" v-model="form.imageUrl" type="text" placeholder="https://..." />
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prod-threshold">Low stock threshold</label>
+              <input
+                id="prod-threshold"
+                v-model.number="form.lowStockThreshold"
+                type="number"
+                min="0"
+                placeholder="5"
+              />
+            </div>
+            <div class="form-group">
+              <label for="prod-image">Image URL</label>
+              <input id="prod-image" v-model="form.imageUrl" type="text" placeholder="https://..." />
+            </div>
           </div>
 
           <!-- Image manager (edit mode) -->
@@ -345,7 +361,7 @@ function onCancel() {
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: center;

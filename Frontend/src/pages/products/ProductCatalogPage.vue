@@ -115,6 +115,10 @@ function getCategoryCount(name) {
   const found = categoryCounts.value.find(c => c.name === name)
   return found ? found.count : 0
 }
+
+function onSortChange() {
+  store.applyFilters({ sort: sortValue.value })
+}
 </script>
 
 <template>

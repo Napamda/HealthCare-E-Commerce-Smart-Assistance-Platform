@@ -35,22 +35,32 @@ public class InventoryService {
 
     @Transactional(readOnly = true)
     public List<StockInfoResponse> getAllStockInfo() {
-        return productRepository.findAll().stream()
-                .map(this::toStockInfo)
-                .collect(Collectors.toList());
+        List<StockInfoResponse> result = new java.util.ArrayList<>();
+        for (Product p : productRepository.findAll()) {
+            try {
+                result.add(toStockInfo(p, false));
+            } catch (Exception e) {
+                log.warn("Skipping stock row for product {}: {}", p.getId(), e.getMessage());
+            }
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)
     public StockInfoResponse getStockInfo(Long productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
-        return toStockInfo(product);
+        return toStockInfo(product, true);
     }
 
     @Transactional(readOnly = true)
     public List<StockInfoResponse> getLowStockProducts() {
         return productRepository.findAll().stream()
-                .filter(p -> p.getStockQuantity() <= p.getLowStockThreshold())
+                .filter(p -> {
+                    int qty = p.getStockQuantity() != null ? p.getStockQuantity() : 0;
+                    int threshold = p.getLowStockThreshold() != null ? p.getLowStockThreshold() : 5;
+                    return qty <= threshold;
+                })
                 .map(this::toStockInfo)
                 .collect(Collectors.toList());
     }
@@ -64,9 +74,29 @@ public class InventoryService {
 
     @Transactional(readOnly = true)
     public List<StockInfoResponse.StockReservationDto> getReservations() {
-        return reservationRepository.findAll().stream()
-                .map(this::toReservationDto)
-                .collect(Collectors.toList());
+        try {
+            return reservationRepository.findAll().stream()
+                    .map(this::toReservationDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("Failed to load reservations: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockInfoResponse.StockHistoryDto> getRecentActivity(int limit) {
+        int size = Math.max(1, Math.min(limit, 50));
+        try {
+            return stockHistoryRepository
+                    .findAllByOrderByCreatedAtDesc(org.springframework.data.domain.PageRequest.of(0, size))
+                    .stream()
+                    .map(this::toHistoryDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("Failed to load recent stock activity: {}", e.getMessage());
+            return List.of();
+        }
     }
 
     // ============ Stock mutations ============
@@ -108,6 +138,16 @@ public class InventoryService {
         productRepository.save(product);
         logHistory(product, StockHistory.ChangeType.ADJUSTMENT, newQuantity - before, newQuantity, userId, null, note);
         log.info("Adjusted stock for product={} from {} to {} — {}", productId, before, newQuantity, note);
+        return product;
+    }
+
+    @Transactional
+    public Product setLowStockThreshold(Long productId, int threshold) {
+        if (threshold < 0) throw new IllegalArgumentException("Threshold cannot be negative");
+        Product product = getProduct(productId);
+        product.setLowStockThreshold(threshold);
+        productRepository.save(product);
+        log.info("Updated low-stock threshold for product={} to {}", productId, threshold);
         return product;
     }
 
@@ -213,24 +253,57 @@ public class InventoryService {
     }
 
     private StockInfoResponse toStockInfo(Product p) {
-        Long reserved = reservationRepository.sumReservedQuantity(p.getId());
-        long available = p.getStockQuantity() - reserved;
-        return StockInfoResponse.builder()
+        return toStockInfo(p, false);
+    }
+
+    private StockInfoResponse toStockInfo(Product p, boolean includeDetails) {
+        int stockQty = p.getStockQuantity() != null ? p.getStockQuantity() : 0;
+        int threshold = p.getLowStockThreshold() != null ? p.getLowStockThreshold() : 5;
+        long reserved = 0L;
+        try {
+            Long reservedRaw = reservationRepository.sumActiveReservedQuantity(p.getId());
+            reserved = reservedRaw != null ? reservedRaw : 0L;
+        } catch (Exception e) {
+            log.warn("Reservation lookup failed for product {}: {}", p.getId(), e.getMessage());
+        }
+        long available = Math.max(0L, stockQty - reserved);
+        String category = p.getCategory() != null ? p.getCategory().name() : "OTHER";
+
+        StockInfoResponse.StockInfoResponseBuilder builder = StockInfoResponse.builder()
                 .productId(p.getId())
                 .productName(p.getName())
-                .category(p.getCategory().name())
-                .stockQuantity(p.getStockQuantity())
-                .lowStockThreshold(p.getLowStockThreshold())
+                .category(category)
+                .stockQuantity(stockQty)
+                .lowStockThreshold(threshold)
                 .reservedQuantity(reserved)
-                .availableQuantity(Math.max(0, available))
-                .lowStock(p.getStockQuantity() <= p.getLowStockThreshold())
-                .outOfStock(p.getStockQuantity() <= 0)
-                .history(stockHistoryRepository.findByProductIdOrderByCreatedAtDesc(p.getId()).stream()
-                        .limit(50).map(this::toHistoryDto).collect(Collectors.toList()))
-                .reservations(reservationRepository.findAll().stream()
-                        .filter(r -> r.getProductId().equals(p.getId()))
-                        .map(this::toReservationDto).collect(Collectors.toList()))
-                .build();
+                .availableQuantity(available)
+                .lowStock(stockQty <= threshold)
+                .outOfStock(stockQty <= 0);
+
+        if (includeDetails) {
+            try {
+                builder.history(stockHistoryRepository.findByProductIdOrderByCreatedAtDesc(p.getId()).stream()
+                        .limit(20)
+                        .map(this::toHistoryDto)
+                        .collect(Collectors.toList()));
+            } catch (Exception e) {
+                log.warn("Failed loading stock history for product {}: {}", p.getId(), e.getMessage());
+                builder.history(List.of());
+            }
+            try {
+                builder.reservations(reservationRepository.findAll().stream()
+                        .filter(r -> r.getProductId() != null && r.getProductId().equals(p.getId()))
+                        .map(this::toReservationDto)
+                        .collect(Collectors.toList()));
+            } catch (Exception e) {
+                log.warn("Failed loading reservations for product {}: {}", p.getId(), e.getMessage());
+                builder.reservations(List.of());
+            }
+        } else {
+            builder.history(List.of()).reservations(List.of());
+        }
+
+        return builder.build();
     }
 
     private StockInfoResponse.StockHistoryDto toHistoryDto(StockHistory h) {
@@ -238,7 +311,7 @@ public class InventoryService {
                 .id(h.getId())
                 .productId(h.getProductId())
                 .productName(h.getProductName())
-                .changeType(h.getChangeType())
+                .changeType(h.getChangeType() != null ? h.getChangeType().name() : null)
                 .quantityChange(h.getQuantityChange())
                 .stockAfter(h.getStockAfter())
                 .orderId(h.getOrderId())
@@ -254,7 +327,7 @@ public class InventoryService {
                 .userId(r.getUserId())
                 .quantity(r.getQuantity())
                 .orderId(r.getOrderId())
-                .status(r.getStatus())
+                .status(r.getStatus() != null ? r.getStatus().name() : null)
                 .expiresAt(r.getExpiresAt())
                 .createdAt(r.getCreatedAt())
                 .build();

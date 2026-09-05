@@ -6,11 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.common.CurrentUser;
 import org.example.Healthcareplatform.inventory.dto.StockAdjustRequest;
 import org.example.Healthcareplatform.inventory.dto.StockInfoResponse;
+import org.example.Healthcareplatform.inventory.dto.ThresholdRequest;
 import org.example.Healthcareplatform.inventory.service.InventoryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,6 +55,12 @@ public class InventoryController {
         return ResponseEntity.ok(inventoryService.getReservations());
     }
 
+    @GetMapping("/activity")
+    public ResponseEntity<List<StockInfoResponse.StockHistoryDto>> getRecentActivity() {
+        log.info("GET /api/inventory/activity");
+        return ResponseEntity.ok(inventoryService.getRecentActivity(20));
+    }
+
     @PostMapping("/{productId}/increment")
     public ResponseEntity<StockInfoResponse> incrementStock(@PathVariable Long productId,
                                                             @Valid @RequestBody StockAdjustRequest request) {
@@ -74,6 +82,14 @@ public class InventoryController {
                                                          @Valid @RequestBody StockAdjustRequest request) {
         log.info("POST /api/inventory/{}/adjust — qty={}, note={}", productId, request.getQuantity(), request.getNote());
         inventoryService.adjustStock(productId, request.getQuantity(), CurrentUser.userId(), request.getNote());
+        return ResponseEntity.ok(inventoryService.getStockInfo(productId));
+    }
+
+    @PutMapping("/{productId}/threshold")
+    public ResponseEntity<StockInfoResponse> setThreshold(@PathVariable Long productId,
+                                                          @Valid @RequestBody ThresholdRequest request) {
+        log.info("PUT /api/inventory/{}/threshold — threshold={}", productId, request.getThreshold());
+        inventoryService.setLowStockThreshold(productId, request.getThreshold());
         return ResponseEntity.ok(inventoryService.getStockInfo(productId));
     }
 }

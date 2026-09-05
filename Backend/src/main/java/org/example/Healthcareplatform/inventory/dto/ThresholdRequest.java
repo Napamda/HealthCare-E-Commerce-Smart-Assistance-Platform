@@ -11,11 +11,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StockAdjustRequest {
+public class ThresholdRequest {
 
-    @NotNull(message = "Quantity is required")
-    @Min(value = 0, message = "Quantity cannot be negative")
-    private Integer quantity;
-
-    private String note;
+    @NotNull(message = "Threshold is required")
+    @Min(value = 0, message = "Threshold cannot be negative")
+    private Integer threshold;
 }

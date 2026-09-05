@@ -12,6 +12,7 @@ import org.example.Healthcareplatform.order.dto.CheckoutPreviewRequest;
 import org.example.Healthcareplatform.order.dto.CheckoutPreviewResponse;
 import org.example.Healthcareplatform.order.dto.OrderRequest;
 import org.example.Healthcareplatform.order.dto.OrderResponse;
+import org.example.Healthcareplatform.order.dto.OrderStatisticsResponse;
 import org.example.Healthcareplatform.order.entity.Order;
 import org.example.Healthcareplatform.order.entity.OrderItem;
 import org.example.Healthcareplatform.order.repository.OrderRepository;
@@ -29,9 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -222,6 +226,22 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public Page<OrderResponse> getUserOrdersWithFilters(Long userId, String status, Instant startDate, Instant endDate, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Order.OrderStatus statusEnum = status != null ? Order.OrderStatus.valueOf(status.toUpperCase()) : null;
+        Page<Order> orders = orderRepository.findUserOrdersWithFilters(userId, statusEnum, startDate, endDate, pageable);
+        return orders.map(OrderResponse::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getUserOrdersByStatus(Long userId, String status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Order.OrderStatus statusEnum = Order.OrderStatus.valueOf(status.toUpperCase());
+        Page<Order> orders = orderRepository.findByUserIdAndStatus(userId, statusEnum, pageable);
+        return orders.map(OrderResponse::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long userId, Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
@@ -242,6 +262,50 @@ public class OrderService {
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderNumber));
         return OrderResponse.fromEntity(order);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderByNumber(Long userId, String orderNumber) {
+        Order order = orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderNumber));
+        if (!order.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Order does not belong to user");
+        }
+        return OrderResponse.fromEntity(order);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderStatisticsResponse getUserOrderStatistics(Long userId) {
+        long totalOrders = orderRepository.countByUserId(userId);
+        long pendingOrders = orderRepository.countByUserIdAndStatus(userId, Order.OrderStatus.PENDING);
+        long confirmedOrders = orderRepository.countByUserIdAndStatus(userId, Order.OrderStatus.CONFIRMED);
+        long processingOrders = orderRepository.countByUserIdAndStatus(userId, Order.OrderStatus.PROCESSING);
+        long shippedOrders = orderRepository.countByUserIdAndStatus(userId, Order.OrderStatus.SHIPPED);
+        long deliveredOrders = orderRepository.countByUserIdAndStatus(userId, Order.OrderStatus.DELIVERED);
+        long cancelledOrders = orderRepository.countByUserIdAndStatus(userId, Order.OrderStatus.CANCELLED);
+
+        Double totalSpent = orderRepository.sumTotalAmountByUserId(userId, Order.OrderStatus.CANCELLED);
+        BigDecimal totalSpentAmount = totalSpent != null ? BigDecimal.valueOf(totalSpent) : BigDecimal.ZERO;
+
+        Map<String, Long> statusBreakdown = new HashMap<>();
+        statusBreakdown.put("PENDING", pendingOrders);
+        statusBreakdown.put("CONFIRMED", confirmedOrders);
+        statusBreakdown.put("PROCESSING", processingOrders);
+        statusBreakdown.put("SHIPPED", shippedOrders);
+        statusBreakdown.put("DELIVERED", deliveredOrders);
+        statusBreakdown.put("CANCELLED", cancelledOrders);
+
+        return OrderStatisticsResponse.builder()
+                .totalOrders(totalOrders)
+                .pendingOrders(pendingOrders)
+                .confirmedOrders(confirmedOrders)
+                .processingOrders(processingOrders)
+                .shippedOrders(shippedOrders)
+                .deliveredOrders(deliveredOrders)
+                .cancelledOrders(cancelledOrders)
+                .totalSpent(totalSpentAmount)
+                .statusBreakdown(statusBreakdown)
+                .build();
     }
 
     @Transactional
@@ -359,6 +423,28 @@ public class OrderService {
             throw new IllegalStateException("No items could be added to cart — items are out of stock");
         }
         log.info("Reorder completed for order={}, user={}, items added={}", orderId, userId, added);
+    }
+
+    @Transactional
+    public OrderResponse confirmOrder(Long userId, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
+        if (!order.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Order does not belong to user");
+        }
+        if (order.getStatus() != Order.OrderStatus.PENDING) {
+            throw new IllegalArgumentException("Only pending orders can be confirmed");
+        }
+
+        // Confirm reservations and deduct actual inventory
+        inventoryService.confirmReservations(orderId);
+
+        // Update order status to CONFIRMED
+        order.setStatus(Order.OrderStatus.CONFIRMED);
+        Order saved = orderRepository.save(order);
+
+        log.info("Order confirmed: number={}, id={}, userId={}", saved.getOrderNumber(), saved.getId(), userId);
+        return OrderResponse.fromEntity(saved);
     }
 
     private String resolveShippingMethod(String method) {

@@ -1,12 +1,19 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useInventoryStore } from '../stores/inventory.js'
+import { useProductStore } from '../stores/product.js'
+import ProductForm from '../components/product/ProductForm.vue'
 
+const route = useRoute()
+const router = useRouter()
 const store = useInventoryStore()
+const productStore = useProductStore()
 const {
   stock,
   loading,
+  reservationsLoading,
   updating,
   error,
   success,
@@ -18,28 +25,113 @@ const {
   totalUnits,
   lowStockCount,
   outOfStockCount,
+  reservedCount,
+  activeReservations,
+  categoryBreakdown,
 } = storeToRefs(store)
 
+const { categories: productCategories } = storeToRefs(productStore)
+
 const searchQuery = ref('')
-const stockFilter = ref('all') // all | low | out
+const stockFilter = ref('all')
+const categoryFilter = ref('all')
+const sortKey = ref('name')
+const actionMenuId = ref(null)
+const selectedIds = ref([])
+const focusedId = ref(null)
+const showProductForm = ref(false)
+const editingProduct = ref(null)
+const now = ref(Date.now())
+let tickTimer = null
+
 const modal = reactive({
   visible: false,
   item: null,
-  mode: 'increment', // increment | decrement | set
+  mode: 'increment',
   quantity: 0,
   note: '',
 })
 
-onMounted(() => {
-  store.fetchStock()
+const thresholdModal = reactive({
+  visible: false,
+  item: null,
+  threshold: 0,
 })
 
-// ---------------- Filtering ----------------
+const MODE_TITLES = {
+  increment: 'Add stock',
+  decrement: 'Remove stock',
+  set: 'Set stock level',
+}
+
+const TYPE_LABELS = {
+  INIT: 'Initial stock',
+  PURCHASE: 'Restocked',
+  SALE: 'Sale',
+  RESERVED: 'Reserved',
+  RESERVATION_RELEASED: 'Reservation released',
+  RESERVATION_EXPIRED: 'Reservation expired',
+  ADJUSTMENT: 'Adjustment',
+  CANCELLATION: 'Cancellation',
+  REFUND: 'Refund',
+}
+
+const QUICK_AMOUNTS = [5, 10, 25, 50]
+
+onMounted(async () => {
+  applyRouteState()
+  await Promise.all([store.refreshAll(), productStore.fetchCategories()])
+  tickTimer = setInterval(() => {
+    now.value = Date.now()
+  }, 1000)
+  await nextTick()
+  scrollToFocused()
+})
+
+onUnmounted(() => {
+  if (tickTimer) clearInterval(tickTimer)
+})
+
+watch(
+  () => [route.query.filter, route.query.focus],
+  async () => {
+    applyRouteState()
+    await nextTick()
+    scrollToFocused()
+  },
+)
+
+function applyRouteState() {
+  const allowed = ['all', 'low', 'out', 'reserved']
+  const next = String(route.query.filter || 'all')
+  stockFilter.value = allowed.includes(next) ? next : 'all'
+  focusedId.value = route.query.focus ? Number(route.query.focus) : null
+}
+
+function setFilter(filter) {
+  stockFilter.value = filter
+  actionMenuId.value = null
+  router.replace({
+    path: '/inventory',
+    query: {
+      ...(filter === 'all' ? {} : { filter }),
+      ...(focusedId.value ? { focus: focusedId.value } : {}),
+    },
+  })
+}
+
+const categories = computed(() =>
+  categoryBreakdown.value.map((row) => row.category),
+)
 
 const filteredStock = computed(() => {
-  let rows = stock.value
+  let rows = stock.value.slice()
   if (stockFilter.value === 'low') rows = rows.filter((i) => i.lowStock && !i.outOfStock)
   if (stockFilter.value === 'out') rows = rows.filter((i) => i.outOfStock)
+  if (stockFilter.value === 'reserved') rows = rows.filter((i) => i.reservedQuantity > 0)
+  if (categoryFilter.value !== 'all') {
+    rows = rows.filter((i) => i.category === categoryFilter.value)
+  }
   const q = searchQuery.value.trim().toLowerCase()
   if (q) {
     rows = rows.filter(
@@ -48,32 +140,69 @@ const filteredStock = computed(() => {
         (categoryLabel(i.category) || '').toLowerCase().includes(q),
     )
   }
+
+  rows.sort((a, b) => {
+    if (sortKey.value === 'stock') return (b.stockQuantity || 0) - (a.stockQuantity || 0)
+    if (sortKey.value === 'available') return (b.availableQuantity || 0) - (a.availableQuantity || 0)
+    if (sortKey.value === 'status') {
+      const rank = (item) => (item.outOfStock ? 0 : item.lowStock ? 1 : item.reservedQuantity > 0 ? 2 : 3)
+      return rank(a) - rank(b) || (a.productName || '').localeCompare(b.productName || '')
+    }
+    return (a.productName || '').localeCompare(b.productName || '')
+  })
   return rows
 })
+
+const allVisibleSelected = computed(
+  () =>
+    filteredStock.value.length > 0 &&
+    filteredStock.value.every((item) => selectedIds.value.includes(item.productId)),
+)
+
+const selectedItems = computed(() =>
+  stock.value.filter((item) => selectedIds.value.includes(item.productId)),
+)
 
 const emptyMessage = computed(() => {
   if (stockFilter.value === 'low') return 'No low-stock products — everything looks healthy.'
   if (stockFilter.value === 'out') return 'No out-of-stock products.'
+  if (stockFilter.value === 'reserved') return 'No products with reserved stock.'
   return searchQuery.value ? 'No products match your search.' : 'No products in inventory yet.'
 })
 
-// ---------------- Status helpers ----------------
+const productNameById = computed(() => {
+  const map = {}
+  for (const item of stock.value) map[item.productId] = item.productName
+  return map
+})
+
+const suggestedQty = computed(() =>
+  modal.item ? store.suggestedRestockQty(modal.item) : 10,
+)
 
 function statusOf(item) {
   if (item.outOfStock) return 'out'
   if (item.lowStock) return 'low'
+  if (item.reservedQuantity > 0) return 'reserved'
   return 'ok'
 }
 
 function statusLabel(item) {
   if (item.outOfStock) return 'Out of stock'
   if (item.lowStock) return 'Low stock'
+  if (item.reservedQuantity > 0) return 'Reserved'
   return 'In stock'
 }
 
 function rowClass(item) {
+  const classes = []
   const s = statusOf(item)
-  return s === 'out' ? 'row-out' : s === 'low' ? 'row-low' : ''
+  if (s === 'out') classes.push('row-out')
+  if (s === 'low') classes.push('row-low')
+  if (s === 'reserved') classes.push('row-reserved')
+  if (focusedId.value === item.productId) classes.push('row-focused')
+  if (selectedIds.value.includes(item.productId)) classes.push('row-selected')
+  return classes
 }
 
 function categoryLabel(cat) {
@@ -84,19 +213,9 @@ function categoryLabel(cat) {
     .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-// ---------------- Adjust modal ----------------
-
-const MODE_TITLES = { increment: 'Add stock', decrement: 'Remove stock', set: 'Set stock level' }
-
 const modalTitle = computed(() => MODE_TITLES[modal.mode])
-
 const currentStock = computed(() => Number(modal.item?.stockQuantity) || 0)
-
-const maxQuantity = computed(() => {
-  if (modal.mode === 'decrement') return currentStock.value
-  if (modal.mode === 'increment') return undefined
-  return undefined
-})
+const maxQuantity = computed(() => (modal.mode === 'decrement' ? currentStock.value : undefined))
 
 const previewStock = computed(() => {
   const q = Number(modal.quantity) || 0
@@ -110,8 +229,9 @@ const hintText = computed(() => {
   if (modal.mode === 'decrement' && q > currentStock.value) {
     return 'Cannot remove more than the current stock.'
   }
-  if (modal.mode === 'increment' && q <= 0) return 'Enter a quantity greater than 0.'
-  if (modal.mode === 'decrement' && q <= 0) return 'Enter a quantity greater than 0.'
+  if ((modal.mode === 'increment' || modal.mode === 'decrement') && q <= 0) {
+    return 'Enter a quantity greater than 0.'
+  }
   return ''
 })
 
@@ -125,15 +245,28 @@ const canSubmit = computed(() => {
 })
 
 function openAdjust(item, mode) {
+  actionMenuId.value = null
   modal.visible = true
   modal.item = item
   setMode(mode)
+  if (mode === 'increment') {
+    modal.quantity = store.suggestedRestockQty(item)
+    modal.note = 'Restock'
+  }
 }
 
 function setMode(mode) {
   modal.mode = mode
-  modal.quantity = 0
-  modal.note = ''
+  modal.quantity = mode === 'increment' && modal.item ? store.suggestedRestockQty(modal.item) : 0
+  modal.note = mode === 'increment' ? 'Restock' : ''
+}
+
+function applyQuickAmount(amount) {
+  if (modal.mode === 'set') {
+    modal.quantity = amount
+    return
+  }
+  modal.quantity = amount
 }
 
 function closeAdjust() {
@@ -151,22 +284,114 @@ async function submitAdjust() {
   if (ok) closeAdjust()
 }
 
-function refresh() {
-  store.fetchStock()
+function openThreshold(item) {
+  actionMenuId.value = null
+  thresholdModal.visible = true
+  thresholdModal.item = item
+  thresholdModal.threshold = item.lowStockThreshold
 }
 
-// ---------------- History helpers ----------------
+function closeThreshold() {
+  thresholdModal.visible = false
+  thresholdModal.item = null
+}
 
-const TYPE_LABELS = {
-  INIT: 'Initial stock',
-  PURCHASE: 'Restocked',
-  SALE: 'Sale',
-  RESERVED: 'Reserved',
-  RESERVATION_RELEASED: 'Reservation released',
-  RESERVATION_EXPIRED: 'Reservation expired',
-  ADJUSTMENT: 'Adjustment',
-  CANCELLATION: 'Cancellation',
-  REFUND: 'Refund',
+async function submitThreshold() {
+  const ok = await store.setThreshold({
+    productId: thresholdModal.item.productId,
+    threshold: Number(thresholdModal.threshold),
+  })
+  if (ok) closeThreshold()
+}
+
+function toggleMenu(id) {
+  actionMenuId.value = actionMenuId.value === id ? null : id
+}
+
+function openHistory(item) {
+  actionMenuId.value = null
+  store.openHistory(item)
+}
+
+function toggleSelect(id) {
+  if (selectedIds.value.includes(id)) {
+    selectedIds.value = selectedIds.value.filter((x) => x !== id)
+  } else {
+    selectedIds.value = [...selectedIds.value, id]
+  }
+}
+
+function toggleSelectAll() {
+  if (allVisibleSelected.value) {
+    const visible = new Set(filteredStock.value.map((i) => i.productId))
+    selectedIds.value = selectedIds.value.filter((id) => !visible.has(id))
+  } else {
+    const ids = new Set([...selectedIds.value, ...filteredStock.value.map((i) => i.productId)])
+    selectedIds.value = [...ids]
+  }
+}
+
+function clearSelection() {
+  selectedIds.value = []
+}
+
+async function bulkRestockSelected() {
+  const targets = selectedItems.value
+  if (!targets.length) return
+  const ok = await store.bulkRestock(targets, 'Bulk restock from inventory page')
+  if (ok) clearSelection()
+}
+
+async function restockAllLow() {
+  const targets = stock.value.filter((i) => i.lowStock || i.outOfStock)
+  if (!targets.length) return
+  await store.bulkRestock(targets, 'Restock all low / out of stock')
+}
+
+async function quickRowRestock(item) {
+  actionMenuId.value = null
+  await store.restockToSafeLevel(item)
+}
+
+function exportCsv() {
+  const headers = [
+    'Product',
+    'Category',
+    'Stock',
+    'Threshold',
+    'Reserved',
+    'Available',
+    'Status',
+  ]
+  const rows = filteredStock.value.map((item) => [
+    item.productName,
+    categoryLabel(item.category),
+    item.stockQuantity,
+    item.lowStockThreshold,
+    item.reservedQuantity,
+    item.availableQuantity,
+    statusLabel(item),
+  ])
+  const csv = [headers, ...rows]
+    .map((row) =>
+      row
+        .map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`)
+        .join(','),
+    )
+    .join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `inventory-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function scrollToFocused() {
+  if (!focusedId.value) return
+  const el = document.getElementById(`inv-row-${focusedId.value}`)
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 function typeLabel(t) {
@@ -177,7 +402,9 @@ function typeLabel(t) {
 }
 
 function typeTone(t) {
-  if (t === 'PURCHASE' || t === 'INIT') return 'up'
+  if (t === 'PURCHASE' || t === 'INIT' || t === 'RESERVATION_RELEASED' || t === 'RESERVATION_EXPIRED') {
+    return 'up'
+  }
   if (t === 'SALE' || t === 'RESERVED' || t === 'CANCELLATION' || t === 'REFUND') return 'down'
   return 'neutral'
 }
@@ -200,177 +427,424 @@ function formatDate(iso) {
     return iso
   }
 }
+
+function reservationStatus(r) {
+  return String(r.status || '').toUpperCase()
+}
+
+function countdown(expiresAt) {
+  if (!expiresAt) return '—'
+  const ms = new Date(expiresAt).getTime() - now.value
+  if (ms <= 0) return 'Expired'
+  const totalSec = Math.floor(ms / 1000)
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  return `${m}m ${String(s).padStart(2, '0')}s`
+}
+
+function isExpiringSoon(r) {
+  if (!r.expiresAt || reservationStatus(r) !== 'ACTIVE') return false
+  const ms = new Date(r.expiresAt).getTime() - now.value
+  return ms > 0 && ms < 10 * 60 * 1000
+}
+
+function stockHealthPercentage(item) {
+  if (!item.lowStockThreshold) return item.stockQuantity > 0 ? 100 : 0
+  return Math.min(100, (item.stockQuantity / item.lowStockThreshold) * 100)
+}
+
+function openNewProduct() {
+  editingProduct.value = null
+  showProductForm.value = true
+}
+
+function closeProductForm() {
+  showProductForm.value = false
+  editingProduct.value = null
+}
+
+async function onProductSave(payload) {
+  try {
+    store.clearMessages()
+    if (editingProduct.value?.id) {
+      await productStore.editProduct(editingProduct.value.id, payload)
+      success.value = `Updated "${payload.name}"`
+      closeProductForm()
+    } else {
+      const created = await productStore.addProduct(payload)
+      success.value = `Created "${created.name}". You can upload images now.`
+      editingProduct.value = created
+    }
+    await store.fetchStock()
+  } catch (e) {
+    error.value =
+      e?.response?.data?.message ||
+      e?.response?.data?.error ||
+      productStore.error ||
+      'Failed to save product'
+  }
+}
+
+async function onProductImagesChanged() {
+  await store.fetchStock()
+}
+
+function stockHealthColor(item) {
+  if (item.outOfStock) return 'danger'
+  if (item.lowStock) return 'warning'
+  return 'success'
+}
 </script>
 
 <template>
-  <div class="inv-page">
-    <div class="inv-header">
+  <div class="page-wrap inv-page" @click="actionMenuId = null">
+    <header class="inv-header">
       <div>
-        <h1 class="inv-title">Vendor Inventory</h1>
+        <button class="btn-link inv-back" type="button" @click="$router.push('/vendor')">
+          ← Vendor workspace
+        </button>
+        <h1 class="page-title">Inventory</h1>
         <p class="inv-subtitle">
-          Monitor stock levels, top up products, and review stock movement history.
+          Search, sort, restock, and track reserved units across your catalog.
         </p>
       </div>
-      <button class="btn btn-secondary" :disabled="loading" @click="refresh">
-        {{ loading ? 'Loading…' : 'Refresh' }}
-      </button>
-    </div>
+      <div class="inv-header-actions">
+        <button class="btn btn-primary" type="button" @click="openNewProduct">
+          + Add product
+        </button>
+        <button
+          class="btn btn-secondary"
+          type="button"
+          :disabled="updating || !(lowStockCount + outOfStockCount)"
+          @click="restockAllLow"
+        >
+          Restock all low
+        </button>
+        <button class="btn btn-secondary" type="button" @click="exportCsv">Export CSV</button>
+        <button class="btn btn-secondary" type="button" :disabled="loading" @click="store.refreshAll()">
+          {{ loading ? 'Refreshing…' : 'Refresh' }}
+        </button>
+      </div>
+    </header>
 
-    <div v-if="error" class="banner banner-error">
+    <div v-if="error" class="alert alert-error inv-alert">
       <span>{{ error }}</span>
-      <button class="banner-close" title="Dismiss" @click="store.clearMessages()">×</button>
+      <button class="banner-close" type="button" title="Dismiss" @click="store.clearMessages()">×</button>
     </div>
-    <div v-if="success" class="banner banner-success">
+    <div v-if="success" class="alert alert-success inv-alert">
       <span>{{ success }}</span>
-      <button class="banner-close" title="Dismiss" @click="store.clearMessages()">×</button>
+      <button class="banner-close" type="button" title="Dismiss" @click="store.clearMessages()">×</button>
     </div>
 
-    <div class="stat-grid">
-      <div class="stat-card">
-        <span class="stat-label">Total products</span>
-        <span class="stat-value">{{ totalProducts }}</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Units in stock</span>
-        <span class="stat-value">{{ totalUnits }}</span>
-      </div>
-      <div class="stat-card stat-warn">
-        <span class="stat-label">Low stock</span>
-        <span class="stat-value">{{ lowStockCount }}</span>
-      </div>
-      <div class="stat-card stat-danger">
-        <span class="stat-label">Out of stock</span>
-        <span class="stat-value">{{ outOfStockCount }}</span>
-      </div>
-    </div>
+    <section class="inv-stats" aria-label="Inventory summary">
+      <button class="inv-stat" type="button" :class="{ active: stockFilter === 'all' }" @click="setFilter('all')">
+        <span class="inv-stat-label">Products</span>
+        <span class="inv-stat-value">{{ totalProducts }}</span>
+      </button>
+      <button class="inv-stat" type="button" @click="setFilter('all')">
+        <span class="inv-stat-label">Units</span>
+        <span class="inv-stat-value">{{ totalUnits }}</span>
+      </button>
+      <button
+        class="inv-stat tone-warn"
+        type="button"
+        :class="{ active: stockFilter === 'low' }"
+        @click="setFilter('low')"
+      >
+        <span class="inv-stat-label">Low stock</span>
+        <span class="inv-stat-value">{{ lowStockCount }}</span>
+      </button>
+      <button
+        class="inv-stat tone-danger"
+        type="button"
+        :class="{ active: stockFilter === 'out' }"
+        @click="setFilter('out')"
+      >
+        <span class="inv-stat-label">Out of stock</span>
+        <span class="inv-stat-value">{{ outOfStockCount }}</span>
+      </button>
+      <button
+        class="inv-stat tone-info"
+        type="button"
+        :class="{ active: stockFilter === 'reserved' }"
+        @click="setFilter('reserved')"
+      >
+        <span class="inv-stat-label">Reserved SKUs</span>
+        <span class="inv-stat-value">{{ reservedCount }}</span>
+      </button>
+    </section>
 
     <div class="inv-toolbar">
-      <input
-        v-model="searchQuery"
-        class="inv-search"
-        type="search"
-        placeholder="Search products or categories…"
-      />
-      <div class="inv-filters">
-        <button
-          class="chip"
-          :class="{ active: stockFilter === 'all' }"
-          @click="stockFilter = 'all'"
-        >
-          All
-        </button>
-        <button
-          class="chip chip-warn"
-          :class="{ active: stockFilter === 'low' }"
-          @click="stockFilter = 'low'"
-        >
-          Low stock
-        </button>
-        <button
-          class="chip chip-danger"
-          :class="{ active: stockFilter === 'out' }"
-          @click="stockFilter = 'out'"
-        >
-          Out of stock
-        </button>
+      <div class="inv-search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          v-model="searchQuery"
+          class="inv-search"
+          type="search"
+          placeholder="Search products or categories…"
+        />
+      </div>
+      <div class="inv-toolbar-controls">
+        <select v-model="categoryFilter" class="inv-select">
+          <option value="all">All categories</option>
+          <option v-for="cat in categories" :key="cat" :value="cat">
+            {{ categoryLabel(cat) }}
+          </option>
+        </select>
+        <select v-model="sortKey" class="inv-select">
+          <option value="name">Sort: Name</option>
+          <option value="stock">Sort: Stock</option>
+          <option value="available">Sort: Available</option>
+          <option value="status">Sort: Status</option>
+        </select>
       </div>
     </div>
 
-    <div class="panel">
+    <div class="filter-row inv-filters">
+      <button
+        v-for="chip in [
+          { id: 'all', label: 'All' },
+          { id: 'low', label: 'Low stock' },
+          { id: 'out', label: 'Out of stock' },
+          { id: 'reserved', label: 'Reserved' },
+        ]"
+        :key="chip.id"
+        type="button"
+        class="filter-chip"
+        :class="{ active: stockFilter === chip.id }"
+        @click="setFilter(chip.id)"
+      >
+        {{ chip.label }}
+      </button>
+      <span class="inv-result-count">{{ filteredStock.length }} shown</span>
+    </div>
+
+    <div v-if="selectedIds.length" class="inv-bulk-bar">
+      <span>{{ selectedIds.length }} selected</span>
+      <div class="inv-bulk-actions">
+        <button class="btn btn-primary" type="button" :disabled="updating" @click="bulkRestockSelected">
+          {{ updating ? 'Restocking…' : 'Restock selected' }}
+        </button>
+        <button class="btn-link" type="button" @click="clearSelection">Clear</button>
+      </div>
+    </div>
+
+    <section class="inv-panel">
       <div class="inv-table-wrap">
         <table class="inv-table">
           <thead>
             <tr>
+              <th class="check-col">
+                <input
+                  type="checkbox"
+                  :checked="allVisibleSelected"
+                  :disabled="!filteredStock.length"
+                  @change="toggleSelectAll"
+                />
+              </th>
               <th>Product</th>
               <th class="num">Stock</th>
               <th class="num">Threshold</th>
               <th class="num">Reserved</th>
               <th class="num">Available</th>
+              <th>Health</th>
               <th>Status</th>
               <th class="actions-col">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="7" class="inv-message">Loading inventory…</td>
+              <td colspan="9" class="inv-message">Loading inventory…</td>
             </tr>
             <tr v-else-if="filteredStock.length === 0">
-              <td colspan="7" class="inv-message">{{ emptyMessage }}</td>
+              <td colspan="9" class="inv-message">{{ emptyMessage }}</td>
             </tr>
             <tr
               v-for="item in filteredStock"
+              :id="`inv-row-${item.productId}`"
               :key="item.productId"
               :class="rowClass(item)"
             >
+              <td class="check-col" @click.stop>
+                <input
+                  type="checkbox"
+                  :checked="selectedIds.includes(item.productId)"
+                  @change="toggleSelect(item.productId)"
+                />
+              </td>
               <td>
-                <div class="product-name">{{ item.productName }}</div>
-                <div class="product-meta">{{ categoryLabel(item.category) }}</div>
+                <div class="inv-product">
+                  <div class="inv-product-name">{{ item.productName }}</div>
+                  <div class="inv-product-meta">{{ categoryLabel(item.category) }}</div>
+                </div>
               </td>
-              <td class="num">
-                <strong>{{ item.stockQuantity }}</strong>
-              </td>
+              <td class="num"><strong>{{ item.stockQuantity }}</strong></td>
               <td class="num">{{ item.lowStockThreshold }}</td>
               <td class="num">{{ item.reservedQuantity }}</td>
               <td class="num">{{ item.availableQuantity }}</td>
               <td>
-                <span class="status-badge" :class="`status-${statusOf(item)}`">
+                <div class="inv-health">
+                  <div class="inv-health-bar">
+                    <div
+                      class="inv-health-fill"
+                      :class="`health-${stockHealthColor(item)}`"
+                      :style="{ width: `${stockHealthPercentage(item)}%` }"
+                    ></div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="inv-status" :class="`status-${statusOf(item)}`">
                   {{ statusLabel(item) }}
                 </span>
               </td>
-              <td class="actions-col">
-                <div class="action-row">
-                  <button class="act act-inc" title="Add stock" @click="openAdjust(item, 'increment')">
-                    + Add
+              <td class="actions-col" @click.stop>
+                <div class="inv-actions">
+                  <button class="act act-inc" type="button" :disabled="updating" @click="quickRowRestock(item)">
+                    +{{ store.suggestedRestockQty(item) }}
+                  </button>
+                  <button class="act act-inc" type="button" @click="openAdjust(item, 'increment')">
+                    Add
                   </button>
                   <button
                     class="act act-dec"
-                    title="Remove stock"
+                    type="button"
                     :disabled="item.stockQuantity <= 0"
                     @click="openAdjust(item, 'decrement')"
                   >
-                    − Remove
+                    Remove
                   </button>
-                  <button class="act act-set" title="Set stock level" @click="openAdjust(item, 'set')">
-                    Set
-                  </button>
-                  <button class="act act-log" title="View stock history" @click="store.openHistory(item)">
-                    History
-                  </button>
+                  <div class="inv-menu">
+                    <button
+                      class="act act-more"
+                      type="button"
+                      :aria-expanded="actionMenuId === item.productId"
+                      @click="toggleMenu(item.productId)"
+                    >
+                      More
+                    </button>
+                    <div v-if="actionMenuId === item.productId" class="inv-menu-panel">
+                      <button type="button" @click="openAdjust(item, 'set')">Set level</button>
+                      <button type="button" @click="openThreshold(item)">Set threshold</button>
+                      <button type="button" @click="openHistory(item)">View history</button>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
 
-    <!-- Adjust stock modal -->
+    <section class="inv-reservations">
+      <div class="vendor-section-head">
+        <div>
+          <h2>Active reservations</h2>
+          <p>Live countdown until checkout holds expire and stock is released.</p>
+        </div>
+        <span class="inv-count-pill">{{ activeReservations.length }} active</span>
+      </div>
+
+      <div v-if="reservationsLoading" class="loading-state">Loading reservations…</div>
+      <div v-else-if="activeReservations.length === 0" class="empty-state vendor-empty">
+        No active checkout reservations right now.
+      </div>
+      <div v-else class="inv-table-wrap">
+        <table class="inv-table inv-reservation-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="num">Qty</th>
+              <th>Order</th>
+              <th>Status</th>
+              <th>Countdown</th>
+              <th>Expires</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="r in activeReservations"
+              :key="r.id"
+              :class="{ 'row-expiring': isExpiringSoon(r) }"
+            >
+              <td>{{ productNameById[r.productId] || `Product #${r.productId}` }}</td>
+              <td class="num"><strong>{{ r.quantity }}</strong></td>
+              <td>{{ r.orderId ? `#${r.orderId}` : '—' }}</td>
+              <td>
+                <span class="inv-status status-reserved">
+                  {{ reservationStatus(r) }}
+                </span>
+              </td>
+              <td>
+                <span class="vendor-countdown" :class="{ urgent: isExpiringSoon(r) }">
+                  {{ countdown(r.expiresAt) }}
+                </span>
+              </td>
+              <td>{{ formatDate(r.expiresAt) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Adjust modal -->
     <div v-if="modal.visible" class="modal-overlay" @click.self="closeAdjust">
-      <div class="modal">
+      <div class="modal" role="dialog" aria-modal="true">
         <div class="modal-header">
           <h3 class="modal-title">{{ modalTitle }}</h3>
-          <button class="modal-x" title="Close" @click="closeAdjust">×</button>
+          <button class="modal-x" type="button" title="Close" @click="closeAdjust">×</button>
         </div>
         <div class="modal-body">
           <p class="modal-product">{{ modal.item?.productName }}</p>
 
           <div class="mode-tabs">
             <button
+              type="button"
               class="mode-tab"
               :class="{ active: modal.mode === 'increment' }"
               @click="setMode('increment')"
             >
-              Add stock
+              Add
             </button>
             <button
+              type="button"
               class="mode-tab"
               :class="{ active: modal.mode === 'decrement' }"
               @click="setMode('decrement')"
             >
-              Remove stock
+              Remove
             </button>
-            <button class="mode-tab" :class="{ active: modal.mode === 'set' }" @click="setMode('set')">
+            <button
+              type="button"
+              class="mode-tab"
+              :class="{ active: modal.mode === 'set' }"
+              @click="setMode('set')"
+            >
               Set level
+            </button>
+          </div>
+
+          <div v-if="modal.mode !== 'decrement'" class="quick-amounts">
+            <button
+              v-for="amount in QUICK_AMOUNTS"
+              :key="amount"
+              type="button"
+              class="quick-chip"
+              @click="applyQuickAmount(amount)"
+            >
+              {{ modal.mode === 'set' ? amount : `+${amount}` }}
+            </button>
+            <button
+              v-if="modal.mode === 'increment'"
+              type="button"
+              class="quick-chip quick-chip-accent"
+              @click="applyQuickAmount(suggestedQty)"
+            >
+              Safe +{{ suggestedQty }}
             </button>
           </div>
 
@@ -398,26 +872,62 @@ function formatDate(iso) {
           ></textarea>
 
           <div class="preview">
-            <span>Current stock: <strong>{{ currentStock }}</strong></span>
+            <span>Current: <strong>{{ currentStock }}</strong></span>
             <span class="preview-arrow">→</span>
-            <span>New stock: <strong>{{ previewStock }}</strong></span>
+            <span>New: <strong>{{ previewStock }}</strong></span>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-ghost" @click="closeAdjust">Cancel</button>
-          <button class="btn btn-primary" :disabled="!canSubmit || updating" @click="submitAdjust">
+          <button class="btn btn-secondary" type="button" @click="closeAdjust">Cancel</button>
+          <button
+            class="btn btn-primary"
+            type="button"
+            :disabled="!canSubmit || updating"
+            @click="submitAdjust"
+          >
             {{ updating ? 'Saving…' : 'Save' }}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Stock history modal -->
+    <!-- Threshold modal -->
+    <div v-if="thresholdModal.visible" class="modal-overlay" @click.self="closeThreshold">
+      <div class="modal modal-small" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h3 class="modal-title">Low stock threshold</h3>
+          <button class="modal-x" type="button" title="Close" @click="closeThreshold">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-product">{{ thresholdModal.item?.productName }}</p>
+          <p class="modal-hint">
+            Products are marked low stock when quantity falls to this level or below.
+          </p>
+          <label class="field-label" for="threshold-qty">Threshold</label>
+          <input
+            id="threshold-qty"
+            v-model.number="thresholdModal.threshold"
+            class="field-input"
+            type="number"
+            min="0"
+            placeholder="0"
+          />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" type="button" @click="closeThreshold">Cancel</button>
+          <button class="btn btn-primary" type="button" :disabled="updating" @click="submitThreshold">
+            {{ updating ? 'Saving…' : 'Save' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History modal -->
     <div v-if="historyVisible" class="modal-overlay" @click.self="store.closeHistory()">
-      <div class="modal modal-wide">
+      <div class="modal modal-wide" role="dialog" aria-modal="true">
         <div class="modal-header">
           <h3 class="modal-title">Stock history</h3>
-          <button class="modal-x" title="Close" @click="store.closeHistory()">×</button>
+          <button class="modal-x" type="button" title="Close" @click="store.closeHistory()">×</button>
         </div>
         <div class="modal-body">
           <p class="modal-product">
@@ -448,649 +958,18 @@ function formatDate(iso) {
           </ul>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-primary" @click="store.closeHistory()">Close</button>
+          <button class="btn btn-primary" type="button" @click="store.closeHistory()">Close</button>
         </div>
       </div>
     </div>
+
+    <ProductForm
+      v-if="showProductForm"
+      :product="editingProduct"
+      :categories="productCategories"
+      @save="onProductSave"
+      @close="closeProductForm"
+      @images-changed="onProductImagesChanged"
+    />
   </div>
 </template>
-
-<style scoped>
-.inv-page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 32px 24px 48px;
-}
-
-.inv-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.inv-title {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 4px;
-  color: var(--color-text);
-}
-
-.inv-subtitle {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-text-secondary);
-}
-
-/* ---------------- Banners ---------------- */
-.banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  margin-bottom: 16px;
-}
-
-.banner-error {
-  background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  color: var(--color-danger);
-}
-
-.banner-success {
-  background: rgba(22, 163, 74, 0.08);
-  border: 1px solid rgba(22, 163, 74, 0.3);
-  color: var(--color-success);
-}
-
-.banner-close {
-  border: none;
-  background: none;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  color: inherit;
-  opacity: 0.6;
-  padding: 0 2px;
-}
-
-.banner-close:hover {
-  opacity: 1;
-}
-
-/* ---------------- Stat cards ---------------- */
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  box-shadow: var(--shadow-sm);
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.stat-value {
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1;
-}
-
-.stat-card.stat-warn .stat-value {
-  color: var(--color-warning);
-}
-
-.stat-card.stat-danger .stat-value {
-  color: var(--color-danger);
-}
-
-/* ---------------- Toolbar ---------------- */
-.inv-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.inv-search {
-  flex: 1;
-  min-width: 220px;
-  padding: 9px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.inv-search:focus {
-  border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-.inv-filters {
-  display: flex;
-  gap: 6px;
-}
-
-.chip {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: var(--radius-full);
-  padding: 6px 14px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.chip:hover {
-  border-color: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-.chip.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
-}
-
-/* ---------------- Table ---------------- */
-.panel {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.inv-table-wrap {
-  overflow-x: auto;
-}
-
-.inv-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.inv-table th {
-  text-align: left;
-  padding: 12px 16px;
-  background: var(--color-bg);
-  color: var(--color-text-muted);
-  font-weight: 600;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid var(--color-border);
-  white-space: nowrap;
-}
-
-.inv-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: middle;
-}
-
-.inv-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.inv-table tbody tr {
-  transition: background 0.12s;
-}
-
-.inv-table tbody tr:hover {
-  background: rgba(37, 99, 235, 0.03);
-}
-
-.inv-table tbody tr.row-low {
-  background: rgba(217, 119, 6, 0.05);
-}
-
-.inv-table tbody tr.row-out {
-  background: rgba(220, 38, 38, 0.05);
-}
-
-.num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.product-name {
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.product-meta {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  margin-top: 2px;
-  text-transform: capitalize;
-}
-
-.inv-message {
-  text-align: center;
-  padding: 36px 16px !important;
-  color: var(--color-text-muted);
-  font-size: 13px;
-}
-
-/* Status badges */
-.status-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.status-ok {
-  color: var(--color-success);
-  background: rgba(22, 163, 74, 0.1);
-}
-
-.status-low {
-  color: var(--color-warning);
-  background: rgba(217, 119, 6, 0.12);
-}
-
-.status-out {
-  color: var(--color-danger);
-  background: rgba(220, 38, 38, 0.1);
-}
-
-/* Row actions */
-.actions-col {
-  white-space: nowrap;
-}
-
-.action-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.act {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 5px 9px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.act:hover:not(:disabled) {
-  border-color: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-.act:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.act-inc:hover:not(:disabled) {
-  border-color: var(--color-success);
-  color: var(--color-success);
-  background: rgba(22, 163, 74, 0.06);
-}
-
-.act-dec:hover:not(:disabled) {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-  background: rgba(220, 38, 38, 0.06);
-}
-
-/* ---------------- Modals ---------------- */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  z-index: 100;
-}
-
-.modal {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  width: 440px;
-  max-width: 100%;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
-  animation: inv-pop 0.16s ease-out;
-}
-
-.modal-wide {
-  width: 620px;
-}
-
-@keyframes inv-pop {
-  from {
-    transform: scale(0.97);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.modal-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.modal-x {
-  border: none;
-  background: none;
-  font-size: 20px;
-  line-height: 1;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  padding: 0;
-}
-
-.modal-x:hover {
-  color: var(--color-text);
-}
-
-.modal-body {
-  padding: 18px 20px;
-  overflow-y: auto;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 14px 20px;
-  border-top: 1px solid var(--color-border);
-}
-
-.modal-product {
-  margin: 0 0 14px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.history-stock {
-  display: block;
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--color-text-muted);
-  margin-top: 4px;
-}
-
-/* Mode tabs */
-.mode-tabs {
-  display: flex;
-  gap: 4px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 4px;
-  margin-bottom: 14px;
-}
-
-.mode-tab {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 7px 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.mode-tab.active {
-  background: var(--color-surface);
-  color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Form fields */
-.field-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  margin: 12px 0 6px;
-}
-
-.field-label .optional {
-  font-weight: 400;
-  color: var(--color-text-muted);
-}
-
-.field-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 9px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-family: inherit;
-  background: var(--color-surface);
-  color: var(--color-text);
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.field-input:focus {
-  border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-.field-area {
-  resize: vertical;
-  min-height: 52px;
-}
-
-.field-hint {
-  margin: 6px 0 0;
-  font-size: 12px;
-  color: var(--color-danger);
-}
-
-.preview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  padding: 10px 12px;
-  background: var(--color-primary-bg);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  flex-wrap: wrap;
-}
-
-.preview-arrow {
-  color: var(--color-text-muted);
-}
-
-/* History list */
-.history-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.history-item {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 10px 12px;
-}
-
-.history-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.h-type {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 2px 10px;
-  border-radius: var(--radius-full);
-}
-
-.h-type-up {
-  color: var(--color-success);
-  background: rgba(22, 163, 74, 0.1);
-}
-
-.h-type-down {
-  color: var(--color-danger);
-  background: rgba(220, 38, 38, 0.1);
-}
-
-.h-type-neutral {
-  color: var(--color-text-secondary);
-  background: var(--color-bg);
-}
-
-.h-delta {
-  font-size: 14px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.delta-up {
-  color: var(--color-success);
-}
-
-.delta-down {
-  color: var(--color-danger);
-}
-
-.delta-zero {
-  color: var(--color-text-muted);
-}
-
-.history-meta {
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-
-.history-time {
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
-/* ---------------- Buttons ---------------- */
-.btn {
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 9px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-ghost {
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-}
-
-.btn-ghost:hover {
-  border-color: var(--color-text-muted);
-  color: var(--color-text);
-}
-
-.btn-secondary {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  border-color: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* ---------------- Responsive ---------------- */
-@media (max-width: 760px) {
-  .stat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .inv-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-</style>

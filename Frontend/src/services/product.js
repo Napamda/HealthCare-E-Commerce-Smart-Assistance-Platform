@@ -22,7 +22,7 @@ export function listProducts(page = 0, size = 12, sort) {
  * @param {number} [params.maxPrice]
  * @param {number} [params.page=0]
  * @param {number} [params.size=12]
- * @param {string} [params.sort] One of price_asc, price_desc, name_asc, name_desc, newest, popular, stock_asc
+ * @param {string} [params.sort]
  * @returns {Promise<object>} Paginated search result
  */
 export function searchProducts({ keyword, category, minPrice, maxPrice, page = 0, size = 12, sort } = {}) {
@@ -59,7 +59,7 @@ export function getCategoriesWithCounts() {
 }
 
 /**
- * Create a new product (admin).
+ * Create a new product (admin / vendor).
  * @param {object} productData
  * @returns {Promise<object>} ProductResponse
  */
@@ -68,7 +68,7 @@ export function createProduct(productData) {
 }
 
 /**
- * Update an existing product (admin).
+ * Update an existing product (admin / vendor).
  * @param {number} id
  * @param {object} productData
  * @returns {Promise<object>} ProductResponse
@@ -98,7 +98,7 @@ export function getProductImages(productId) {
 }
 
 /**
- * Upload an image for a product (admin). Generates a 240px thumbnail server-side.
+ * Upload an image for a product (admin / vendor). Generates a 240px thumbnail server-side.
  * @param {number} productId
  * @param {File} file
  * @returns {Promise<object>} ImageResponse
@@ -114,7 +114,7 @@ export function uploadProductImage(productId, file) {
 }
 
 /**
- * Set an image as the product's primary image (admin).
+ * Set an image as the product's primary image (admin / vendor).
  * @param {number} imageId
  * @returns {Promise<object>} ImageResponse
  */
@@ -125,7 +125,7 @@ export function setPrimaryImage(imageId) {
 }
 
 /**
- * Delete an image (admin).
+ * Delete an image (admin / vendor).
  * @param {number} imageId
  * @returns {Promise<void>}
  */

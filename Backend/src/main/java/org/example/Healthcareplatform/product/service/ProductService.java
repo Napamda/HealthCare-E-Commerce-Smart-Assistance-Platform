@@ -2,6 +2,8 @@ package org.example.Healthcareplatform.product.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.Healthcareplatform.order.entity.Order;
+import org.example.Healthcareplatform.order.repository.OrderRepository;
 import org.example.Healthcareplatform.product.dto.CategoryCountResponse;
 import org.example.Healthcareplatform.product.dto.ProductRef;
 import org.example.Healthcareplatform.product.dto.ProductRequest;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +31,7 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
 
     @Transactional(readOnly = true)
     public Page<ProductResponse> listProducts(int page, int size, String sort) {
@@ -218,5 +222,78 @@ public class ProductService {
                     return new CategoryCountResponse(cat.name(), count);
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getProductNameToIdMap() {
+        return productRepository.findAllByOrderByNameAsc().stream()
+                .collect(Collectors.toMap(
+                        p -> p.getName().toLowerCase(),
+                        Product::getId,
+                        (existing, replacement) -> existing));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getPopularProducts(int limit) {
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "ratings"));
+        return productRepository.findAll(pageable).stream()
+                .map(ProductResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getPersonalizedRecommendations(Long userId, int limit) {
+        // Get user's order history to find categories they've purchased
+        List<String> userCategories = orderRepository.findCategoriesByUserId(userId, Order.OrderStatus.CANCELLED);
+        
+        if (userCategories.isEmpty()) {
+            // If no order history, return popular products
+            return getPopularProducts(limit);
+        }
+
+        // Convert category names to enum values
+        List<Product.ProductCategory> categoryEnums = userCategories.stream()
+                .map(catName -> {
+                    try {
+                        return Product.ProductCategory.valueOf(catName);
+                    } catch (IllegalArgumentException e) {
+                        log.warn("Invalid category name from orders: {}", catName);
+                        return null;
+                    }
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (categoryEnums.isEmpty()) {
+            return getPopularProducts(limit);
+        }
+
+        // Get products by checking each category individually
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "ratings"));
+        List<ProductResponse> allProducts = new ArrayList<>();
+        
+        for (Product.ProductCategory category : categoryEnums) {
+            Page<Product> categoryProducts = productRepository.findByCategory(category, pageable);
+            categoryProducts.getContent().forEach(product -> allProducts.add(ProductResponse.fromEntity(product)));
+        }
+        
+        // Limit to requested number
+        return allProducts.stream()
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getRecommendationsByCategory(String category, int limit) {
+        try {
+            Product.ProductCategory productCategory = Product.ProductCategory.valueOf(category.toUpperCase());
+            Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "ratings"));
+            return productRepository.findByCategory(productCategory, pageable).stream()
+                    .map(ProductResponse::fromEntity)
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid category for recommendations: {}", category);
+            return getPopularProducts(limit);
+        }
     }
 }

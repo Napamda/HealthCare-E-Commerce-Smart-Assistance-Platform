@@ -68,6 +68,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/events/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/events/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasAnyRole("DOCTOR", "ADMIN")
+                        // Vendors may create/update catalog products and upload images from inventory
+                        .requestMatchers(HttpMethod.POST, "/api/admin/products").hasAnyRole("ADMIN", "VENDOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/admin/products/*").hasAnyRole("ADMIN", "VENDOR")
+                        .requestMatchers(HttpMethod.POST, "/api/admin/products/*/images").hasAnyRole("ADMIN", "VENDOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/admin/products/images/*/primary").hasAnyRole("ADMIN", "VENDOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/admin/products/images/*").hasAnyRole("ADMIN", "VENDOR")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/orders/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/inventory/**").hasAnyRole("VENDOR", "ADMIN")

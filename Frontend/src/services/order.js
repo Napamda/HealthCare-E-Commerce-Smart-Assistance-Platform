@@ -28,6 +28,9 @@ export function cancelOrder(orderId) {
   return api.post(`/api/orders/${orderId}/cancel`).then((res) => res.data)
 }
 
+export function reorder(orderId) {
+  return api.post(`/api/orders/${orderId}/reorder`).then((res) => res.data)
+}
 /**
  * Preview the checkout breakdown (subtotal, discount, shipping, tax, total).
  * @param {{ shippingMethod?: string, discountCode?: string }} params

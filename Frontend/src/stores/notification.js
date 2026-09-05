@@ -1,18 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import {
-  getUnreadCount,
-  getNotifications,
-  markAsRead,
-  markAllAsRead,
-} from '../services/notification.js'
 
 export const useNotificationStore = defineStore('notification', () => {
   const notifications = ref([])
-  const unreadCount = ref(0)
-  const loading = ref(false)
-  const error = ref(null)
-  const showDropdown = ref(false)
 
   async function fetchUnreadCount() {
     try {
@@ -58,30 +48,22 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
-  function toggleDropdown() {
-    showDropdown.value = !showDropdown.value
+  function warning(title, message, options = {}) {
+    return addNotification({ type: 'warning', title, message, ...options })
   }
 
-  function closeDropdown() {
-    showDropdown.value = false
-  }
-
-  function clearError() {
-    error.value = null
+  function info(title, message, options = {}) {
+    return addNotification({ type: 'info', title, message, ...options })
   }
 
   return {
     notifications,
-    unreadCount,
-    loading,
+    addNotification,
+    removeNotification,
+    clearAll,
+    success,
     error,
-    showDropdown,
-    fetchUnreadCount,
-    fetchNotifications,
-    markNotificationRead,
-    markAllNotificationsRead,
-    toggleDropdown,
-    closeDropdown,
-    clearError,
+    warning,
+    info,
   }
 })

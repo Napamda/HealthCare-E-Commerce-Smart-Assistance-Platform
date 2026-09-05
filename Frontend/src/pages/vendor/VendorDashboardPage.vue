@@ -199,6 +199,9 @@ onMounted(() => {
         <button class="vd-btn vd-btn-sm vd-btn-outline" @click="auth.logout(); router.push('/login')">Log out</button>
         <button class="vd-btn vd-btn-sm vd-btn-primary" @click="router.push('/register')">Register as Vendor</button>
       </div>
+      <button class="btn-link" type="button" @click="goInventory(outOfStockCount ? 'out' : 'low')">
+        Review items
+      </button>
     </div>
 
     <!-- Tabs -->
@@ -436,7 +439,21 @@ onMounted(() => {
           </button>
         </div>
       </div>
-    </div>
+      <div v-if="!recentMovements.length" class="empty-state vendor-empty">
+        No recent movements yet.
+      </div>
+      <ul v-else class="vendor-activity-list">
+        <li v-for="entry in recentMovements" :key="`${entry.id}-${entry.productId}`">
+          <div>
+            <div class="vendor-item-name">{{ entry.productName }}</div>
+            <div class="vendor-item-meta">{{ typeLabel(entry.changeType) }} · {{ formatDate(entry.createdAt) }}</div>
+          </div>
+          <span class="h-delta" :class="entry.quantityChange > 0 ? 'delta-up' : entry.quantityChange < 0 ? 'delta-down' : 'delta-zero'">
+            {{ signedDelta(entry.quantityChange) }}
+          </span>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 

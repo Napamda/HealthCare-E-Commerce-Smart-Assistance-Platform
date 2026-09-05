@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.common.CurrentUser;
 import org.example.Healthcareplatform.order.dto.OrderRequest;
 import org.example.Healthcareplatform.order.dto.OrderResponse;
+import org.example.Healthcareplatform.order.dto.OrderStatisticsResponse;
 import org.example.Healthcareplatform.order.service.OrderService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -101,6 +103,70 @@ public class OrderController {
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @PostMapping("/{orderId}/confirm")
+    public ResponseEntity<?> confirmOrder(@PathVariable Long orderId, Authentication auth) {
+        Long userId = getUserId(auth);
+        log.info("POST /api/orders/{}/confirm — userId={}", orderId, userId);
+        try {
+            return ResponseEntity.ok(orderService.confirmOrder(userId, orderId));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchOrders(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication auth) {
+        Long userId = getUserId(auth);
+        log.info("GET /api/orders/search — userId={}, status={}, page={}, size={}", userId, status, page, size);
+
+        try {
+            Instant start = startDate != null ? Instant.parse(startDate) : null;
+            Instant end = endDate != null ? Instant.parse(endDate) : null;
+            return ResponseEntity.ok(toPageBody(orderService.getUserOrdersWithFilters(userId, status, start, end, page, size)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid date format. Use ISO format: yyyy-MM-dd'T'HH:mm:ss'Z'"));
+        }
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<?> getOrdersByStatus(
+            @PathVariable String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication auth) {
+        Long userId = getUserId(auth);
+        log.info("GET /api/orders/status/{} — userId={}, page={}, size={}", status, userId, page, size);
+        try {
+            return ResponseEntity.ok(toPageBody(orderService.getUserOrdersByStatus(userId, status, page, size)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status: " + status));
+        }
+    }
+
+    @GetMapping("/number/{orderNumber}")
+    public ResponseEntity<?> getOrderByNumber(@PathVariable String orderNumber, Authentication auth) {
+        Long userId = getUserId(auth);
+        log.info("GET /api/orders/number/{} — userId={}", orderNumber, userId);
+        try {
+            return ResponseEntity.ok(orderService.getOrderByNumber(userId, orderNumber));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/statistics")
+    public ResponseEntity<OrderStatisticsResponse> getUserStatistics(Authentication auth) {
+        Long userId = getUserId(auth);
+        log.info("GET /api/orders/statistics — userId={}", userId);
+        return ResponseEntity.ok(orderService.getUserOrderStatistics(userId));
     }
 
     // ============ Admin endpoints ============
