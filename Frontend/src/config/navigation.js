@@ -30,7 +30,6 @@ export const NAV_ITEMS = {
     { to: '/events', label: 'Events' },
     { to: '/events/registrations', label: 'My Events' },
     { to: '/consultations', label: 'Consultations' },
-    { to: '/chat', label: 'AI Chat' },
   ],
 
   [ROLES.ADMIN]: [

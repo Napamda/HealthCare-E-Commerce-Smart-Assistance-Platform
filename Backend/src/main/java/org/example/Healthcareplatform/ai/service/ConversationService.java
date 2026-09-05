@@ -78,6 +78,10 @@ public class ConversationService {
 
     @Transactional
     public ConversationMessage saveUserMessage(Long conversationId, String content) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("message must not be blank");
+        }
+
         ConversationMessage message = ConversationMessage.builder()
                 .conversationId(conversationId)
                 .role(ConversationMessage.MessageRole.USER)

@@ -5,7 +5,9 @@ import org.example.Healthcareplatform.ai.exception.ProviderUnavailableException;
 import org.example.Healthcareplatform.ai.prompt.PromptTemplate;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
@@ -15,10 +17,17 @@ import java.util.Map;
 @Slf4j
 public class OpenRouterProvider implements AIProvider {
 
+    private static final int MAX_ATTEMPTS = 3;
+    private static final long RETRY_BACKOFF_MILLIS = 250;
+
     private final RestClient restClient;
     private final String model;
 
     public OpenRouterProvider(String baseUrl, String apiKey, String model) {
+        this(baseUrl, apiKey, model, requestFactoryWithTimeouts());
+    }
+
+    OpenRouterProvider(String baseUrl, String apiKey, String model, ClientHttpRequestFactory requestFactory) {
         this.model = model;
 
         if (apiKey == null || apiKey.isBlank()) {
@@ -30,7 +39,7 @@ public class OpenRouterProvider implements AIProvider {
                 .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "Bearer " + apiKey)
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                .requestFactory(requestFactoryWithTimeouts())
+                .requestFactory(requestFactory)
                 .build();
 
         log.info("OpenRouterProvider initialized — model={}, baseUrl={}", model, baseUrl);
@@ -43,10 +52,29 @@ public class OpenRouterProvider implements AIProvider {
         return factory;
     }
 
+    private static final int MAX_RETRIES = 3;
+    private static final long BASE_DELAY_MS = 1000;
+
     @Override
     public String chat(String prompt) {
         log.info("OpenRouterProvider sending prompt ({} chars)", prompt.length());
+        int attempt = 1;
+        while (true) {
+            try {
+                return executeChat(prompt);
+            } catch (RetryableProviderFailure e) {
+                if (attempt >= MAX_ATTEMPTS) {
+                    log.error("OpenRouter API call failed after {} attempts", attempt, e);
+                    throw new ProviderUnavailableException("OpenRouter", e);
+                }
+                log.warn("OpenRouter attempt {}/{} failed, retrying — {}", attempt, MAX_ATTEMPTS, e.getMessage());
+                sleepBeforeRetry(attempt);
+                attempt++;
+            }
+        }
+    }
 
+    private String executeChat(String prompt) {
         try {
             var messages = buildMessages(prompt);
 
@@ -63,6 +91,9 @@ public class OpenRouterProvider implements AIProvider {
                         if (status.isError()) {
                             byte[] errorBody = resp.getBody().readAllBytes();
                             String errorText = new String(errorBody);
+                            if (status.value() >= 500) {
+                                throw new RetryableProviderFailure("HTTP " + status.value() + ": " + errorText);
+                            }
                             log.error("OpenRouter HTTP {} — body: {}", status.value(), errorText);
                             throw new ProviderUnavailableException("OpenRouter",
                                     new RuntimeException("HTTP " + status.value() + ": " + errorText));
@@ -76,17 +107,134 @@ public class OpenRouterProvider implements AIProvider {
                     || response.choices().get(0).message() == null) {
                 throw new ProviderUnavailableException("OpenRouter",
                         new IllegalStateException("Empty response from API"));
-            }
+        Exception lastException = null;
 
-            String content = response.choices().get(0).message().content();
-            log.info("OpenRouterProvider response received ({} chars)", content.length());
-            return content;
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                var messages = buildMessages(prompt);
+
+                var body = Map.of(
+                        "model", model,
+                        "messages", messages
+                );
+
+                var response = restClient.post()
+                        .uri("/chat/completions")
+                        .body(body)
+                        .exchange((req, resp) -> {
+                            HttpStatusCode status = resp.getStatusCode();
+                            if (status.is5xxServerError() || status.value() == 429) {
+                                byte[] errorBody = resp.getBody().readAllBytes();
+                                String errorText = new String(errorBody);
+                                log.warn("OpenRouter HTTP {} on attempt {}/{} — retryable: {}",
+                                        status.value(), attempt, MAX_RETRIES, errorText);
+                                throw new RetryableHttpException(status.value(), errorText);
+                            }
+                            if (status.isError()) {
+                                byte[] errorBody = resp.getBody().readAllBytes();
+                                String errorText = new String(errorBody);
+                                log.error("OpenRouter HTTP {} — non-retryable: {}", status.value(), errorText);
+                                throw new ProviderUnavailableException("OpenRouter",
+                                        new RuntimeException("HTTP " + status.value() + ": " + errorText));
+                            }
+                            return resp.bodyTo(OpenRouterChatResponse.class);
+                        });
+
+                if (response == null
+                        || response.choices() == null
+                        || response.choices().isEmpty()
+                        || response.choices().get(0).message() == null) {
+                    throw new RetryableHttpException(0, "Empty response from API");
+                }
+
+                String content = response.choices().get(0).message().content();
+                log.info("OpenRouterProvider response received ({} chars)", content.length());
+                return content;
+
+            } catch (RetryableHttpException e) {
+                lastException = e;
+                if (attempt < MAX_RETRIES) {
+                    long delayMs = BASE_DELAY_MS * (1L << (attempt - 1));
+                    log.warn("OpenRouter attempt {}/{} failed ({}), retrying in {}ms",
+                            attempt, MAX_RETRIES, e.getMessage(), delayMs);
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new ProviderUnavailableException("OpenRouter", ie);
+                    }
+                }
+            } catch (ProviderUnavailableException e) {
+                throw e;
+            } catch (Exception e) {
+                lastException = e;
+                if (attempt < MAX_RETRIES && isRetryable(e)) {
+                    long delayMs = BASE_DELAY_MS * (1L << (attempt - 1));
+                    log.warn("OpenRouter attempt {}/{} failed with {}, retrying in {}ms",
+                            attempt, MAX_RETRIES, e.getClass().getSimpleName(), delayMs);
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new ProviderUnavailableException("OpenRouter", ie);
+                    }
+                } else {
+                    log.error("OpenRouter API call failed on attempt {}/{}", attempt, MAX_RETRIES, e);
+                    if (attempt >= MAX_RETRIES) {
+                        throw new ProviderUnavailableException("OpenRouter", e);
+                    }
+                }
+            }
+        }
+
+        throw new ProviderUnavailableException("OpenRouter",
+                lastException != null ? lastException : new RuntimeException("All retries exhausted"));
+    }
+
+    private boolean isRetryable(Exception e) {
+        String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+        return msg.contains("timeout")
+                || msg.contains("connection")
+                || msg.contains("network")
+                || msg.contains("reset")
+                || msg.contains("refused");
+    }
+
+    private static class RetryableHttpException extends RuntimeException {
+        private final int statusCode;
 
         } catch (ProviderUnavailableException e) {
             throw e;
+        } catch (RetryableProviderFailure e) {
+            throw e;
+        } catch (ResourceAccessException e) {
+            throw new RetryableProviderFailure(e);
         } catch (Exception e) {
             log.error("OpenRouter API call failed", e);
             throw new ProviderUnavailableException("OpenRouter", e);
+        RetryableHttpException(int statusCode, String message) {
+            super("HTTP " + statusCode + ": " + message);
+            this.statusCode = statusCode;
+        }
+    }
+
+    private static void sleepBeforeRetry(int attempt) {
+        try {
+            Thread.sleep(RETRY_BACKOFF_MILLIS * attempt);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ProviderUnavailableException("OpenRouter", e);
+        }
+    }
+
+    private static class RetryableProviderFailure extends RuntimeException {
+
+        RetryableProviderFailure(String message) {
+            super(message);
+        }
+
+        RetryableProviderFailure(Throwable cause) {
+            super(cause);
         }
     }
 

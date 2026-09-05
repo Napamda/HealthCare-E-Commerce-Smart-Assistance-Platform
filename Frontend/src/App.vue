@@ -1,30 +1,14 @@
 <script setup>
-import { computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted } from 'vue'
 import { useAuthStore } from './stores/auth.js'
 import { useCartStore } from './stores/cart.js'
 import CartIcon from './components/cart/CartIcon.vue'
 import NotificationContainer from './components/NotificationContainer.vue'
 import { ROLE_LABELS, ROLE_DASHBOARD } from './config/permissions.js'
+import AppNavbar from './components/AppNavbar.vue'
 
-const router = useRouter()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
-
-const dashboardLink = computed(() => {
-  if (!authStore.userRole) return '/chat'
-  return ROLE_DASHBOARD[authStore.userRole] || '/chat'
-})
-
-const roleLabel = computed(() => {
-  if (!authStore.userRole) return ''
-  return ROLE_LABELS[authStore.userRole] || authStore.userRole
-})
-
-async function handleLogout() {
-  await authStore.logout()
-  router.push('/login')
-}
 
 onMounted(() => {
   if (authStore.isAuthenticated) {

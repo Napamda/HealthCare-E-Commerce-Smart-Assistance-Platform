@@ -43,6 +43,10 @@ public class CartItem {
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
 
+    @Column(name = "prescription_required")
+    @Builder.Default
+    private Boolean prescriptionRequired = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

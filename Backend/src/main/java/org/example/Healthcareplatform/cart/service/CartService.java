@@ -3,10 +3,12 @@ package org.example.Healthcareplatform.cart.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.cart.dto.CartMergeItem;
+import org.example.Healthcareplatform.cart.dto.CartMergeItem;
 import org.example.Healthcareplatform.cart.dto.CartRequest;
 import org.example.Healthcareplatform.cart.dto.CartResponse;
 import org.example.Healthcareplatform.cart.entity.CartItem;
 import org.example.Healthcareplatform.cart.repository.CartItemRepository;
+import org.example.Healthcareplatform.inventory.service.InventoryService;
 import org.example.Healthcareplatform.product.entity.Product;
 import org.example.Healthcareplatform.product.repository.ProductRepository;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ public class CartService {
 
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
+    private final InventoryService inventoryService;
 
     @Transactional(readOnly = true)
     public List<CartResponse> getCart(Long userId) {
@@ -60,12 +63,13 @@ public class CartService {
             if (product == null) continue;
             int qty = mergeItem.getQuantity() != null && mergeItem.getQuantity() > 0
                     ? mergeItem.getQuantity() : 1;
-            if (qty > product.getStockQuantity()) qty = Math.max(1, product.getStockQuantity());
+            int available = inventoryService.getAvailableQuantity(product.getId());
+            if (qty > available) qty = Math.max(1, available);
 
             var existing = cartItemRepository.findByUserIdAndProductId(userId, product.getId());
             if (existing.isPresent()) {
                 CartItem item = existing.get();
-                item.setQuantity(Math.min(item.getQuantity() + qty, product.getStockQuantity()));
+                item.setQuantity(Math.min(item.getQuantity() + qty, available));
                 cartItemRepository.save(item);
             } else {
                 cartItemRepository.save(CartItem.builder()
@@ -75,6 +79,7 @@ public class CartService {
                         .productImage(product.getImageUrl())
                         .quantity(qty)
                         .unitPrice(product.getPrice())
+                        .prescriptionRequired(product.getPrescriptionRequired())
                         .build());
             }
             merged++;
@@ -95,9 +100,10 @@ public class CartService {
             int newQty = request.getQuantity() != null && request.getQuantity() > 0
                     ? request.getQuantity()
                     : item.getQuantity() + 1;
-            if (newQty > product.getStockQuantity()) {
-                throw new IllegalArgumentException("Only " + product.getStockQuantity()
-                        + " units of " + product.getName() + " are in stock");
+            int available = inventoryService.getAvailableQuantity(product.getId());
+            if (newQty > available) {
+                throw new IllegalArgumentException("Only " + available
+                        + " units of " + product.getName() + " are available");
             }
             item.setQuantity(newQty);
             CartItem saved = cartItemRepository.save(item);
@@ -113,6 +119,7 @@ public class CartService {
                 .quantity(request.getQuantity() != null && request.getQuantity() > 0
                         ? request.getQuantity() : 1)
                 .unitPrice(product.getPrice())
+                .prescriptionRequired(product.getPrescriptionRequired())
                 .build();
 
         CartItem saved = cartItemRepository.save(cartItem);
@@ -134,9 +141,10 @@ public class CartService {
         }
 
         productRepository.findById(item.getProductId()).ifPresent(product -> {
-            if (quantity > product.getStockQuantity()) {
-                throw new IllegalArgumentException("Only " + product.getStockQuantity()
-                        + " units of " + product.getName() + " are in stock");
+            int available = inventoryService.getAvailableQuantity(product.getId());
+            if (quantity > available) {
+                throw new IllegalArgumentException("Only " + available
+                        + " units of " + product.getName() + " are available");
             }
         });
 

@@ -21,4 +21,13 @@ public interface ConsultationRepository extends JpaRepository<Consultation, Long
             Long doctorUserId, Pageable pageable);
 
     boolean existsByConversationIdAndStatusNot(Long conversationId, Consultation.ConsultationStatus status);
+
+    List<Consultation> findAllByOrderByCreatedAtDesc();
+
+    List<Consultation> findByStatusInOrderByPriorityAscCreatedAtAsc(List<Consultation.ConsultationStatus> statuses);
+
+    List<Consultation> findByStatusOrderByScheduledAtAscCreatedAtDesc(Consultation.ConsultationStatus status);
+
+    List<Consultation> findByStatusInAndDoctorUserIdOrderByScheduledAtAscCreatedAtDesc(
+            List<Consultation.ConsultationStatus> statuses, Long doctorUserId);
 }

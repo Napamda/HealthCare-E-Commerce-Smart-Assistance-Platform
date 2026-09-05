@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
+import { ROLES, ROLE_DASHBOARD } from '../config/permissions.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -45,7 +46,7 @@ async function handleLogin() {
       rememberMe: rememberMe.value,
     })
 
-    const redirect = route.query.redirect || '/chat'
+    const redirect = route.query.redirect || ROLE_DASHBOARD[authStore.userRole] || '/chat'
     router.push(redirect)
   } catch (e) {
     error.value = e.response?.data?.error || 'Login failed. Please check your credentials.'

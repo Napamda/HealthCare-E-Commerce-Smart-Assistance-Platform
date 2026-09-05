@@ -32,6 +32,9 @@ public class AIService {
 
     @Transactional
     public ChatResponse chat(ChatRequest request, Long userId) {
+        if (request.getMessage() == null || request.getMessage().isBlank()) {
+            throw new IllegalArgumentException("Message must not be blank");
+        }
         log.info("AIService.chat — provider={}, model={}, userId={}, convoId={}, maxHistory={}, summaryThreshold={}",
                 aiProvider.providerName(), aiProvider.modelName(),
                 userId, request.getConversationId(), maxHistory, summaryThreshold);
@@ -68,6 +71,10 @@ public class AIService {
                 request.getMessage(), contextHistory, summary);
 
         String responseText = aiProvider.chat(prompt);
+
+        if (responseText == null || responseText.isBlank()) {
+            throw new IllegalArgumentException("AI provider returned an empty response");
+        }
 
         ConversationMessage saved = conversationService.saveAssistantMessage(
                 conversation.getId(), responseText,

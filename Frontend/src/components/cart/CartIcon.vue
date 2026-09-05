@@ -1,9 +1,13 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useCartStore } from '../../stores/cart.js'
 
 const cartStore = useCartStore()
 const count = computed(() => cartStore.itemCount)
+
+onMounted(() => {
+  cartStore.fetchCount()
+})
 </script>
 
 <template>
@@ -17,31 +21,3 @@ const count = computed(() => cartStore.itemCount)
     <span v-if="count > 0" class="cart-badge">{{ count }}</span>
   </router-link>
 </template>
-
-<style scoped>
-.cart-icon-link {
-  position: relative;
-  display: flex;
-  align-items: center;
-  padding: 6px 10px;
-  color: var(--color-text-secondary);
-  transition: color 0.15s;
-  text-decoration: none;
-}
-.cart-icon-link:hover { color: var(--color-primary); }
-.cart-badge {
-  position: absolute;
-  top: 0;
-  right: 2px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 18px;
-  text-align: center;
-  border-radius: 9px;
-  background: var(--color-primary);
-  color: #fff;
-}
-</style>

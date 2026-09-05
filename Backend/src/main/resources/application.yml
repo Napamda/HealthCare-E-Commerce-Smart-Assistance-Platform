@@ -6,8 +6,8 @@ spring:
       enabled: false
   datasource:
     url: jdbc:mysql://localhost:3306/healthcare?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -19,7 +19,7 @@ spring:
         format_sql: true
   ai:
     openai:
-      api-key: ${OPENROUTER_API_KEY}
+      api-key: ${OPENROUTER_API_KEY:}
       base-url: https://openrouter.ai/api/v1
       chat:
         enabled: true
@@ -31,12 +31,18 @@ spring:
 # =====================================================
 ai:
   # Active provider: openrouter | mock
-  provider: ${AI_PROVIDER:openrouter}
+  provider: ${AI_PROVIDER:mock}
   openrouter:
-    api-key: ${OPENROUTER_API_KEY}
+    api-key: ${OPENROUTER_API_KEY:}
     base-url: https://openrouter.ai/api/v1
     model: ${OPENROUTER_MODEL:openrouter/free}
     timeout-seconds: 60
+  memory:
+    max-history: 10
+    summary-threshold: 30
+  ocr:
+    enabled: ${AI_OCR_ENABLED:true}
+    model: ${AI_OCR_MODEL:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}
 
 # =====================================================
 # JWT Configuration
@@ -51,10 +57,6 @@ jwt:
   memory:
     max-history: 10
     summary-threshold: 30
-
-  ocr:
-    enabled: ${AI_OCR_ENABLED:true}
-    model: ${AI_OCR_MODEL:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}
     
 # =====================================================
 # Geocoding Configuration — Nominatim (OpenStreetMap)
@@ -63,15 +65,15 @@ geocoding:
   base-url: ${GEOCODING_BASE_URL:https://nominatim.openstreetmap.org}
   user-agent: ${GEOCODING_USER_AGENT:HealthCarePlatform/1.0 (https://localhost)}
 
-logging:
-  level:
-    root: INFO
-    com.yourpackage: DEBUG
-    org.springframework: INFO
-    org.hibernate: DEBUG
-  file:
-    name: application.log
-    path: ${user.home}/Desktop/HealthCare/logs/
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+#logging:
+ # level:
+  #  root: INFO
+   # com.yourpackage: DEBUG
+    #org.springframework: INFO
+    #org.hibernate: DEBUG
+  #file:
+   # name: application.log
+    #path: ${user.home}/Desktop/HealthCare/logs/
+  #pattern:
+   # console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    #file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
