@@ -6,8 +6,8 @@ spring:
       enabled: false
   datasource:
     url: jdbc:mysql://localhost:3306/healthcare?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -64,8 +64,10 @@ spring:
 # AI Configuration — OpenRouter via custom provider
 # =====================================================
 ai:
+  # Active provider: openrouter | mock
+  provider: ${AI_PROVIDER:mock}
   openrouter:
-    api-key: ${OPENROUTER_API_KEY}
+    api-key: ${OPENROUTER_API_KEY:}
     base-url: https://openrouter.ai/api/v1
     model: ${OPENROUTER_MODEL:openrouter/free}
     timeout-seconds: 60
@@ -84,6 +86,12 @@ jwt:
   access-token-expiration-ms: 900000
   refresh-token-expiration-ms: 86400000
   remember-me-expiration-ms: 2592000000
+
+  # Context memory — controls how many messages are sent as prompt context
+  memory:
+    max-history: 10
+    summary-threshold: 30
+    
 # =====================================================
 # Geocoding Configuration — Nominatim (OpenStreetMap)
 # =====================================================

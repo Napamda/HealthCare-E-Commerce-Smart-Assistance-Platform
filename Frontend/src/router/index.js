@@ -89,6 +89,11 @@ const routes = [
     component: () => import('../pages/products/ProductDetailPage.vue'),
   },
   {
+    path: '/recommendations',
+    name: 'Recommendations',
+    component: () => import('../pages/RecommendationsPage.vue'),
+  },
+  {
     path: '/cart',
     name: 'Cart',
     component: () => import('../pages/cart/CartPage.vue'),
@@ -97,6 +102,11 @@ const routes = [
     path: '/checkout',
     name: 'Checkout',
     component: () => import('../pages/cart/CheckoutPage.vue'),
+  },
+  {
+    path: '/payment/:orderId',
+    name: 'Payment',
+    component: () => import('../pages/PaymentPage.vue'),
   },
   {
     path: '/orders',
@@ -112,13 +122,30 @@ const routes = [
     path: '/admin/products',
     name: 'AdminProducts',
     meta: { requiresRole: [ROLES.ADMIN] },
-    component: () => import('../pages/products/AdminProductPage.vue'),
+    component: () => import('../pages/AdminProductPage.vue'),
+  },
+  {
+    path: '/admin/categories',
+    name: 'AdminCategories',
+    meta: { requiresRole: [ROLES.ADMIN] },
+    component: () => import('../pages/AdminCategoryPage.vue'),
+  },
+  {
+    path: '/inventory',
+    name: 'InventoryManagement',
+    meta: { requiresRole: [ROLES.VENDOR, ROLES.ADMIN] },
+    component: () => import('../pages/InventoryManagementPage.vue'),
   },
   {
     path: '/register',
     name: 'Register',
     component: () => import('../pages/auth/RegisterPage.vue'),
     meta: { public: true },
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../pages/ProfilePage.vue'),
   },
   {
     path: '/verify-email',

@@ -1,5 +1,6 @@
 package org.example.Healthcareplatform.product.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.product.dto.ProductRequest;
@@ -23,35 +24,17 @@ public class AdminProductController {
     private final ProductService productService;
 
     @PostMapping
-    public ResponseEntity<ProductResponse> createProduct(@RequestBody ProductRequest request) {
+    public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
         log.info("POST /api/admin/products — name={}, category={}", request.getName(), request.getCategory());
-
-        if (request.getName() == null || request.getName().isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-        if (request.getPrice() == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        if (request.getCategory() == null || request.getCategory().isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        ProductResponse response = productService.createProduct(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(productService.createProduct(request));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponse> updateProduct(
             @PathVariable Long id,
-            @RequestBody ProductRequest request) {
+            @Valid @RequestBody ProductRequest request) {
         log.info("PUT /api/admin/products/{} — name={}", id, request.getName());
-
-        try {
-            ProductResponse response = productService.updateProduct(id, request);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 
     @DeleteMapping("/{id}")

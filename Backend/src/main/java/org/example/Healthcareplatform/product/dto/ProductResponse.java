@@ -24,6 +24,7 @@ public class ProductResponse {
     private String category;
     private String imageUrl;
     private Integer stockQuantity;
+    private Integer lowStockThreshold;
     private String manufacturer;
     private String dosage;
     private String ingredients;
@@ -63,6 +64,7 @@ public class ProductResponse {
                 .category(product.getCategory().name())
                 .imageUrl(product.getImageUrl())
                 .stockQuantity(product.getStockQuantity())
+                .lowStockThreshold(product.getLowStockThreshold())
                 .manufacturer(product.getManufacturer())
                 .dosage(product.getDosage())
                 .ingredients(product.getIngredients())

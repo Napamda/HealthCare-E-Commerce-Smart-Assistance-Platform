@@ -36,6 +36,12 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 100)
     private String lastName;
 
+    @Column(length = 20)
+    private String phone;
+
+    @Column
+    private java.time.LocalDate dateOfBirth;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole role;

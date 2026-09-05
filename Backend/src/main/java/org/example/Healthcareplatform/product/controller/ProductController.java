@@ -32,10 +32,11 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<?> listProducts(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size) {
-        log.info("GET /api/products — page={}, size={}", page, size);
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String sort) {
+        log.info("GET /api/products — page={}, size={}, sort={}", page, size, sort);
 
-        Page<ProductResponse> productPage = productService.listProducts(page, size);
+        Page<ProductResponse> productPage = productService.listProducts(page, size, sort);
 
         Map<String, Object> body = Map.of(
                 "content", productPage.getContent(),
@@ -56,12 +57,13 @@ public class ProductController {
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size) {
-        log.info("GET /api/products/search — keyword={}, category={}, minPrice={}, maxPrice={}, page={}, size={}",
-                keyword, category, minPrice, maxPrice, page, size);
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String sort) {
+        log.info("GET /api/products/search — keyword={}, category={}, minPrice={}, maxPrice={}, page={}, size={}, sort={}",
+                keyword, category, minPrice, maxPrice, page, size, sort);
 
         Page<ProductResponse> productPage = productService.searchProducts(
-                keyword, category, minPrice, maxPrice, page, size);
+                keyword, category, minPrice, maxPrice, page, size, sort);
 
         Map<String, Object> body = Map.of(
                 "content", productPage.getContent(),

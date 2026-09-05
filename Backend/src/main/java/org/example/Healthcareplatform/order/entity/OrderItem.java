@@ -41,4 +41,8 @@ public class OrderItem {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
+
+    @Column(name = "prescription_required")
+    @Builder.Default
+    private Boolean prescriptionRequired = false;
 }

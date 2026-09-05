@@ -33,6 +33,9 @@ public class AIService {
     private int summaryThreshold;
 
     public ChatResponse chat(ChatRequest request, Long userId) {
+        if (request.getMessage() == null || request.getMessage().isBlank()) {
+            throw new IllegalArgumentException("Message must not be blank");
+        }
         log.info("AIService.chat — provider={}, model={}, userId={}, convoId={}, maxHistory={}, summaryThreshold={}",
                 aiProvider.providerName(), aiProvider.modelName(),
                 userId, request.getConversationId(), maxHistory, summaryThreshold);

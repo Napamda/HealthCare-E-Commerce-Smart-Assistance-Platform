@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { createOrder, getUserOrders, getOrderById, cancelOrder } from '../services/order.js'
+import { createOrder, getUserOrders, getOrderById, cancelOrder, reorder } from '../services/order.js'
 
 export const useOrderStore = defineStore('order', () => {
   const orders = ref([])
@@ -67,12 +67,21 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
+  async function reorderExistingOrder(orderId) {
+    try {
+      await reorder(orderId)
+    } catch (e) {
+      error.value = e.response?.data?.error || 'Failed to reorder'
+      throw e
+    }
+  }
+
   function clearError() {
     error.value = null
   }
 
   return {
     orders, selectedOrder, loading, error, pagination,
-    placeOrder, fetchOrders, fetchOrderById, cancelExistingOrder, clearError,
+    placeOrder, fetchOrders, fetchOrderById, cancelExistingOrder, reorderExistingOrder, clearError,
   }
 })

@@ -1,18 +1,47 @@
 package org.example.Healthcareplatform.notification.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", indexes = {
+        @Index(name = "idx_notification_user", columnList = "userId"),
+        @Index(name = "idx_notification_read", columnList = "isRead")
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Notification {
+
+    public enum NotificationType {
+        PRESCRIPTION_APPROVED,
+        PRESCRIPTION_REJECTED,
+        PAYMENT_PENDING,
+        PAYMENT_SUCCESS,
+        PAYMENT_FAILED,
+        ORDER_CONFIRMED,
+        ORDER_CANCELLED,
+        ORDER_STATUS,
+        LOW_STOCK,
+        GENERIC
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,7 +60,6 @@ public class Notification {
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
-    @Column(nullable = false)
     private Long referenceId;
 
     @Column(nullable = false)

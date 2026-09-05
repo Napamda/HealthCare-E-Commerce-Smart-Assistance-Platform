@@ -68,8 +68,14 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token) return Promise.resolve(false)
 
     return refreshAccessToken(token)
-      .then((data) => {
+      .then(async (data) => {
         persistSession(data)
+        // Merge guest cart into server cart after session restore
+        try {
+          const { useCartStore } = await import('./cart.js')
+          const cartStore = useCartStore()
+          await cartStore.mergeAfterLogin()
+        } catch (_) { /* non-critical */ }
         return true
       })
       .catch(() => {
@@ -84,6 +90,12 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const data = await loginApi(credentials)
       persistSession(data)
+      // Merge guest cart into server cart after login
+      try {
+        const { useCartStore } = await import('./cart.js')
+        const cartStore = useCartStore()
+        await cartStore.mergeAfterLogin()
+      } catch (_) { /* non-critical */ }
       return data
     } catch (e) {
       error.value = e.response?.data?.error || 'Login failed'

@@ -48,7 +48,7 @@ public class AuthService {
             role = UserRole.valueOf(request.getRole().toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
-                    "Invalid role: " + request.getRole() + ". Must be PATIENT, PHARMACIST, or DOCTOR");
+                    "Invalid role: " + request.getRole() + ". Must be PATIENT, PHARMACIST, DOCTOR, or VENDOR");
         }
 
         String verificationToken = UUID.randomUUID().toString();

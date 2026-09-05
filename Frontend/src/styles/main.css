@@ -25,6 +25,7 @@
 @import './components/notifications.css';
 @import './components/professionals.css';
 @import './components/events.css';
+@import './components/inventory.css';
 @import './components/recommendations.css';
 @import './components/admin-users.css';
 @import './components/admin-moderation.css';

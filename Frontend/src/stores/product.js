@@ -38,6 +38,7 @@ export const useProductStore = defineStore('product', () => {
     category: '',
     minPrice: null,
     maxPrice: null,
+    sort: 'newest',
   })
 
   // ----------------------------------------------------------------
@@ -70,9 +71,10 @@ export const useProductStore = defineStore('product', () => {
           maxPrice: filters.value.maxPrice,
           page,
           size,
+          sort: filters.value.sort,
         })
       } else {
-        data = await listProducts(page, size)
+        data = await listProducts(page, size, filters.value.sort)
       }
 
       products.value = data.content || []
@@ -136,6 +138,7 @@ export const useProductStore = defineStore('product', () => {
       category: '',
       minPrice: null,
       maxPrice: null,
+      sort: 'newest',
     }
     await fetchProducts(0, pagination.value.size)
   }
@@ -163,9 +166,10 @@ export const useProductStore = defineStore('product', () => {
           maxPrice: filters.value.maxPrice,
           page: nextPage,
           size: pagination.value.size,
+          sort: filters.value.sort,
         })
       } else {
-        data = await listProducts(nextPage, pagination.value.size)
+        data = await listProducts(nextPage, pagination.value.size, filters.value.sort)
       }
 
       products.value = [...products.value, ...(data.content || [])]

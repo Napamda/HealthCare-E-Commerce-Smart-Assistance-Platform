@@ -33,6 +33,8 @@ export const NAV_ITEMS = {
     { to: '/admin', label: 'Dashboard' },
     { to: '/admin/users', label: 'Manage Users' },
     { to: '/admin/products', label: 'Manage Products' },
+    { to: '/admin/categories', label: 'Manage Categories' },
+    { to: '/inventory', label: 'Manage Inventory' },
     { to: '/events/manage', label: 'Manage Events' },
     {
       label: 'Role Views',
@@ -46,6 +48,7 @@ export const NAV_ITEMS = {
 
   [ROLES.VENDOR]: [
     { to: '/vendor', label: 'Dashboard' },
+    { to: '/inventory', label: 'Inventory' },
     { to: '/products', label: 'Shop' },
     { to: '/events', label: 'Events' },
     { to: '/events/registrations', label: 'My Events' },
