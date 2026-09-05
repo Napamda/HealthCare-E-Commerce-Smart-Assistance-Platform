@@ -2,17 +2,26 @@ package org.example.Healthcareplatform.prescription.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.ai.ocr.OCRService;
+import org.example.Healthcareplatform.cart.dto.CartRequest;
+import org.example.Healthcareplatform.cart.service.CartService;
 import org.example.Healthcareplatform.notification.entity.Notification;
 import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.prescription.dto.DownloadResource;
+import org.example.Healthcareplatform.prescription.dto.PrescriptionItemRequest;
+import org.example.Healthcareplatform.prescription.dto.PrescriptionItemResponse;
 import org.example.Healthcareplatform.prescription.dto.PrescriptionResponse;
 import org.example.Healthcareplatform.prescription.dto.ReviewRequest;
 import org.example.Healthcareplatform.prescription.dto.UploadResponse;
 import org.example.Healthcareplatform.prescription.entity.Prescription;
+import org.example.Healthcareplatform.prescription.entity.PrescriptionItem;
+import org.example.Healthcareplatform.prescription.repository.PrescriptionItemRepository;
 import org.example.Healthcareplatform.prescription.repository.PrescriptionRepository;
+import org.example.Healthcareplatform.product.entity.Product;
+import org.example.Healthcareplatform.product.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -23,6 +32,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -33,8 +43,11 @@ import java.util.UUID;
 public class PrescriptionService {
 
     private final PrescriptionRepository prescriptionRepository;
+    private final PrescriptionItemRepository prescriptionItemRepository;
     private final NotificationService notificationService;
     private final OCRService ocrService;
+    private final ProductRepository productRepository;
+    private final CartService cartService;
 
     @Value("${prescription.storage-root:${user.home}/Desktop/HealthCare/healthcare-uploads/prescriptions}")
     private String storageRoot;
@@ -63,10 +76,16 @@ public class PrescriptionService {
 
     public PrescriptionService(PrescriptionRepository prescriptionRepository,
                                NotificationService notificationService,
-                               OCRService ocrService) {
+                               OCRService ocrService,
+                               PrescriptionItemRepository prescriptionItemRepository,
+                               ProductRepository productRepository,
+                               CartService cartService) {
         this.prescriptionRepository = prescriptionRepository;
         this.notificationService = notificationService;
         this.ocrService = ocrService;
+        this.prescriptionItemRepository = prescriptionItemRepository;
+        this.productRepository = productRepository;
+        this.cartService = cartService;
     }
 
     public UploadResponse uploadPrescription(Long patientUserId, MultipartFile file) {
@@ -110,8 +129,27 @@ public class PrescriptionService {
             ocrAttempted = true;
             if (ocrResult != null && !ocrResult.isBlank()) {
                 prescription.setOcrText(ocrResult);
-                prescriptionRepository.save(prescription);
-                log.info("OCR text saved for prescription — id={}, chars={}", prescription.getId(), ocrResult.length());
+                try {
+                    prescriptionRepository.save(prescription);
+                } catch (Exception truncationException) {
+                    // Old schema may still cap the column; try again with a safe trim
+                    // so the record is still persisted (the OCR extractor error is
+                    // transient and the column grows to TEXT on next boot.)
+                    try {
+                        String trimmed = ocrResult.length() > 1950
+                                ? ocrResult.substring(0, 1950) + "\n[truncated]"
+                                : ocrResult;
+                        prescription.setOcrText(trimmed);
+                        prescriptionRepository.save(prescription);
+                    } catch (Exception fatal) {
+                        prescription.setOcrText(null);
+                        log.warn("Could not persist OCR text for prescription id={}: {}",
+                                prescription.getId(), fatal.getMessage());
+                    }
+                }
+                log.info("OCR text saved for prescription — id={}, chars={}",
+                        prescription.getId(),
+                        prescription.getOcrText() == null ? 0 : prescription.getOcrText().length());
             }
         } catch (Exception e) {
             log.warn("OCR failed for prescription — id={}: {}", prescription.getId(), e.getMessage());
@@ -234,8 +272,17 @@ public class PrescriptionService {
         prescription.setPharmacistId(request.getPharmacistId());
 
         prescription = prescriptionRepository.save(prescription);
-        log.info("Prescription reviewed — id={}, status={}, pharmacistId={}",
-                prescriptionId, newStatus, request.getPharmacistId());
+
+        if (newStatus == Prescription.PrescriptionStatus.APPROVED) {
+            savePrescriptionItems(prescription, request.getItems());
+        } else {
+            // Rejected prescriptions should not carry selectable medications.
+            prescriptionItemRepository.deleteByPrescriptionId(prescription.getId());
+        }
+
+        log.info("Prescription reviewed — id={}, status={}, pharmacistId={}, items={}",
+                prescriptionId, newStatus, request.getPharmacistId(),
+                request.getItems() == null ? 0 : request.getItems().size());
 
         Notification.NotificationType notificationType = newStatus == Prescription.PrescriptionStatus.APPROVED
                 ? Notification.NotificationType.PRESCRIPTION_APPROVED
@@ -245,8 +292,10 @@ public class PrescriptionService {
                 ? "Prescription Approved"
                 : "Prescription Rejected";
 
+        long itemCount = prescriptionItemRepository.findByPrescriptionIdOrderByIdAsc(prescription.getId()).size();
         String message = newStatus == Prescription.PrescriptionStatus.APPROVED
                 ? "Your prescription \"" + prescription.getOriginalFileName() + "\" has been approved."
+                + (itemCount > 0 ? " Your medications are ready to order — open the prescription and tap \"Order Medications\"." : "")
                 : "Your prescription \"" + prescription.getOriginalFileName() + "\" has been rejected.";
 
         if (request.getPharmacistComments() != null && !request.getPharmacistComments().isBlank()) {
@@ -255,6 +304,78 @@ public class PrescriptionService {
 
         notificationService.createNotification(
                 prescription.getPatientUserId(), title, message, notificationType, prescription.getId());
+
+        return toResponse(prescription);
+    }
+
+    /**
+     * Persists the medications the pharmacist selected while approving.
+     * Product names and prices are snapshotted from the catalog so the patient
+     * sees stable data even if the product changes later.
+     */
+    private void savePrescriptionItems(Prescription prescription, List<PrescriptionItemRequest> items) {
+        prescriptionItemRepository.deleteByPrescriptionId(prescription.getId());
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+
+        List<PrescriptionItem> toSave = new ArrayList<>();
+        for (PrescriptionItemRequest item : items) {
+            if (item.getProductId() == null) {
+                continue;
+            }
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Selected product not found: " + item.getProductId()));
+            toSave.add(PrescriptionItem.builder()
+                    .prescriptionId(prescription.getId())
+                    .productId(product.getId())
+                    .productName(product.getName())
+                    .unitPrice(product.getPrice())
+                    .quantity(item.getQuantity() != null && item.getQuantity() > 0
+                            ? item.getQuantity() : 1)
+                    .dosageInstructions(item.getDosageInstructions())
+                    .build());
+        }
+        prescriptionItemRepository.saveAll(toSave);
+    }
+
+    /**
+     * Adds every medication on an APPROVED prescription to the patient's own
+     * cart. Only the patient (derived from the authenticated session) can call
+     * this — the pharmacist never purchases on the patient's behalf.
+     */
+    @Transactional
+    public PrescriptionResponse orderPrescription(Long prescriptionId, Long patientUserId) {
+        Prescription prescription = prescriptionRepository.findById(prescriptionId)
+                .orElseThrow(() -> new IllegalArgumentException("Prescription not found with id: " + prescriptionId));
+
+        if (!prescription.getPatientUserId().equals(patientUserId)) {
+            log.warn("Unauthorized order attempt — prescriptionId={}, requestor={}, owner={}",
+                    prescriptionId, patientUserId, prescription.getPatientUserId());
+            throw new IllegalStateException("You can only order from your own prescription");
+        }
+
+        if (prescription.getStatus() != Prescription.PrescriptionStatus.APPROVED) {
+            throw new IllegalStateException("Prescription must be approved before ordering");
+        }
+
+        List<PrescriptionItem> items = prescriptionItemRepository.findByPrescriptionIdOrderByIdAsc(prescriptionId);
+        if (items.isEmpty()) {
+            throw new IllegalStateException("This prescription has no medications selected by the pharmacist");
+        }
+
+        for (PrescriptionItem item : items) {
+            CartRequest cartRequest = new CartRequest();
+            cartRequest.setProductId(item.getProductId());
+            cartRequest.setProductName(item.getProductName());
+            cartRequest.setQuantity(item.getQuantity());
+            cartRequest.setUnitPrice(item.getUnitPrice());
+            cartService.addToCart(patientUserId, cartRequest);
+        }
+
+        log.info("Prescription medications added to patient cart — prescriptionId={}, patientUserId={}, items={}",
+                prescriptionId, patientUserId, items.size());
 
         return toResponse(prescription);
     }
@@ -377,6 +498,19 @@ public class PrescriptionService {
     }
 
     private PrescriptionResponse toResponse(Prescription p) {
+        List<PrescriptionItemResponse> items = prescriptionItemRepository
+                .findByPrescriptionIdOrderByIdAsc(p.getId())
+                .stream()
+                .map(i -> PrescriptionItemResponse.builder()
+                        .id(i.getId())
+                        .productId(i.getProductId())
+                        .productName(i.getProductName())
+                        .unitPrice(i.getUnitPrice())
+                        .quantity(i.getQuantity())
+                        .dosageInstructions(i.getDosageInstructions())
+                        .build())
+                .toList();
+
         return PrescriptionResponse.builder()
                 .id(p.getId())
                 .patientUserId(p.getPatientUserId())
@@ -389,6 +523,7 @@ public class PrescriptionService {
                 .pharmacistId(p.getPharmacistId())
                 .createdAt(p.getCreatedAt())
                 .updatedAt(p.getUpdatedAt())
+                .items(items)
                 .build();
     }
 }

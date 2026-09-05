@@ -5,10 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.order.entity.Order;
 import org.example.Healthcareplatform.order.repository.OrderRepository;
 import org.example.Healthcareplatform.product.dto.CategoryCountResponse;
+import org.example.Healthcareplatform.product.dto.ProductRef;
 import org.example.Healthcareplatform.product.dto.ProductRequest;
 import org.example.Healthcareplatform.product.dto.ProductResponse;
 import org.example.Healthcareplatform.product.entity.Product;
 import org.example.Healthcareplatform.product.repository.ProductRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -59,28 +61,9 @@ public class ProductService {
 
         Pageable pageable = PageRequest.of(page, size, buildSort(sort));
 
-        if (keyword != null && !keyword.isBlank()) {
-            Page<Product> products = productRepository.searchProducts(
-                    keyword, productCategory, minPrice, maxPrice, pageable);
-            return products.map(ProductResponse::fromEntity);
-        }
-
-        if (productCategory != null && minPrice != null && maxPrice != null) {
-            return productRepository.findByCategoryAndPriceBetween(productCategory, minPrice, maxPrice, pageable)
-                    .map(ProductResponse::fromEntity);
-        }
-
-        if (productCategory != null) {
-            return productRepository.findByCategory(productCategory, pageable)
-                    .map(ProductResponse::fromEntity);
-        }
-
-        if (minPrice != null && maxPrice != null) {
-            return productRepository.findByPriceBetween(minPrice, maxPrice, pageable)
-                    .map(ProductResponse::fromEntity);
-        }
-
-        Page<Product> products = productRepository.findAll(pageable);
+        String normalizedKeyword = (keyword != null && !keyword.isBlank()) ? keyword : null;
+        Page<Product> products = productRepository.searchProducts(
+                normalizedKeyword, productCategory, minPrice, maxPrice, pageable);
         return products.map(ProductResponse::fromEntity);
     }
 
@@ -108,6 +91,7 @@ public class ProductService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductResponse createProduct(ProductRequest request) {
         if (request.getName() == null || request.getName().isBlank()) {
             throw new IllegalArgumentException("Product name is required");
@@ -148,6 +132,7 @@ public class ProductService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductResponse updateProduct(Long id, ProductRequest request) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + id));
@@ -199,6 +184,7 @@ public class ProductService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "products", allEntries = true)
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
             throw new IllegalArgumentException("Product not found: " + id);
@@ -208,10 +194,22 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> getAllProductsForRecommendation() {
-        return productRepository.findAllByOrderByNameAsc().stream()
-                .map(ProductResponse::fromEntity)
-                .collect(Collectors.toList());
+    public List<ProductRef> getAllProductsForRecommendation() {
+        return getProductRefs();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductRef> getProductRefs() {
+        return productRepository.findAllProductRefs();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getProductNameToIdMap() {
+        return getProductRefs().stream()
+                .collect(Collectors.toMap(
+                        p -> p.name().toLowerCase(),
+                        ProductRef::id,
+                        (existing, replacement) -> existing));
     }
 
     @Transactional(readOnly = true)

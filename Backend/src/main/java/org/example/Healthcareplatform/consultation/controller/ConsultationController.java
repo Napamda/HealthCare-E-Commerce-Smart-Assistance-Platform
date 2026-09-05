@@ -7,7 +7,6 @@ import org.example.Healthcareplatform.consultation.dto.ConsultationResponse;
 import org.example.Healthcareplatform.consultation.dto.EscalationRequest;
 import org.example.Healthcareplatform.consultation.service.ConsultationService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -147,9 +145,4 @@ public class ConsultationController {
         }
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest()
-                .body(Map.of("error", ex.getMessage()));
-    }
 }

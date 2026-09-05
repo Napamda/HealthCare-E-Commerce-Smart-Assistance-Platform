@@ -28,6 +28,7 @@ public class HealthEventResponse {
     private Double longitude;
     private String organizer;
     private Integer capacity;
+    private long registeredCount;
     private EventStatus status;
     private Long createdBy;
     private LocalDateTime createdAt;

@@ -109,6 +109,47 @@ public class ConversationService {
         return saved;
     }
 
+    @Transactional
+    public ConversationMessage saveDoctorMessage(Long conversationId, String content) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("message must not be blank");
+        }
+
+        ConversationMessage message = ConversationMessage.builder()
+                .conversationId(conversationId)
+                .role(ConversationMessage.MessageRole.DOCTOR)
+                .content(content)
+                .provider("DOCTOR")
+                .build();
+
+        ConversationMessage saved = messageRepository.save(message);
+        log.debug("Saved doctor message id={} for conversationId={}", saved.getId(), conversationId);
+        return saved;
+    }
+
+    /**
+     * Saves an informational system/assistant bubble. Used when the AI needs
+     * to step back (e.g. a doctor has taken over the chat) so the patient sees
+     * a short status update rather than a generated AI answer.
+     */
+    @Transactional
+    public ConversationMessage saveSystemInfoMessage(Long conversationId, String content) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("message must not be blank");
+        }
+
+        ConversationMessage message = ConversationMessage.builder()
+                .conversationId(conversationId)
+                .role(ConversationMessage.MessageRole.ASSISTANT)
+                .content(content)
+                .provider("SYSTEM")
+                .build();
+
+        ConversationMessage saved = messageRepository.save(message);
+        log.debug("Saved system info message id={} for conversationId={}", saved.getId(), conversationId);
+        return saved;
+    }
+
     public List<ConversationMessage> getMessages(Long conversationId) {
         return messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
     }

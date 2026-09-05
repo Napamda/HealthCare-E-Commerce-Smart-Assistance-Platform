@@ -6,7 +6,6 @@ import org.example.Healthcareplatform.ai.dto.ChatRequest;
 import org.example.Healthcareplatform.ai.dto.ChatResponse;
 import org.example.Healthcareplatform.ai.dto.ConversationResponse;
 import org.example.Healthcareplatform.ai.entity.Conversation;
-import org.example.Healthcareplatform.ai.exception.AIException;
 import org.example.Healthcareplatform.ai.service.AIService;
 import org.example.Healthcareplatform.ai.service.ConversationService;
 import org.example.Healthcareplatform.auth.util.SecurityContextUtil;
@@ -16,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -132,23 +130,6 @@ public class ChatController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    @ExceptionHandler(AIException.class)
-    public ResponseEntity<Map<String, String>> handleAIException(AIException ex) {
-        log.error("AI error: {}", ex.getMessage(), ex);
-        String detail = (ex.getCause() != null) ? ex.getCause().getMessage() : ex.getMessage();
-        return ResponseEntity.internalServerError()
-                .body(Map.of(
-                        "error", ex.getMessage(),
-                        "detail", detail
-                ));
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest()
-                .body(Map.of("error", ex.getMessage()));
     }
 
     private ConversationResponse toConversationResponse(Conversation conversation) {

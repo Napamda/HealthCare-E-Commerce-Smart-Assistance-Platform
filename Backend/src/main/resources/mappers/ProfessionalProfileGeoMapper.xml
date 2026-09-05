@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.Healthcareplatform.location.mapper.ProfessionalProfileGeoMapper">
+
+    <select id="findNearby" resultType="org.example.Healthcareplatform.location.dto.NearbyProfessionalRow">
+        SELECT *
+        FROM (
+            SELECT id,
+                   user_id,
+                   first_name,
+                   last_name,
+                   title,
+                   specialty,
+                   bio,
+                   phone,
+                   address,
+                   city,
+                   latitude,
+                   longitude,
+                   active,
+                   created_at,
+                   updated_at,
+                   (CAST(6371.0 AS DOUBLE) * ACOS(
+                        LEAST(CAST(1.0 AS DOUBLE),
+                              CAST(
+                                  COS(RADIANS(CAST(#{lat} AS DOUBLE))) * COS(RADIANS(latitude))
+                                      * COS(RADIANS(longitude) - RADIANS(CAST(#{lng} AS DOUBLE)))
+                                      + SIN(RADIANS(CAST(#{lat} AS DOUBLE))) * SIN(RADIANS(latitude))
+                                  AS DOUBLE
+                              )
+                        )
+                   )) AS distance_km
+            FROM professional_profiles
+            WHERE active = TRUE
+              AND latitude BETWEEN CAST(#{lat} AS DOUBLE) - CAST(#{radiusKm} AS DOUBLE) / CAST(111.320 AS DOUBLE)
+                              AND CAST(#{lat} AS DOUBLE) + CAST(#{radiusKm} AS DOUBLE) / CAST(111.320 AS DOUBLE)
+              AND longitude BETWEEN CAST(#{lng} AS DOUBLE) - CAST(#{radiusKm} AS DOUBLE) / (CAST(111.320 AS DOUBLE) * COS(RADIANS(CAST(#{lat} AS DOUBLE))))
+                              AND CAST(#{lng} AS DOUBLE) + CAST(#{radiusKm} AS DOUBLE) / (CAST(111.320 AS DOUBLE) * COS(RADIANS(CAST(#{lat} AS DOUBLE))))
+              AND (#{specialty} IS NULL OR LOWER(specialty) LIKE CONCAT('%', LOWER(#{specialty}), '%'))
+        ) AS nearby
+        WHERE distance_km &lt;= CAST(#{radiusKm} AS DOUBLE)
+        ORDER BY distance_km ASC
+    </select>
+
+</mapper>

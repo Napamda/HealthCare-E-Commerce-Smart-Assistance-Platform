@@ -24,4 +24,10 @@ public class EventRegistrationResponse {
     private String organizer;
     private RegistrationStatus status;
     private LocalDateTime registeredAt;
+
+    /**
+     * The volunteer role of the registrant (DOCTOR or PHARMACIST) when they
+     * registered as a volunteer. Null for regular attendees.
+     */
+    private String volunteerRole;
 }

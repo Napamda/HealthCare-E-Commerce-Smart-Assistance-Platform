@@ -73,4 +73,12 @@ public class Notification {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
+
+    public enum NotificationType {
+        PRESCRIPTION_APPROVED,
+        PRESCRIPTION_REJECTED,
+        CONSULTATION_CREATED,
+        CONSULTATION_ACCEPTED,
+        CONSULTATION_IN_PROGRESS
+    }
 }

@@ -1,13 +1,16 @@
 package org.example.Healthcareplatform.prescription.service;
 
 import org.example.Healthcareplatform.ai.ocr.OCRService;
+import org.example.Healthcareplatform.cart.service.CartService;
 import org.example.Healthcareplatform.notification.entity.Notification;
 import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.prescription.dto.PrescriptionResponse;
 import org.example.Healthcareplatform.prescription.dto.ReviewRequest;
 import org.example.Healthcareplatform.prescription.dto.UploadResponse;
 import org.example.Healthcareplatform.prescription.entity.Prescription;
+import org.example.Healthcareplatform.prescription.repository.PrescriptionItemRepository;
 import org.example.Healthcareplatform.prescription.repository.PrescriptionRepository;
+import org.example.Healthcareplatform.product.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +38,15 @@ class PrescriptionServiceTest {
     private PrescriptionRepository prescriptionRepository;
 
     @Mock
+    private PrescriptionItemRepository prescriptionItemRepository;
+
+    @Mock
+    private ProductRepository productRepository;
+
+    @Mock
+    private CartService cartService;
+
+    @Mock
     private NotificationService notificationService;
 
     @Mock
@@ -57,6 +69,10 @@ class PrescriptionServiceTest {
                 "storageRoot",
                 "target/test-uploads/prescriptions"
         );
+
+        // New dependencies: responses carry an (empty) medication list.
+        lenient().when(prescriptionItemRepository.findByPrescriptionIdOrderByIdAsc(anyLong()))
+                .thenReturn(List.of());
 
         pendingPrescription = Prescription.builder()
                 .id(10L)

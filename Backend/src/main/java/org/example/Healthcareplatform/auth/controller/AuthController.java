@@ -8,7 +8,6 @@ import org.example.Healthcareplatform.auth.service.AuthService;
 import org.example.Healthcareplatform.auth.util.SecurityContextUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -58,13 +57,4 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Email verified successfully. You can now log in."));
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, BadCredentialsException.class})
-    public ResponseEntity<Map<String, String>> handleAuthError(RuntimeException e) {
-        log.warn("Auth error: {}", e.getMessage());
-        HttpStatus status = e instanceof BadCredentialsException
-                ? HttpStatus.UNAUTHORIZED
-                : HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(status)
-                .body(Map.of("error", e.getMessage()));
-    }
 }

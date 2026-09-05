@@ -1,9 +1,11 @@
 package org.example.Healthcareplatform.location.service;
 
 import org.example.Healthcareplatform.location.dto.NearbyProfessionalResponse;
+import org.example.Healthcareplatform.location.dto.NearbyProfessionalRow;
 import org.example.Healthcareplatform.location.dto.ProfessionalProfileRequest;
 import org.example.Healthcareplatform.location.dto.ProfessionalProfileResponse;
 import org.example.Healthcareplatform.location.entity.ProfessionalProfile;
+import org.example.Healthcareplatform.location.mapper.ProfessionalProfileGeoMapper;
 import org.example.Healthcareplatform.location.repository.ProfessionalProfileRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +29,9 @@ class ProfessionalProfileServiceTest {
 
     @Mock
     private ProfessionalProfileRepository profileRepository;
+
+    @Mock
+    private ProfessionalProfileGeoMapper professionalProfileGeoMapper;
 
     @InjectMocks
     private ProfessionalProfileService professionalProfileService;
@@ -122,113 +128,53 @@ class ProfessionalProfileServiceTest {
     }
 
     @Test
-    void shouldReturnNearbyProfessionalsWithinRadiusSortedByDistance() {
-        ProfessionalProfile near = ProfessionalProfile.builder()
-                .id(1L)
-                .userId(1L)
-                .firstName("Near")
-                .lastName("Doctor")
-                .title("Dr")
-                .specialty("General Practice")
-                .latitude(5.6037)
-                .longitude(-0.1870)
-                .active(true)
-                .build();
+    void shouldReturnNearbyProfessionalsSortedByDistance() {
+        NearbyProfessionalRow near = row(
+                1L, 1L, "Near", "Doctor", "General Practice", 5.6037, -0.1870, 0.5);
+        NearbyProfessionalRow farther = row(
+                2L, 2L, "Farther", "Doctor", "General Practice", 5.6140, -0.2000, 5.2);
 
-        ProfessionalProfile farther = ProfessionalProfile.builder()
-                .id(2L)
-                .userId(2L)
-                .firstName("Farther")
-                .lastName("Doctor")
-                .title("Dr")
-                .specialty("General Practice")
-                .latitude(5.6140)
-                .longitude(-0.2000)
-                .active(true)
-                .build();
-
-        ProfessionalProfile outside = ProfessionalProfile.builder()
-                .id(3L)
-                .userId(3L)
-                .firstName("Outside")
-                .lastName("Doctor")
-                .title("Dr")
-                .specialty("General Practice")
-                .latitude(6.0000)
-                .longitude(-0.1870)
-                .active(true)
-                .build();
-
-        when(profileRepository
-                .findByActiveTrueAndLatitudeIsNotNullAndLongitudeIsNotNull())
-                .thenReturn(List.of(outside, farther, near));
+        when(professionalProfileGeoMapper.findNearby(5.6037, -0.1870, 10.0, null))
+                .thenReturn(List.of(near, farther));
 
         List<NearbyProfessionalResponse> result =
-                professionalProfileService.searchNearby(
-                        5.6037,
-                        -0.1870,
-                        10.0,
-                        null
-                );
+                professionalProfileService.searchNearby(5.6037, -0.1870, 10.0, null);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getProfile().getId()).isEqualTo(1L);
+        assertThat(result.get(0).getDistanceKm()).isEqualTo(0.5);
         assertThat(result.get(1).getProfile().getId()).isEqualTo(2L);
-        assertThat(result.get(0).getDistanceKm())
-                .isLessThanOrEqualTo(result.get(1).getDistanceKm());
+        assertThat(result.get(1).getProfile().getFullName()).isEqualTo("Farther Doctor");
+        verify(professionalProfileGeoMapper).findNearby(5.6037, -0.1870, 10.0, null);
     }
 
     @Test
     void shouldSearchNearbyUsingSpecialtyFilter() {
-        when(profileRepository
-                .findBySpecialtyContainingIgnoreCaseAndActiveTrueOrderByLastNameAsc(
-                        "Cardio"
-                ))
-                .thenReturn(List.of(profile));
+        NearbyProfessionalRow card = row(
+                1L, 100L, "Ama", "Mensah", "Cardiology", 5.6037, -0.1870, 0.2);
+
+        when(professionalProfileGeoMapper.findNearby(5.6037, -0.1870, 10.0, "Cardio"))
+                .thenReturn(List.of(card));
 
         List<NearbyProfessionalResponse> result =
-                professionalProfileService.searchNearby(
-                        5.6037,
-                        -0.1870,
-                        10.0,
-                        "Cardio"
-                );
+                professionalProfileService.searchNearby(5.6037, -0.1870, 10.0, "Cardio");
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getProfile().getSpecialty())
-                .isEqualTo("Cardiology");
+        assertThat(result.get(0).getProfile().getSpecialty()).isEqualTo("Cardiology");
+        assertThat(result.get(0).getDistanceKm()).isEqualTo(0.2);
+        verify(professionalProfileGeoMapper).findNearby(5.6037, -0.1870, 10.0, "Cardio");
     }
 
     @Test
-    void shouldIgnoreSpecialtyCandidatesWithoutCoordinates() {
-        ProfessionalProfile withoutCoordinates = ProfessionalProfile.builder()
-                .id(2L)
-                .userId(2L)
-                .firstName("No")
-                .lastName("Coordinates")
-                .title("Dr")
-                .specialty("Cardiology")
-                .latitude(null)
-                .longitude(null)
-                .active(true)
-                .build();
-
-        when(profileRepository
-                .findBySpecialtyContainingIgnoreCaseAndActiveTrueOrderByLastNameAsc(
-                        "Cardio"
-                ))
-                .thenReturn(List.of(profile, withoutCoordinates));
+    void shouldPassNullSpecialtyWhenBlank() {
+        when(professionalProfileGeoMapper.findNearby(5.6037, -0.1870, 10.0, null))
+                .thenReturn(List.of());
 
         List<NearbyProfessionalResponse> result =
-                professionalProfileService.searchNearby(
-                        5.6037,
-                        -0.1870,
-                        10.0,
-                        "Cardio"
-                );
+                professionalProfileService.searchNearby(5.6037, -0.1870, 10.0, "   ");
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getProfile().getId()).isEqualTo(1L);
+        assertThat(result).isEmpty();
+        verify(professionalProfileGeoMapper).findNearby(5.6037, -0.1870, 10.0, null);
     }
 
     @Test
@@ -281,8 +227,7 @@ class ProfessionalProfileServiceTest {
 
     @Test
     void shouldReturnEmptyListWhenNoProfilesInRadius() {
-        when(profileRepository
-                .findByActiveTrueAndLatitudeIsNotNullAndLongitudeIsNotNull())
+        when(professionalProfileGeoMapper.findNearby(5.6037, -0.1870, 1.0, null))
                 .thenReturn(List.of());
 
         List<NearbyProfessionalResponse> result =
@@ -291,6 +236,7 @@ class ProfessionalProfileServiceTest {
                 );
 
         assertThat(result).isEmpty();
+        verify(professionalProfileGeoMapper).findNearby(5.6037, -0.1870, 1.0, null);
     }
 
     @Test
@@ -370,6 +316,26 @@ class ProfessionalProfileServiceTest {
                 .latitude(5.6037)
                 .longitude(-0.1870)
                 .active(true)
+                .build();
+    }
+
+    private NearbyProfessionalRow row(Long id, Long userId, String firstName, String lastName,
+                                      String specialty, double latitude, double longitude,
+                                      double distanceKm) {
+        return NearbyProfessionalRow.builder()
+                .id(id)
+                .userId(userId)
+                .firstName(firstName)
+                .lastName(lastName)
+                .title("Dr")
+                .specialty(specialty)
+                .city("Accra")
+                .latitude(latitude)
+                .longitude(longitude)
+                .active(true)
+                .createdAt(LocalDateTime.of(2026, 1, 1, 9, 0))
+                .updatedAt(LocalDateTime.of(2026, 1, 1, 9, 0))
+                .distanceKm(distanceKm)
                 .build();
     }
 }

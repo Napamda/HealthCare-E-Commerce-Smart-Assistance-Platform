@@ -4,45 +4,48 @@ import { ref } from 'vue'
 export const useNotificationStore = defineStore('notification', () => {
   const notifications = ref([])
 
-  function addNotification(notification) {
-    const id = Date.now()
-    const newNotification = {
-      id,
-      type: notification.type || 'info', // success, error, warning, info
-      title: notification.title || '',
-      message: notification.message || '',
-      duration: notification.duration || 5000,
-      persistent: notification.persistent || false,
-    }
-    notifications.value.push(newNotification)
-
-    if (!newNotification.persistent && newNotification.duration > 0) {
-      setTimeout(() => {
-        removeNotification(id)
-      }, newNotification.duration)
-    }
-
-    return id
-  }
-
-  function removeNotification(id) {
-    const index = notifications.value.findIndex(n => n.id === id)
-    if (index !== -1) {
-      notifications.value.splice(index, 1)
+  async function fetchUnreadCount() {
+    try {
+      const result = await getUnreadCount()
+      unreadCount.value = result.count
+    } catch (e) {
+      console.error('Failed to fetch unread count:', e)
     }
   }
 
-  function clearAll() {
-    notifications.value = []
+  async function fetchNotifications() {
+    loading.value = true
+    error.value = null
+    try {
+      notifications.value = await getNotifications()
+    } catch (e) {
+      error.value = e.response?.data?.error || 'Failed to load notifications'
+    } finally {
+      loading.value = false
+    }
   }
 
-  // Convenience methods
-  function success(title, message, options = {}) {
-    return addNotification({ type: 'success', title, message, ...options })
+  async function markNotificationRead(notificationId) {
+    try {
+      await markAsRead(notificationId)
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+      const idx = notifications.value.findIndex((n) => n.id === notificationId)
+      if (idx !== -1) {
+        notifications.value[idx].isRead = true
+      }
+    } catch (e) {
+      console.error('Failed to mark notification as read:', e)
+    }
   }
 
-  function error(title, message, options = {}) {
-    return addNotification({ type: 'error', title, message, ...options })
+  async function markAllNotificationsRead() {
+    try {
+      await markAllAsRead()
+      notifications.value.forEach((n) => (n.isRead = true))
+      unreadCount.value = 0
+    } catch (e) {
+      console.error('Failed to mark all notifications as read:', e)
+    }
   }
 
   function warning(title, message, options = {}) {

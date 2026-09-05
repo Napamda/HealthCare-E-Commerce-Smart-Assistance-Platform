@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -24,4 +25,10 @@ public class PrescriptionResponse {
     private Long pharmacistId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /**
+     * Medications the pharmacist selected for this prescription. Populated for
+     * approved prescriptions so the patient can order them directly.
+     */
+    private List<PrescriptionItemResponse> items;
 }
