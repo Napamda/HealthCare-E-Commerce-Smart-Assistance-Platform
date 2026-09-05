@@ -54,6 +54,21 @@ public class InventoryService {
     }
 
     @Transactional(readOnly = true)
+    public long getAvailableQuantity(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
+        int stockQty = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+        long reserved = 0L;
+        try {
+            Long reservedRaw = reservationRepository.sumActiveReservedQuantity(product.getId());
+            reserved = reservedRaw != null ? reservedRaw : 0L;
+        } catch (Exception e) {
+            log.warn("Reservation lookup failed for product {}: {}", product.getId(), e.getMessage());
+        }
+        return Math.max(0L, stockQty - reserved);
+    }
+
+    @Transactional(readOnly = true)
     public List<StockInfoResponse> getLowStockProducts() {
         return productRepository.findAll().stream()
                 .filter(p -> {

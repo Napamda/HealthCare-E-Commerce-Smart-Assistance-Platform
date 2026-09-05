@@ -439,6 +439,11 @@ onMounted(() => {
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- ==================== RECENT MOVEMENTS ==================== -->
+    <section class="vd-section">
+      <h2 class="vd-section-title">Recent Stock Movements</h2>
       <div v-if="!recentMovements.length" class="empty-state vendor-empty">
         No recent movements yet.
       </div>

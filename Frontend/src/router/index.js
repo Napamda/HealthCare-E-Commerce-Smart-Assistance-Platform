@@ -72,11 +72,6 @@ const routes = [
     component: () => import('../pages/products/ProductDetailPage.vue'),
   },
   {
-    path: '/recommendations',
-    name: 'Recommendations',
-    component: () => import('../pages/RecommendationsPage.vue'),
-  },
-  {
     path: '/cart',
     name: 'Cart',
     component: () => import('../pages/cart/CartPage.vue'),
@@ -105,7 +100,7 @@ const routes = [
     path: '/admin/products',
     name: 'AdminProducts',
     meta: { requiresRole: [ROLES.ADMIN] },
-    component: () => import('../pages/AdminProductPage.vue'),
+    component: () => import('../pages/products/AdminProductPage.vue'),
   },
   {
     path: '/admin/categories',
@@ -117,7 +112,7 @@ const routes = [
     path: '/inventory',
     name: 'InventoryManagement',
     meta: { requiresRole: [ROLES.VENDOR, ROLES.ADMIN] },
-    component: () => import('../pages/InventoryManagementPage.vue'),
+    component: () => import('../pages/inventory/InventoryManagementPage.vue'),
   },
   {
     path: '/register',

@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import java.math.BigDecimal;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -54,8 +56,8 @@ public class VendorController {
         long shippedOrders = orderRepository.countByStatus(OrderStatus.SHIPPED);
         long deliveredOrders = orderRepository.countByStatus(OrderStatus.DELIVERED);
         long ordersToday = orderRepository.countByCreatedAtAfter(startOfDay);
-        BigDecimal revenueToday = orderRepository.sumTotalSince(startOfDay);
-        BigDecimal totalRevenue = orderRepository.sumTotalByStatus(OrderStatus.DELIVERED);
+        Double revenueToday = orderRepository.sumTotalSince(startOfDay);
+        Double totalRevenue = orderRepository.sumTotalByStatus(OrderStatus.DELIVERED);
         long lowStockCount = productRepository.countByStockQuantityLessThanEqual(10);
         long outOfStockCount = productRepository.countByStockQuantity(0);
         long totalCustomers = userRepository.count();
@@ -68,8 +70,8 @@ public class VendorController {
         stats.setShippedOrders(shippedOrders);
         stats.setDeliveredOrders(deliveredOrders);
         stats.setOrdersToday(ordersToday);
-        stats.setRevenueToday(revenueToday != null ? revenueToday : BigDecimal.ZERO);
-        stats.setTotalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO);
+        stats.setRevenueToday(revenueToday != null ? BigDecimal.valueOf(revenueToday) : BigDecimal.ZERO);
+        stats.setTotalRevenue(totalRevenue != null ? BigDecimal.valueOf(totalRevenue) : BigDecimal.ZERO);
         stats.setLowStockCount(lowStockCount);
         stats.setOutOfStockCount(outOfStockCount);
         stats.setTotalCustomers(totalCustomers);

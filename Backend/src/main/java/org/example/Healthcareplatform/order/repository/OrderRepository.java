@@ -49,4 +49,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT DISTINCT p.category FROM Order o JOIN o.items i JOIN org.example.Healthcareplatform.product.entity.Product p ON i.productId = p.id WHERE o.userId = :userId AND o.status != :cancelledStatus")
     List<String> findCategoriesByUserId(@Param("userId") Long userId, @Param("cancelledStatus") Order.OrderStatus cancelledStatus);
+
+    long countByStatus(Order.OrderStatus status);
+
+    long countByCreatedAtAfter(Instant createdAt);
+
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.createdAt >= :createdAt")
+    Double sumTotalSince(@Param("createdAt") Instant createdAt);
+
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.status = :status")
+    Double sumTotalByStatus(@Param("status") Order.OrderStatus status);
+
+    Page<Order> findByStatusOrderByCreatedAtDesc(Order.OrderStatus status, Pageable pageable);
 }

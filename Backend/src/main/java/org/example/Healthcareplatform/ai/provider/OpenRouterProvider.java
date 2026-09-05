@@ -18,8 +18,9 @@ import java.util.Map;
 @Slf4j
 public class OpenRouterProvider implements AIProvider {
 
-    private static final int MAX_ATTEMPTS = 3;
-    private static final long RETRY_BACKOFF_MILLIS = 250;
+    private static final int MAX_RETRIES = 3;
+    private static final long BASE_DELAY_MS = 1000;
+    private static final long MAX_RETRY_DELAY_MS = 30_000;
 
     private final RestClient restClient;
     private final String model;
@@ -53,62 +54,9 @@ public class OpenRouterProvider implements AIProvider {
         return factory;
     }
 
-    private static final int MAX_RETRIES = 3;
-    private static final long BASE_DELAY_MS = 1000;
-    private static final long MAX_RETRY_DELAY_MS = 30_000;
-
     @Override
     public String chat(String prompt) {
         log.info("OpenRouterProvider sending prompt ({} chars)", prompt.length());
-        int attempt = 1;
-        while (true) {
-            try {
-                return executeChat(prompt);
-            } catch (RetryableProviderFailure e) {
-                if (attempt >= MAX_ATTEMPTS) {
-                    log.error("OpenRouter API call failed after {} attempts", attempt, e);
-                    throw new ProviderUnavailableException("OpenRouter", e);
-                }
-                log.warn("OpenRouter attempt {}/{} failed, retrying — {}", attempt, MAX_ATTEMPTS, e.getMessage());
-                sleepBeforeRetry(attempt);
-                attempt++;
-            }
-        }
-    }
-
-    private String executeChat(String prompt) {
-        try {
-            var messages = buildMessages(prompt);
-
-            var body = Map.of(
-                    "model", model,
-                    "messages", messages
-            );
-
-            var response = restClient.post()
-                    .uri("/chat/completions")
-                    .body(body)
-                    .exchange((req, resp) -> {
-                        HttpStatusCode status = resp.getStatusCode();
-                        if (status.isError()) {
-                            byte[] errorBody = resp.getBody().readAllBytes();
-                            String errorText = new String(errorBody);
-                            if (status.value() >= 500) {
-                                throw new RetryableProviderFailure("HTTP " + status.value() + ": " + errorText);
-                            }
-                            log.error("OpenRouter HTTP {} — body: {}", status.value(), errorText);
-                            throw new ProviderUnavailableException("OpenRouter",
-                                    new RuntimeException("HTTP " + status.value() + ": " + errorText));
-                        }
-                        return resp.bodyTo(OpenRouterChatResponse.class);
-                    });
-
-            if (response == null
-                    || response.choices() == null
-                    || response.choices().isEmpty()
-                    || response.choices().get(0).message() == null) {
-                throw new ProviderUnavailableException("OpenRouter",
-                        new IllegalStateException("Empty response from API"));
         Exception lastException = null;
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -228,15 +176,6 @@ public class OpenRouterProvider implements AIProvider {
         private final int statusCode;
         private final Long retryAfterSeconds;
 
-        } catch (ProviderUnavailableException e) {
-            throw e;
-        } catch (RetryableProviderFailure e) {
-            throw e;
-        } catch (ResourceAccessException e) {
-            throw new RetryableProviderFailure(e);
-        } catch (Exception e) {
-            log.error("OpenRouter API call failed", e);
-            throw new ProviderUnavailableException("OpenRouter", e);
         RetryableHttpException(int statusCode, String message, Long retryAfterSeconds) {
             super("HTTP " + statusCode + ": " + message);
             this.statusCode = statusCode;
@@ -245,46 +184,6 @@ public class OpenRouterProvider implements AIProvider {
 
         Long retryAfterSeconds() {
             return retryAfterSeconds;
-        }
-    }
-
-    private static void sleepBeforeRetry(int attempt) {
-        try {
-            Thread.sleep(RETRY_BACKOFF_MILLIS * attempt);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ProviderUnavailableException("OpenRouter", e);
-        }
-    }
-
-    private static class RetryableProviderFailure extends RuntimeException {
-
-        RetryableProviderFailure(String message) {
-            super(message);
-        }
-
-        RetryableProviderFailure(Throwable cause) {
-            super(cause);
-        }
-    }
-
-    private static void sleepBeforeRetry(int attempt) {
-        try {
-            Thread.sleep(RETRY_BACKOFF_MILLIS * attempt);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ProviderUnavailableException("OpenRouter", e);
-        }
-    }
-
-    private static class RetryableProviderFailure extends RuntimeException {
-
-        RetryableProviderFailure(String message) {
-            super(message);
-        }
-
-        RetryableProviderFailure(Throwable cause) {
-            super(cause);
         }
     }
 

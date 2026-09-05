@@ -40,7 +40,10 @@ public class Notification {
         ORDER_CANCELLED,
         ORDER_STATUS,
         LOW_STOCK,
-        GENERIC
+        GENERIC,
+        CONSULTATION_CREATED,
+        CONSULTATION_ACCEPTED,
+        CONSULTATION_IN_PROGRESS
     }
 
     @Id
@@ -72,13 +75,5 @@ public class Notification {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-    }
-
-    public enum NotificationType {
-        PRESCRIPTION_APPROVED,
-        PRESCRIPTION_REJECTED,
-        CONSULTATION_CREATED,
-        CONSULTATION_ACCEPTED,
-        CONSULTATION_IN_PROGRESS
     }
 }

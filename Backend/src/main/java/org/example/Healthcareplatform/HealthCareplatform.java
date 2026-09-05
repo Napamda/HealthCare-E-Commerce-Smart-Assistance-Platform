@@ -10,7 +10,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableCaching
 @EnableScheduling
 @MapperScan("org.example.Healthcareplatform.location.mapper")
-@SpringBootApplication
 public class HealthCareplatform {
 
     public static void main(String[] args) {

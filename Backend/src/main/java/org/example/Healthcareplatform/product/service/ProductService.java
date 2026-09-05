@@ -225,15 +225,6 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Long> getProductNameToIdMap() {
-        return productRepository.findAllByOrderByNameAsc().stream()
-                .collect(Collectors.toMap(
-                        p -> p.getName().toLowerCase(),
-                        Product::getId,
-                        (existing, replacement) -> existing));
-    }
-
-    @Transactional(readOnly = true)
     public List<ProductResponse> getPopularProducts(int limit) {
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "ratings"));
         return productRepository.findAll(pageable).stream()

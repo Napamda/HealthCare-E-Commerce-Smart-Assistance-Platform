@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth.js'
 import { useCartStore } from './stores/cart.js'
 import CartIcon from './components/cart/CartIcon.vue'
@@ -9,6 +10,20 @@ import AppNavbar from './components/AppNavbar.vue'
 
 const authStore = useAuthStore()
 const cartStore = useCartStore()
+const router = useRouter()
+
+const roleLabel = computed(() => {
+  return authStore.userRole ? ROLE_LABELS[authStore.userRole] || authStore.userRole : ''
+})
+
+const dashboardLink = computed(() => {
+  return authStore.userRole ? ROLE_DASHBOARD[authStore.userRole] || '/dashboard' : '/dashboard'
+})
+
+function handleLogout() {
+  authStore.logout()
+  router.push('/login')
+}
 
 onMounted(() => {
   if (authStore.isAuthenticated) {

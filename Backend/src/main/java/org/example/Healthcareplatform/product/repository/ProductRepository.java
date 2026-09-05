@@ -45,4 +45,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     long countByStockQuantityLessThanEqual(int threshold);
 
     long countByStockQuantity(int quantity);
+
+    Page<Product> findByCategory(Product.ProductCategory category, Pageable pageable);
 }
