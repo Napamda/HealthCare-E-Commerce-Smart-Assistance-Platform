@@ -19,7 +19,7 @@ export const ROLE_DASHBOARD = {
   [ROLES.DOCTOR]: '/doctor',
   [ROLES.PHARMACIST]: '/pharmacist',
   [ROLES.VENDOR]: '/vendor',
-  [ROLES.PATIENT]: '/chat',
+  [ROLES.PATIENT]: '/products',
 }
 
 export const ROLE_PERMISSIONS = {

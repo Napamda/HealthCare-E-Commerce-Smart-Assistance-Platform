@@ -105,6 +105,16 @@ public class ProfessionalProfileService {
     @Transactional(readOnly = true)
     public List<NearbyProfessionalResponse> searchNearby(double latitude, double longitude,
                                                          double radiusKm, String specialty) {
+        if (latitude < -90.0 || latitude > 90.0) {
+            throw new IllegalArgumentException("latitude must be between -90 and 90");
+        }
+        if (longitude < -180.0 || longitude > 180.0) {
+            throw new IllegalArgumentException("longitude must be between -180 and 180");
+        }
+        if (radiusKm <= 0) {
+            throw new IllegalArgumentException("Search radius must be greater than 0");
+        }
+
         List<ProfessionalProfile> candidates = (specialty == null || specialty.isBlank())
                 ? profileRepository.findByActiveTrueAndLatitudeIsNotNullAndLongitudeIsNotNull()
                 : profileRepository.findBySpecialtyContainingIgnoreCaseAndActiveTrueOrderByLastNameAsc(specialty)
