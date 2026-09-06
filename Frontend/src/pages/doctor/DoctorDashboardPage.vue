@@ -756,7 +756,7 @@ function today() {
   gap: 6px;
   padding: 8px 16px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -780,7 +780,7 @@ function today() {
 .stat-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 16px;
   text-align: center;
 }
@@ -791,8 +791,8 @@ function today() {
 }
 
 .stat-card.stat-active {
-  border-color: #3b82f633;
-  background: #3b82f608;
+  border-color: var(--color-primary-light)33;
+  background: var(--color-primary-light)08;
 }
 
 .stat-card.stat-urgent {
@@ -822,7 +822,7 @@ function today() {
   display: flex;
   gap: 4px;
   background: var(--color-surface);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 4px;
   margin-bottom: 20px;
   border: 1px solid var(--color-border);
@@ -832,7 +832,7 @@ function today() {
   flex: 1;
   padding: 10px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
   font-size: 0.875rem;
@@ -858,7 +858,7 @@ function today() {
   background: #fef2f2;
   color: #991b1b;
   border: 1px solid #fecaca;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 12px 16px;
   margin-bottom: 16px;
   font-size: 0.875rem;
@@ -892,7 +892,7 @@ function today() {
 .filter-chip {
   padding: 6px 14px;
   border: 1px solid var(--color-border);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
   color: var(--color-text-secondary);
   font-size: 0.8125rem;
@@ -938,7 +938,7 @@ function today() {
 .consultation-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 16px 20px;
   transition: box-shadow 0.15s;
 }
@@ -983,7 +983,7 @@ function today() {
 .priority-select {
   padding: 4px 8px;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 0.75rem;
   font-weight: 600;
   background: var(--color-surface);
@@ -993,7 +993,7 @@ function today() {
 
 .card-status {
   padding: 3px 10px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -1081,7 +1081,7 @@ function today() {
   gap: 16px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 16px 20px;
 }
 
@@ -1186,7 +1186,7 @@ function today() {
 .calendar-view {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 20px;
 }
 
@@ -1204,7 +1204,7 @@ function today() {
   width: 36px;
   height: 36px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -1240,7 +1240,7 @@ function today() {
 .cal-day {
   min-height: 72px;
   padding: 6px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: var(--color-bg);
 }
@@ -1248,7 +1248,7 @@ function today() {
 .cal-day.cal-today {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  background: rgba(var(--color-primary-rgb, 59 130 246), 0.06);
+  background: rgba(var(--color-primary-rgb), 0.06);
 }
 
 .cal-day.cal-has-events {
@@ -1290,7 +1290,7 @@ function today() {
 }
 
 .cal-event-dot.priority-normal {
-  background: #3b82f6;
+  background: var(--color-primary-light);
 }
 
 .cal-event-dot.priority-low {
@@ -1331,7 +1331,7 @@ function today() {
   color: var(--color-text-secondary);
   background: var(--color-surface-hover);
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .cal-date-item {
@@ -1339,7 +1339,7 @@ function today() {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   margin-bottom: 6px;
   background: var(--color-bg);
@@ -1370,7 +1370,7 @@ function today() {
 .cal-item-status {
   font-size: 0.7rem;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-weight: 600;
 }
 
@@ -1388,7 +1388,7 @@ function today() {
 
 .modal-card {
   background: var(--color-surface);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 28px;
   width: 90%;
   max-width: 440px;
@@ -1411,7 +1411,7 @@ function today() {
   width: 100%;
   padding: 12px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-family: inherit;
   resize: vertical;
@@ -1423,7 +1423,7 @@ function today() {
 .modal-textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 59 130 246), 0.1);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
 }
 
 .form-group {
@@ -1442,7 +1442,7 @@ function today() {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-family: inherit;
   background: var(--color-bg);
@@ -1453,7 +1453,7 @@ function today() {
 .form-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 59 130 246), 0.1);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
 }
 
 .modal-actions {
@@ -1466,7 +1466,7 @@ function today() {
 /* ---- Buttons ---- */
 .btn {
   padding: 6px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
@@ -1546,7 +1546,7 @@ function today() {
   align-items: center;
   gap: 6px;
   padding: 6px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;

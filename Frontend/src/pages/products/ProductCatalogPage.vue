@@ -159,7 +159,7 @@ function onSortChange() {
           class="category-card"
           :class="{ active: filters.category === cat }"
           :style="filters.category === cat
-            ? { background: (categoryMeta[cat]?.color || '#2563eb') + '18', borderColor: categoryMeta[cat]?.color || '#2563eb' }
+            ? { background: (categoryMeta[cat]?.color || 'var(--color-primary)') + '18', borderColor: categoryMeta[cat]?.color || 'var(--color-primary)' }
             : {}"
           @click="selectCategory(cat)"
         >
@@ -589,7 +589,7 @@ function onSortChange() {
 }
 .search-wrapper:focus-within {
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(53, 185, 147, 0.1);
 }
 .search-icon {
   color: var(--color-text-muted);
@@ -795,13 +795,13 @@ function onSortChange() {
 }
 .sort-select:focus {
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(53, 185, 147, 0.1);
 }
 
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(37, 99, 235, 0.3);
+  border: 2px solid rgba(53, 185, 147, 0.3);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;

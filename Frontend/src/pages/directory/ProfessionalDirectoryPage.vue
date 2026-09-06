@@ -38,7 +38,7 @@ const specialtyLabels = {
 const specialtyColors = {
   CARDIOLOGY: '#dc2626',
   DERMATOLOGY: '#ec4899',
-  GENERAL_PRACTICE: '#2563eb',
+  GENERAL_PRACTICE: 'var(--color-primary)',
   PEDIATRICS: '#f59e0b',
   ORTHOPEDICS: '#8b5cf6',
   GYNECOLOGY: '#14b8a6',
@@ -50,7 +50,7 @@ function specialtyLabel(key) {
 }
 
 function specialtyColor(key) {
-  return specialtyColors[key] || '#2563eb'
+  return specialtyColors[key] || 'var(--color-primary)'
 }
 
 function makeMarkerIcon(specialty, selected = false) {

@@ -38,7 +38,7 @@
 
 .rec-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
 }
 
 .rec-input::placeholder {
@@ -394,7 +394,7 @@
 .rec-field-input:focus,
 .rec-textarea:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
 }
 
 .rec-field-input::placeholder,
@@ -409,7 +409,7 @@
   margin-bottom: 16px;
   padding: 10px 16px;
   background: var(--color-primary-bg);
-  border: 1px solid rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.2);
   border-radius: var(--radius-md);
   color: var(--color-primary-dark);
   font-size: 13px;

@@ -5,39 +5,45 @@
 
 :root {
   /* Primary palette */
-  --color-primary: #2563eb;
-  --color-primary-light: #3b82f6;
-  --color-primary-dark: #1d4ed8;
-  --color-primary-bg: #eff6ff;
+  --color-primary: #168267;
+  --color-primary-light: #35b993;
+  --color-primary-dark: #116650;
+  --color-primary-bg: #e9f8f3;
+  --color-primary-rgb: 53, 185, 147;
 
   /* Neutrals */
-  --color-bg: #f8fafc;
+  --color-bg: #fffdf8;
   --color-surface: #ffffff;
-  --color-border: #e2e8f0;
-  --color-text: #1e293b;
-  --color-text-secondary: #64748b;
-  --color-text-muted: #94a3b8;
+  --color-border: #e5ebe7;
+  --color-text: #183153;
+  --color-text-secondary: #617087;
+  --color-text-muted: #8994a3;
 
   /* Accents */
-  --color-success: #16a34a;
-  --color-warning: #d97706;
-  --color-danger: #dc2626;
+  --color-success: #168267;
+  --color-warning: #d78332;
+  --color-danger: #d65f42;
+  --color-accent: #ff8b6a;
+  --color-accent-bg: #fff0eb;
+  --color-surface-soft: #f3faf7;
+  --color-surface-mint: #edf8f4;
 
   /* Chat-specific */
-  --color-user-bubble: #2563eb;
-  --color-ai-bubble: #f1f5f9;
-  --color-sidebar: #f8fafc;
+  --color-user-bubble: var(--color-text);
+  --color-ai-bubble: #edf8f4;
+  --color-sidebar: #f7fbf8;
 
   /* Spacing */
   --sidebar-width: 320px;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 5px 16px rgba(24, 49, 83, 0.06);
+  --shadow-md: 0 16px 38px rgba(30, 71, 82, 0.11);
+  --shadow-lg: 0 24px 65px rgba(24, 49, 83, 0.15);
 
   /* Radii */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-sm: 9px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
   --radius-full: 9999px;
 }

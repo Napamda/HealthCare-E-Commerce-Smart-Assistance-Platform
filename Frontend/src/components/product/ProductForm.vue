@@ -469,7 +469,7 @@ function onCancel() {
 .form-group select:focus {
   outline: none;
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
 }
 .form-group textarea {
   resize: vertical;
@@ -574,7 +574,7 @@ function onCancel() {
 }
 .btn-upload:disabled { opacity: 0.6; cursor: not-allowed; }
 .spinner--dark {
-  border-color: rgba(37, 99, 235, 0.25);
+  border-color: rgba(var(--color-primary-rgb), 0.25);
   border-top-color: var(--color-primary);
 }
 

@@ -3,6 +3,7 @@ package org.example.Healthcareplatform.payment.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.inventory.service.InventoryService;
+import org.example.Healthcareplatform.messaging.publisher.HealthcareEventPublisher;
 import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.order.entity.Order;
 import org.example.Healthcareplatform.order.repository.OrderRepository;
@@ -37,6 +38,7 @@ public class PaymentService {
     private final OrderRepository orderRepository;
     private final InventoryService inventoryService;
     private final NotificationService notificationService;
+    private final HealthcareEventPublisher eventPublisher;
 
     @Transactional
     public PaymentResponse initiatePayment(Long userId, Long orderId, String methodName) {
@@ -291,6 +293,12 @@ public class PaymentService {
         // Send order confirmation notification
         notificationService.notify(userId, "ORDER", "Order confirmed",
                 "Your order " + payment.getOrderNumber() + " has been confirmed and is being processed.");
+
+        Order order = orderRepository.findById(payment.getOrderId()).orElse(null);
+        if (order != null) {
+            eventPublisher.publishPaymentSuccess(payment.getId(), order.getId(), userId,
+                    order.getUserEmail(), order.getUserName(), payment.getAmount());
+        }
     }
 
     @Transactional(readOnly = true)

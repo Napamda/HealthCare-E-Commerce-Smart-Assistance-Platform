@@ -217,7 +217,7 @@
 
 .input-wrapper:focus-within {
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(53, 185, 147, 0.1);
 }
 
 .input-field {
@@ -336,8 +336,8 @@ kbd {
 }
 
 .consultation-banner.status-closed {
-  background: #f8fafc;
-  border-bottom-color: #e2e8f0;
+  background: var(--color-bg);
+  border-bottom-color: var(--color-border);
 }
 
 .banner-content {
@@ -644,7 +644,7 @@ kbd {
 .field-textarea:focus {
   outline: none;
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(53, 185, 147, 0.1);
 }
 
 .field-textarea::placeholder {
@@ -986,8 +986,8 @@ kbd {
 }
 
 .doctor-session-banner.status-closed {
-  background: #f8fafc;
-  border-bottom-color: #e2e8f0;
+  background: var(--color-bg);
+  border-bottom-color: var(--color-border);
 }
 
 .doctor-session-banner .banner-text {

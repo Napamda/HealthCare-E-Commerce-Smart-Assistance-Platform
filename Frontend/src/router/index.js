@@ -5,7 +5,33 @@ import { ROLES, ROLE_DASHBOARD } from '../config/permissions.js'
 const routes = [
   {
     path: '/',
-    redirect: '/login',
+    name: 'Home',
+    component: () => import('../pages/public/HomePage.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/about',
+    name: 'About',
+    component: () => import('../pages/public/PublicInfoPage.vue'),
+    meta: { public: true, page: 'about' },
+  },
+  {
+    path: '/services',
+    name: 'Services',
+    component: () => import('../pages/public/PublicInfoPage.vue'),
+    meta: { public: true, page: 'services' },
+  },
+  {
+    path: '/faq',
+    name: 'FAQ',
+    component: () => import('../pages/public/PublicInfoPage.vue'),
+    meta: { public: true, page: 'faq' },
+  },
+  {
+    path: '/contact',
+    name: 'Contact',
+    component: () => import('../pages/public/PublicInfoPage.vue'),
+    meta: { public: true, page: 'contact' },
   },
   {
     path: '/login',

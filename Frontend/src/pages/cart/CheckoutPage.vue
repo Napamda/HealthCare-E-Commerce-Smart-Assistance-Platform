@@ -517,7 +517,7 @@ onMounted(async () => {
   background: var(--color-primary);
   color: #fff;
 }
-.btn-apply-discount:hover:not(:disabled) { background: #1d4ed8; }
+.btn-apply-discount:hover:not(:disabled) { background: var(--color-primary-dark); }
 .btn-apply-discount:disabled { opacity: 0.5; cursor: default; }
 .btn-remove-discount {
   background: #fef2f2;
@@ -647,7 +647,7 @@ onMounted(async () => {
   cursor: pointer;
   transition: background 0.15s;
 }
-.btn-place-order:hover:not(:disabled) { background: #1d4ed8; }
+.btn-place-order:hover:not(:disabled) { background: var(--color-primary-dark); }
 .btn-place-order:disabled { opacity: 0.6; cursor: default; }
 .submit-error {
   padding: 10px 14px;

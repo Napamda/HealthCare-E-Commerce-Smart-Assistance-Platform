@@ -589,7 +589,7 @@ onMounted(async () => {
 }
 .method-card.selected {
   border-color: var(--color-primary);
-  background: #eff6ff;
+  background: var(--color-primary-bg);
 }
 .method-icon {
   color: var(--color-primary);
@@ -681,12 +681,12 @@ onMounted(async () => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
 }
 .btn-pay:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--color-primary-dark);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.4);
 }
 .btn-pay:disabled {
   opacity: 0.6;

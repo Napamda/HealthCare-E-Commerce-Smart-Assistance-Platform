@@ -110,7 +110,7 @@
   color: #fff;
 }
 .btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--color-primary-dark);
 }
 
 .btn-secondary {
@@ -154,7 +154,7 @@
 .form-group input:focus,
 .form-group select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(53, 185, 147, 0.1);
 }
 
 .form-group input::placeholder {
@@ -276,8 +276,8 @@
 }
 
 .status-closed {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--color-surface-soft);
+  color: var(--color-text-secondary);
 }
 
 /* ---- Priority badges (shared) ---- */
@@ -297,7 +297,7 @@
 
 .priority-normal {
   background: #dbeafe;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 .priority-high {

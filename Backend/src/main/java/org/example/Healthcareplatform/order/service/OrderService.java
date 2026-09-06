@@ -53,6 +53,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
     private final DiscountService discountService;
+    private final HealthcareEventPublisher eventPublisher;
 
     private static final List<String> SHIPPING_METHODS = List.of("STANDARD", "EXPRESS", "SAME_DAY");
 
@@ -155,6 +156,8 @@ public class OrderService {
 
         log.info("Order created: number={}, id={}, userId={}, total={}, items={}",
                 saved.getOrderNumber(), saved.getId(), userId, total, orderItems.size());
+        eventPublisher.publishOrderCreated(saved.getId(), userId, user.getEmail(),
+                user.getFirstName() + " " + user.getLastName(), total.doubleValue(), orderItems.size());
         return OrderResponse.fromEntity(saved);
     }
 

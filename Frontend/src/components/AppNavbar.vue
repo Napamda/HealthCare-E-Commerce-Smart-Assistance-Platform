@@ -13,6 +13,13 @@ const authStore = useAuthStore()
 const openDropdown = ref(null)   // which top-level dropdown is open (desktop)
 const userMenuOpen = ref(false)  // the single consolidated user menu
 const mobileNavOpen = ref(false) // hamburger drawer, small screens only
+const publicNavItems = [
+  { to: '/', label: 'Home' },
+  { to: '/services', label: 'What we do' },
+  { to: '/about', label: 'About' },
+  { to: '/faq', label: 'FAQ' },
+  { to: '/contact', label: 'Contact' },
+]
 
 const roleLabel = computed(() => {
   if (!authStore.userRole) return ''
@@ -23,6 +30,8 @@ const navItems = computed(() => {
   if (!authStore.userRole) return []
   return getNavItems(authStore.userRole)
 })
+
+const displayNavItems = computed(() => authStore.isAuthenticated ? navItems.value : publicNavItems)
 
 function isDropdown(item) {
   return item.children && item.children.length > 0
@@ -71,14 +80,14 @@ async function handleLogout() {
 <template>
   <nav class="app-nav" @click.self="closeAllMenus">
     <div class="nav-left">
-      <router-link to="/chat" class="nav-brand" @click="mobileNavOpen = false">
-        HealthCare
+      <router-link :to="authStore.isAuthenticated ? '/chat' : '/'" class="nav-brand" @click="mobileNavOpen = false">
+        <span class="nav-brand-mark">+</span> HealthCare
       </router-link>
     </div>
 
     <!-- Desktop primary nav -->
-    <div class="nav-center" v-if="authStore.isAuthenticated">
-      <template v-for="item in navItems" :key="item.label">
+    <div class="nav-center">
+      <template v-for="item in displayNavItems" :key="item.label">
         <div v-if="isDropdown(item)" class="nav-dropdown-wrapper">
           <button
             class="nav-link nav-dropdown-trigger"
@@ -109,8 +118,8 @@ async function handleLogout() {
     <!-- Right cluster: notifications + one consolidated user menu -->
     <div class="nav-right">
       <template v-if="!authStore.isAuthenticated">
-        <router-link to="/login" class="nav-link">Sign in</router-link>
-        <router-link to="/register" class="nav-link nav-cta">Register</router-link>
+        <router-link to="/login" class="nav-link">Log in</router-link>
+        <router-link to="/register" class="nav-link nav-cta">Join us</router-link>
       </template>
 
       <template v-else>
@@ -144,16 +153,15 @@ async function handleLogout() {
           </div>
         </div>
 
-        <!-- Hamburger — only visible under the mobile breakpoint, see navbar.css -->
-        <button class="nav-hamburger" @click="toggleMobileNav" aria-label="Open menu">
-          <span /><span /><span />
-        </button>
       </template>
+      <button class="nav-hamburger" @click="toggleMobileNav" aria-label="Open menu" :aria-expanded="mobileNavOpen">
+        <span /><span /><span />
+      </button>
     </div>
 
     <!-- Mobile drawer: same navItems config, no separate route list to maintain -->
-    <div class="nav-mobile-drawer" v-if="mobileNavOpen && authStore.isAuthenticated">
-      <template v-for="item in navItems" :key="'m-' + item.label">
+    <div class="nav-mobile-drawer" v-if="mobileNavOpen">
+      <template v-for="item in displayNavItems" :key="'m-' + item.label">
         <template v-if="isDropdown(item)">
           <div class="nav-mobile-group-label">{{ item.label }}</div>
           <button
@@ -171,10 +179,10 @@ async function handleLogout() {
       </template>
 
       <!-- Account actions — profile + sign out (mobile drawer) -->
-      <button class="nav-mobile-link nav-mobile-profile" @click="navigateToProfile()">
+      <button v-if="authStore.isAuthenticated" class="nav-mobile-link nav-mobile-profile" @click="navigateToProfile()">
         My Profile
       </button>
-      <button class="nav-mobile-link nav-mobile-signout" @click="handleLogout">
+      <button v-if="authStore.isAuthenticated" class="nav-mobile-link nav-mobile-signout" @click="handleLogout">
         Sign out
       </button>
     </div>

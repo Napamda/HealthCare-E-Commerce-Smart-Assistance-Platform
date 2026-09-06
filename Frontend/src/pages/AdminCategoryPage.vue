@@ -440,7 +440,7 @@ function childCount(node) {
 .search-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(46, 134, 193, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
 }
 
 .loading-state, .empty-state {
@@ -528,7 +528,7 @@ function childCount(node) {
   border-radius: 4px;
   transition: transform 0.15s ease;
 }
-.tree-toggle:hover { background: rgba(46, 134, 193, 0.1); }
+.tree-toggle:hover { background: rgba(var(--color-primary-rgb), 0.1); }
 .tree-toggle--open { transform: rotate(90deg); }
 .tree-toggle--empty { cursor: default; }
 .td-name { font-weight: 600; }
@@ -567,7 +567,7 @@ function childCount(node) {
   transition: all 0.15s;
 }
 .btn-edit { color: var(--color-primary); }
-.btn-edit:hover { background: rgba(46, 134, 193, 0.1); border-color: var(--color-primary); }
+.btn-edit:hover { background: rgba(var(--color-primary-rgb), 0.1); border-color: var(--color-primary); }
 .btn-delete { color: var(--color-danger); }
 .btn-delete:hover { background: rgba(231, 76, 60, 0.08); border-color: var(--color-danger); }
 
@@ -627,7 +627,7 @@ function childCount(node) {
 .form-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(46, 134, 193, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
 }
 .form-textarea { resize: vertical; }
 .form-check {

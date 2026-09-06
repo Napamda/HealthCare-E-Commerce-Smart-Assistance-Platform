@@ -213,7 +213,7 @@ function onClear() {
 .price-field input:focus {
   outline: none;
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.1);
 }
 
 .price-separator {

@@ -364,7 +364,7 @@ async function handleAddToCart() {
   cursor: pointer;
   transition: all 0.2s;
 }
-.btn-add-cart:hover:not(:disabled) { background: #1d4ed8; }
+.btn-add-cart:hover:not(:disabled) { background: var(--color-primary-dark); }
 .btn-add-cart:disabled { opacity: 0.5; cursor: default; }
 .btn-add-cart.btn-added { background: #16a34a; }
 .btn-view-cart {
@@ -400,7 +400,7 @@ async function handleAddToCart() {
   cursor: pointer;
   transition: all 0.2s;
 }
-.btn-add-cart:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.btn-add-cart:hover:not(:disabled) { background: var(--color-primary-dark); transform: translateY(-1px); }
 .btn-add-cart:disabled { opacity: 0.6; cursor: default; }
 .btn-added {
   background: #16a34a !important;

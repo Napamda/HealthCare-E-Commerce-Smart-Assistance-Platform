@@ -513,7 +513,7 @@ onMounted(() => {
   justify-content: center;
   flex-shrink: 0;
 }
-.vd-stat-icon-blue { background: #eff6ff; color: #2563eb; }
+.vd-stat-icon-blue { background: var(--color-primary-bg); color: var(--color-primary); }
 .vd-stat-icon-green { background: #f0fdf4; color: #16a34a; }
 .vd-stat-icon-purple { background: #faf5ff; color: #9333ea; }
 .vd-stat-icon-orange { background: #fff7ed; color: #ea580c; }
@@ -547,7 +547,7 @@ onMounted(() => {
   transition: flex 0.3s;
 }
 .s-pending, .s-pending-bg { background: #f59e0b; }
-.s-confirmed, .s-processing-bg { background: #3b82f6; }
+.s-confirmed, .s-processing-bg { background: var(--color-primary-light); }
 .s-processing, .s-processing-bg { background: #8b5cf6; }
 .s-shipped, .s-shipped-bg { background: #06b6d4; }
 .s-delivered, .s-delivered-bg { background: #10b981; }
@@ -583,7 +583,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.15s;
 }
-.vd-action-card:hover { border-color: var(--color-primary); color: var(--color-primary); background: #eff6ff; }
+.vd-action-card:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-bg); }
 
 /* Filters */
 .vd-filters {
@@ -597,7 +597,7 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 600;
   border: 1px solid var(--color-border);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -633,7 +633,7 @@ onMounted(() => {
   vertical-align: middle;
 }
 .vd-table tbody tr:last-child td { border-bottom: none; }
-.vd-table tbody tr:hover { background: rgba(37, 99, 235, 0.02); }
+.vd-table tbody tr:hover { background: rgba(53, 185, 147, 0.02); }
 .vd-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .vd-empty { text-align: center; padding: 40px 16px !important; color: var(--color-text-muted); }
 
@@ -645,7 +645,7 @@ onMounted(() => {
   padding: 2px 8px;
   font-size: 11px;
   background: var(--color-bg);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
@@ -658,13 +658,13 @@ onMounted(() => {
 .vd-status {
   display: inline-block;
   padding: 3px 10px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
 }
 .s-pending { color: #d97706; background: #fef3c7; }
-.s-confirmed { color: #2563eb; background: #dbeafe; }
+.s-confirmed { color: var(--color-primary); background: #dbeafe; }
 .s-processing { color: #7c3aed; background: #ede9fe; }
 .s-shipped { color: #0891b2; background: #cffafe; }
 .s-delivered { color: #059669; background: #d1fae5; }
@@ -687,7 +687,7 @@ onMounted(() => {
 }
 .vd-act:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
 .vd-act:disabled { opacity: 0.5; cursor: default; }
-.vd-act-primary { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+.vd-act-primary { background: var(--color-primary-bg); border-color: #bfdbfe; color: var(--color-primary); }
 .vd-act-primary:hover:not(:disabled) { background: #dbeafe; }
 .vd-act-ship { background: #f0fdfa; border-color: #99f6e4; color: #0d9488; }
 .vd-act-ship:hover:not(:disabled) { background: #ccfbf1; }
@@ -753,7 +753,7 @@ onMounted(() => {
   transition: all 0.15s;
 }
 .vd-btn-primary { background: var(--color-primary); color: #fff; }
-.vd-btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.vd-btn-primary:hover:not(:disabled) { background: var(--color-primary-dark); }
 .vd-btn-primary:disabled { opacity: 0.5; cursor: default; }
 .vd-btn-secondary { background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-secondary); }
 .vd-btn-secondary:hover { border-color: var(--color-primary); color: var(--color-primary); }
@@ -806,5 +806,5 @@ onMounted(() => {
   color: var(--color-text);
   outline: none;
 }
-.vd-field-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+.vd-field-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(53, 185, 147, 0.12); }
 </style>

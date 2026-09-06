@@ -482,10 +482,10 @@ onMounted(async () => {
 .item-img {
   width: 64px;
   height: 64px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  background: linear-gradient(135deg, var(--color-primary-bg) 0%, #dbeafe 100%);
 }
 .item-img img { width: 100%; height: 100%; object-fit: cover; }
 .img-placeholder {
@@ -577,7 +577,7 @@ onMounted(async () => {
   cursor: pointer;
   transition: all 0.15s;
 }
-.btn-reorder:hover { background: #1d4ed8; }
+.btn-reorder:hover { background: var(--color-primary-dark); }
 
 @media (max-width: 640px) {
   .order-header {

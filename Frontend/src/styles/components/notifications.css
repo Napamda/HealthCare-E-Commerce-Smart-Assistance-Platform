@@ -145,7 +145,7 @@
 }
 
 .notification-dot.type-consultation {
-  background: #2563eb;
+  background: var(--color-primary);
 }
 
 .notification-content {

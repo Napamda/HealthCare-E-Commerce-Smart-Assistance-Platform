@@ -90,7 +90,7 @@ function selectIndex(i) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  background: linear-gradient(135deg, var(--color-primary-bg) 0%, #dbeafe 100%);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -134,7 +134,7 @@ function selectIndex(i) {
 
 .gallery-thumb--active {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 3px rgba(53, 185, 147, 0.12);
 }
 
 .gallery-thumb img {

@@ -126,7 +126,7 @@ function iconFor(node) {
   padding: 9px 12px;
   border: none;
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   color: var(--text-color, #2d3436);
   cursor: pointer;
@@ -135,7 +135,7 @@ function iconFor(node) {
 }
 
 .category-node__row:hover {
-  background: rgba(46, 134, 193, 0.08);
+  background: rgba(var(--color-primary-rgb), 0.08);
 }
 
 .category-node__row--active {
@@ -176,10 +176,10 @@ function iconFor(node) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
   font-weight: 700;
-  background: rgba(46, 134, 193, 0.1);
+  background: rgba(var(--color-primary-rgb), 0.1);
 }
 
 .category-node__name {
@@ -195,7 +195,7 @@ function iconFor(node) {
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(46, 134, 193, 0.12);
+  background: rgba(var(--color-primary-rgb), 0.12);
   color: var(--primary-color, #2e86c1);
 }
 

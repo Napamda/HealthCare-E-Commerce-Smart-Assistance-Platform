@@ -117,7 +117,7 @@
 
 .address-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(53, 185, 147, 0.1);
 }
 
 .coord-display {
@@ -178,7 +178,7 @@
 
 .filter-select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(53, 185, 147, 0.1);
 }
 
 /* ---- Layout ---- */
@@ -339,7 +339,7 @@
 }
 
 .prof-marker-user {
-  background: #2563eb;
+  background: var(--color-primary);
 }
 
 /* ---- Responsive ---- */
