@@ -5,6 +5,10 @@
     "dev": "vite",
     "build": "vite build",
     "test": "node scripts/route-contract.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:live": "E2E_LIVE=1 playwright test e2e/live-linkage.spec.js",
+    "test:e2e:install": "playwright install chromium",
     "serve": "vite preview"
   },
   "dependencies": {
@@ -15,6 +19,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/compiler-sfc": "^3.2.6",
     "vite": "^6.0.11"

@@ -2,6 +2,7 @@ package org.example.Healthcareplatform.location.repository;
 
 import org.example.Healthcareplatform.location.entity.ProfessionalProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,5 +17,7 @@ public interface ProfessionalProfileRepository extends JpaRepository<Professiona
 
     Optional<ProfessionalProfile> findByUserId(Long userId);
 
+    @Query("select distinct p.specialty from ProfessionalProfile p " +
+            "where p.active = true and p.specialty is not null order by p.specialty")
     List<String> findDistinctSpecialtyByActiveTrueOrderBySpecialtyAsc();
 }
