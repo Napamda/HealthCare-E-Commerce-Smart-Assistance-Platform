@@ -3,8 +3,9 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 import { ROLE_LABELS } from '../config/permissions.js'
-import { getNavItems } from '../config/navigation.js'
+import { getNavItems, ROLE_PROFILE } from '../config/navigation.js'
 import NotificationBell from './NotificationBell.vue'
+import CartIcon from './cart/CartIcon.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -40,6 +41,14 @@ function navigate(path) {
   closeAllMenus()
   mobileNavOpen.value = false
   router.push(path)
+}
+
+// NEW: Role-based profile navigation
+function navigateToProfile() {
+  const role = authStore.userRole
+  const profilePath = ROLE_PROFILE[role]
+  if (!profilePath) return
+  navigate(profilePath)
 }
 
 function toggleUserMenu() {
@@ -105,11 +114,19 @@ async function handleLogout() {
       </template>
 
       <template v-else>
+        <CartIcon v-if="authStore.userRole === 'PATIENT'" />
         <NotificationBell class="nav-notification-slot" />
 
         <div class="nav-dropdown-wrapper">
           <button class="nav-user-trigger" @click="toggleUserMenu">
-            <span class="nav-user-avatar">{{ authStore.currentUser?.firstName?.[0] || '?' }}</span>
+            <span class="nav-user-avatar">
+              <img
+                v-if="authStore.currentUser?.avatarUrl"
+                :src="authStore.currentUser.avatarUrl"
+                alt="Avatar"
+              />
+              <template v-else>{{ authStore.currentUser?.firstName?.[0] || '?' }}</template>
+            </span>
             <span class="nav-user-name">{{ authStore.currentUser?.firstName }}</span>
             <span class="nav-chevron">▾</span>
           </button>
@@ -118,6 +135,9 @@ async function handleLogout() {
             <div class="nav-user-menu-header">
               <span class="nav-role-badge">{{ roleLabel }}</span>
             </div>
+            <button class="nav-dropdown-item" @click="navigateToProfile()">
+              My Profile
+            </button>
             <button class="nav-dropdown-item nav-logout-item" @click="handleLogout">
               Sign out
             </button>
@@ -149,6 +169,14 @@ async function handleLogout() {
           {{ item.label }}
         </button>
       </template>
+
+      <!-- Account actions — profile + sign out (mobile drawer) -->
+      <button class="nav-mobile-link nav-mobile-profile" @click="navigateToProfile()">
+        My Profile
+      </button>
+      <button class="nav-mobile-link nav-mobile-signout" @click="handleLogout">
+        Sign out
+      </button>
     </div>
   </nav>
 </template>

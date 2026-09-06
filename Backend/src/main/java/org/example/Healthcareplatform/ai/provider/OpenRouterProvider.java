@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
@@ -17,10 +16,6 @@ import java.util.Map;
 
 @Slf4j
 public class OpenRouterProvider implements AIProvider {
-
-    private static final int MAX_RETRIES = 3;
-    private static final long BASE_DELAY_MS = 1000;
-    private static final long MAX_RETRY_DELAY_MS = 30_000;
 
     private final RestClient restClient;
     private final String model;
@@ -54,9 +49,14 @@ public class OpenRouterProvider implements AIProvider {
         return factory;
     }
 
+    private static final int MAX_RETRIES = 3;
+    private static final long BASE_DELAY_MS = 1000;
+    private static final long MAX_RETRY_DELAY_MS = 30_000;
+
     @Override
     public String chat(String prompt) {
         log.info("OpenRouterProvider sending prompt ({} chars)", prompt.length());
+
         Exception lastException = null;
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {

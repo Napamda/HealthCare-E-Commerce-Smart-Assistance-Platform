@@ -9,6 +9,7 @@ import org.example.Healthcareplatform.ai.service.AIService;
 import org.example.Healthcareplatform.ai.service.ConversationService;
 import org.example.Healthcareplatform.ai.service.ConversationSummaryService;
 import org.example.Healthcareplatform.ai.service.PromptService;
+import org.example.Healthcareplatform.consultation.repository.ConsultationRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,6 +43,9 @@ class AIServiceTest {
     @Mock
     private ConversationSummaryService summaryService;
 
+    @Mock
+    private ConsultationRepository consultationRepository;
+
     @InjectMocks
     private AIService aiService;
 
@@ -59,6 +64,8 @@ class AIServiceTest {
 
         when(conversationService.findOrCreateConversation(isNull(), eq(1L), eq("Hello")))
                 .thenReturn(conversation);
+        when(consultationRepository.findFirstByConversationIdAndStatusIn(eq(7L), anyList()))
+                .thenReturn(Optional.empty());
         when(conversationService.getMessages(7L)).thenReturn(List.of());
         when(promptService.buildPrompt(anyString(), anyList(), anyString())).thenReturn("prompt");
         when(aiProvider.chat("prompt")).thenReturn("AI answer");

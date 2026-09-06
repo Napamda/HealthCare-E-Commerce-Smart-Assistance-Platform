@@ -7,12 +7,29 @@ import { ROLES } from './permissions.js'
 export const NAV_ITEMS = {
   [ROLES.PATIENT]: [
     { to: '/chat', label: 'AI Chat' },
-    { to: '/recommendations', label: 'AI Recommendations' },
-    { to: '/products', label: 'Shop' },
-    { to: '/events', label: 'Events' },
-    { to: '/events/registrations', label: 'My Events' },
-    { to: '/consultations', label: 'Consultations' },
-    { to: '/prescriptions', label: 'Prescriptions' },
+    {
+      label: 'Shop',
+      children: [
+        { to: '/products', label: 'Products' },
+        { to: '/recommendations', label: 'AI Recommendations' },
+        { to: '/cart', label: 'Cart' },
+        { to: '/orders', label: 'Orders' },
+      ],
+    },
+    {
+      label: 'Care',
+      children: [
+        { to: '/consultations', label: 'Consultations' },
+        { to: '/prescriptions', label: 'Prescriptions' },
+      ],
+    },
+    {
+      label: 'Events',
+      children: [
+        { to: '/events', label: 'Browse Events' },
+        { to: '/events/registrations', label: 'My Events' },
+      ],
+    },
   ],
 
   [ROLES.DOCTOR]: [
@@ -31,6 +48,7 @@ export const NAV_ITEMS = {
 
   [ROLES.ADMIN]: [
     { to: '/admin', label: 'Dashboard' },
+    { to: '/admin/users', label: 'Manage Users' },
     { to: '/admin/products', label: 'Manage Products' },
     { to: '/admin/categories', label: 'Manage Categories' },
     { to: '/inventory', label: 'Manage Inventory' },
@@ -53,6 +71,16 @@ export const NAV_ITEMS = {
     { to: '/events/registrations', label: 'My Events' },
     { to: '/chat', label: 'AI Chat' },
   ],
+}
+
+// Single source of truth for the "My Profile" destination per role.
+// Every role has its own dedicated profile page.
+export const ROLE_PROFILE = {
+  [ROLES.PATIENT]: '/patient/profile',
+  [ROLES.DOCTOR]: '/doctor/profile',
+  [ROLES.PHARMACIST]: '/pharmacist/profile',
+  [ROLES.VENDOR]: '/vendor/profile',
+  [ROLES.ADMIN]: '/admin/profile',
 }
 
 export function getNavItems(role) {

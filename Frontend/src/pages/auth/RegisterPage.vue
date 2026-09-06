@@ -11,7 +11,16 @@ const form = reactive({
   confirmPassword: '',
   firstName: '',
   lastName: '',
-  role: 'PATIENT',
+  role: '',
+  dateOfBirth: '',
+  clinicName: '',
+  medicalLicenseNumber: '',
+  specialty: '',
+  pharmacyName: '',
+  pharmacistLicenseNumber: '',
+  specialization: '',
+  businessName: '',
+  businessLicense: '',
 })
 
 const submitting = ref(false)
@@ -28,16 +37,34 @@ const roles = [
 ]
 
 const fieldErrors = reactive({
+  role: '',
   email: '',
   password: '',
   confirmPassword: '',
   firstName: '',
   lastName: '',
+  roleDetails: '',
 })
 
 function validateForm() {
   let valid = true
   Object.keys(fieldErrors).forEach((k) => (fieldErrors[k] = ''))
+
+  if (!form.role) {
+    fieldErrors.role = 'Select an account type first'
+    valid = false
+  }
+
+  if (form.role === 'DOCTOR' && !form.clinicName.trim()) {
+    fieldErrors.roleDetails = 'Clinic name is required'
+    valid = false
+  } else if (form.role === 'PHARMACIST' && !form.pharmacyName.trim()) {
+    fieldErrors.roleDetails = 'Pharmacy name is required'
+    valid = false
+  } else if (form.role === 'VENDOR' && !form.businessName.trim()) {
+    fieldErrors.roleDetails = 'Business name is required'
+    valid = false
+  }
 
   if (!form.firstName.trim()) {
     fieldErrors.firstName = 'First name is required'
@@ -91,6 +118,15 @@ async function handleSubmit() {
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       role: form.role,
+      dateOfBirth: form.dateOfBirth || undefined,
+      clinicName: form.clinicName.trim() || undefined,
+      medicalLicenseNumber: form.medicalLicenseNumber.trim() || undefined,
+      specialty: form.specialty.trim() || undefined,
+      pharmacyName: form.pharmacyName.trim() || undefined,
+      pharmacistLicenseNumber: form.pharmacistLicenseNumber.trim() || undefined,
+      specialization: form.specialization.trim() || undefined,
+      businessName: form.businessName.trim() || undefined,
+      businessLicense: form.businessLicense.trim() || undefined,
     })
     success.value = true
     verificationLink.value = result.verificationLink || ''
@@ -149,6 +185,16 @@ function goVerifyNow() {
           <p>{{ error }}</p>
         </div>
 
+        <fieldset class="role-picker">
+          <legend>Choose your account type</legend>
+          <label v-for="r in roles" :key="r.value" class="role-option" :class="{ selected: form.role === r.value }">
+            <input v-model="form.role" type="radio" name="role" :value="r.value" />
+            <span>{{ r.label }}</span>
+          </label>
+        </fieldset>
+        <span v-if="fieldErrors.role" class="field-error">{{ fieldErrors.role }}</span>
+
+        <template v-if="form.role">
         <div class="form-row">
           <div class="form-group">
             <label for="firstName">First Name</label>
@@ -173,6 +219,33 @@ function goVerifyNow() {
             <span v-if="fieldErrors.lastName" class="field-error">{{ fieldErrors.lastName }}</span>
           </div>
         </div>
+
+        <div v-if="form.role === 'PATIENT'" class="form-group">
+          <label for="dateOfBirth">Date of Birth</label>
+          <input id="dateOfBirth" v-model="form.dateOfBirth" type="date" />
+        </div>
+
+        <div v-if="form.role === 'DOCTOR'" class="role-fields">
+          <div class="form-group"><label for="clinicName">Clinic Name *</label><input id="clinicName" v-model="form.clinicName" type="text" /></div>
+          <div class="form-row">
+            <div class="form-group"><label for="medicalLicenseNumber">Medical License</label><input id="medicalLicenseNumber" v-model="form.medicalLicenseNumber" type="text" /></div>
+            <div class="form-group"><label for="specialty">Specialty</label><input id="specialty" v-model="form.specialty" type="text" /></div>
+          </div>
+        </div>
+
+        <div v-if="form.role === 'PHARMACIST'" class="role-fields">
+          <div class="form-group"><label for="pharmacyName">Pharmacy Name *</label><input id="pharmacyName" v-model="form.pharmacyName" type="text" /></div>
+          <div class="form-row">
+            <div class="form-group"><label for="pharmacistLicenseNumber">License Number</label><input id="pharmacistLicenseNumber" v-model="form.pharmacistLicenseNumber" type="text" /></div>
+            <div class="form-group"><label for="specialization">Specialization</label><input id="specialization" v-model="form.specialization" type="text" /></div>
+          </div>
+        </div>
+
+        <div v-if="form.role === 'VENDOR'" class="role-fields">
+          <div class="form-group"><label for="businessName">Business Name *</label><input id="businessName" v-model="form.businessName" type="text" /></div>
+          <div class="form-group"><label for="businessLicense">Business License</label><input id="businessLicense" v-model="form.businessLicense" type="text" /></div>
+        </div>
+        <span v-if="fieldErrors.roleDetails" class="field-error">{{ fieldErrors.roleDetails }}</span>
 
         <div class="form-group">
           <label for="email">Email</label>
@@ -210,15 +283,6 @@ function goVerifyNow() {
           <span v-if="fieldErrors.confirmPassword" class="field-error">{{ fieldErrors.confirmPassword }}</span>
         </div>
 
-        <div class="form-group">
-          <label for="role">Account Type</label>
-          <select id="role" v-model="form.role" class="role-select">
-            <option v-for="r in roles" :key="r.value" :value="r.value">
-              {{ r.label }}
-            </option>
-          </select>
-        </div>
-
         <button
           type="submit"
           class="btn btn-primary btn-full"
@@ -232,9 +296,9 @@ function goVerifyNow() {
           Already have an account?
           <router-link to="/login" class="link">Sign in</router-link>
         </p>
+        </template>
       </form>
     </div>
   </div>
 </template>
-
 

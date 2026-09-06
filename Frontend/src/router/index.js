@@ -24,9 +24,34 @@ const routes = [
     component: () => import('../pages/chat/ChatPage.vue'),
   },
   {
+    path: '/patient/profile',
+    alias: '/profile',
+    name: 'PatientProfile',
+    meta: { requiresExactRole: ROLES.PATIENT },
+    component: () => import('../pages/profile/ProfilePage.vue'),
+  },
+  {
+    path: '/doctor/profile',
+    name: 'DoctorProfile',
+    meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
+    component: () => import('../pages/doctor/DoctorProfilePage.vue'),
+  },
+  {
+    path: '/pharmacist/profile',
+    name: 'PharmacistProfile',
+    meta: { requiresRole: [ROLES.PHARMACIST, ROLES.ADMIN] },
+    component: () => import('../pages/pharmacist/PharmacistProfilePage.vue'),
+  },
+  {
+    path: '/vendor/profile',
+    name: 'VendorProfile',
+    meta: { requiresRole: [ROLES.VENDOR, ROLES.ADMIN] },
+    component: () => import('../pages/vendor/VendorProfilePage.vue'),
+  },
+  {
     path: '/consultations',
     name: 'Consultations',
-    meta: { requiresRole: [ROLES.PATIENT] },
+    meta: { requiresExactRole: ROLES.PATIENT },
     component: () => import('../pages/doctor/ConsultationStatusPage.vue'),
   },
   {
@@ -74,26 +99,31 @@ const routes = [
   {
     path: '/cart',
     name: 'Cart',
+    meta: { requiresExactRole: ROLES.PATIENT },
     component: () => import('../pages/cart/CartPage.vue'),
   },
   {
     path: '/checkout',
     name: 'Checkout',
+    meta: { requiresExactRole: ROLES.PATIENT },
     component: () => import('../pages/cart/CheckoutPage.vue'),
   },
   {
     path: '/payment/:orderId',
     name: 'Payment',
+    meta: { requiresExactRole: ROLES.PATIENT },
     component: () => import('../pages/PaymentPage.vue'),
   },
   {
     path: '/orders',
     name: 'Orders',
+    meta: { requiresExactRole: ROLES.PATIENT },
     component: () => import('../pages/orders/OrderHistoryPage.vue'),
   },
   {
     path: '/orders/:id',
     name: 'OrderDetail',
+    meta: { requiresExactRole: ROLES.PATIENT },
     component: () => import('../pages/orders/OrderDetailPage.vue'),
   },
   {
@@ -112,18 +142,13 @@ const routes = [
     path: '/inventory',
     name: 'InventoryManagement',
     meta: { requiresRole: [ROLES.VENDOR, ROLES.ADMIN] },
-    component: () => import('../pages/inventory/InventoryManagementPage.vue'),
+    component: () => import('../pages/InventoryManagementPage.vue'),
   },
   {
     path: '/register',
     name: 'Register',
     component: () => import('../pages/auth/RegisterPage.vue'),
     meta: { public: true },
-  },
-  {
-    path: '/profile',
-    name: 'Profile',
-    component: () => import('../pages/ProfilePage.vue'),
   },
   {
     path: '/verify-email',
@@ -137,6 +162,30 @@ const routes = [
     name: 'AdminDashboard',
     meta: { requiresRole: [ROLES.ADMIN] },
     component: () => import('../pages/admin/AdminDashboardPage.vue'),
+  },
+  {
+    path: '/admin/users',
+    name: 'AdminUsers',
+    meta: { requiresRole: [ROLES.ADMIN] },
+    component: () => import('../pages/admin/AdminUsersPage.vue'),
+  },
+  {
+    path: '/admin/moderation',
+    name: 'AdminModeration',
+    meta: { requiresRole: [ROLES.ADMIN] },
+    component: () => import('../pages/admin/AdminModerationPage.vue'),
+  },
+  {
+    path: '/admin/profile',
+    name: 'AdminProfile',
+    meta: { requiresRole: [ROLES.ADMIN] },
+    component: () => import('../pages/admin/AdminProfilePage.vue'),
+  },
+  {
+    path: '/admin/notifications',
+    name: 'NotificationLogs',
+    meta: { requiresRole: [ROLES.ADMIN, ROLES.DOCTOR] },
+    component: () => import('../pages/admin/NotificationLogPage.vue'),
   },
   {
     path: '/doctor',
@@ -186,6 +235,12 @@ const routes = [
     meta: { requiresRole: [ROLES.VENDOR, ROLES.ADMIN] },
     component: () => import('../pages/vendor/VendorDashboardPage.vue'),
   },
+  {
+    path: '/payments/:paymentId/receipt',
+    name: 'PaymentReceipt',
+    meta: { requiresExactRole: ROLES.PATIENT },
+    component: () => import('../pages/payments/PaymentReceiptPage.vue'),
+  },
 ]
 
 const router = createRouter({
@@ -221,6 +276,12 @@ router.beforeEach(async (to, _from, next) => {
           : '/chat')
       : { name: 'Login' }
     next(fallback)
+    return
+  }
+
+  const exactRole = to.meta.requiresExactRole
+  if (exactRole && authStore.userRole !== exactRole) {
+    next(ROLE_DASHBOARD[authStore.userRole] || '/chat')
     return
   }
 

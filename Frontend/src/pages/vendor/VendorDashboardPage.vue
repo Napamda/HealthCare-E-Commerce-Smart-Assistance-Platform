@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth.js'
-import { getDashboardStats, getVendorOrders, updateOrderStatus, shipOrder } from '../services/vendor.js'
+import { useAuthStore } from '../../stores/auth.js'
+import { getDashboardStats, getVendorOrders, updateOrderStatus, shipOrder } from '../../services/vendor.js'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -440,25 +440,6 @@ onMounted(() => {
         </div>
       </div>
     </div>
-
-    <!-- ==================== RECENT MOVEMENTS ==================== -->
-    <section class="vd-section">
-      <h2 class="vd-section-title">Recent Stock Movements</h2>
-      <div v-if="!recentMovements.length" class="empty-state vendor-empty">
-        No recent movements yet.
-      </div>
-      <ul v-else class="vendor-activity-list">
-        <li v-for="entry in recentMovements" :key="`${entry.id}-${entry.productId}`">
-          <div>
-            <div class="vendor-item-name">{{ entry.productName }}</div>
-            <div class="vendor-item-meta">{{ typeLabel(entry.changeType) }} · {{ formatDate(entry.createdAt) }}</div>
-          </div>
-          <span class="h-delta" :class="entry.quantityChange > 0 ? 'delta-up' : entry.quantityChange < 0 ? 'delta-down' : 'delta-zero'">
-            {{ signedDelta(entry.quantityChange) }}
-          </span>
-        </li>
-      </ul>
-    </section>
   </div>
 </template>
 

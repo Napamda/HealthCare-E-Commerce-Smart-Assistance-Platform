@@ -1,11 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCartStore } from '../stores/cart.js'
-import { useOrderStore } from '../stores/order.js'
-import { useAuthStore } from '../stores/auth.js'
-import { validateStock } from '../services/inventory.js'
-import { previewCheckout } from '../services/order.js'
+import { useCartStore } from '../../stores/cart.js'
+import { useOrderStore } from '../../stores/order.js'
+import { useAuthStore } from '../../stores/auth.js'
+import { validateStock } from '../../services/inventory.js'
+import { previewCheckout } from '../../services/order.js'
 
 const router = useRouter()
 const cartStore = useCartStore()

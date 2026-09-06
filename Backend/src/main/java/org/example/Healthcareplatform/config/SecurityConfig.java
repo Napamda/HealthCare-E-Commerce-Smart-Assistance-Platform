@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -76,13 +77,23 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/admin/products/images/*").hasAnyRole("ADMIN", "VENDOR")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/orders/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/inventory/validate")
+                        .access((authentication, context) -> new AuthorizationDecision(
+                                authentication.get().getAuthorities().stream()
+                                        .anyMatch(authority -> authority.getAuthority().equals("ROLE_PATIENT"))))
                         .requestMatchers("/api/inventory/**").hasAnyRole("VENDOR", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/discounts/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/discounts/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/discounts/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/discounts/**").authenticated()
-                        .requestMatchers("/api/cart/**", "/api/orders/**", "/api/payments/**",
-                                "/api/notifications/**").authenticated()
+                        // Ordering is patient-only. Use an exact authority check because the
+                        // role hierarchy intentionally lets clinical/admin roles inherit some
+                        // patient permissions, but must not let them place orders.
+                        .requestMatchers("/api/cart/**", "/api/orders/**", "/api/payments/**")
+                        .access((authentication, context) -> new AuthorizationDecision(
+                                authentication.get().getAuthorities().stream()
+                                        .anyMatch(authority -> authority.getAuthority().equals("ROLE_PATIENT"))))
+                        .requestMatchers("/api/notifications/**").authenticated()
                         .requestMatchers("/api/pharmacist/**").hasAnyRole("PHARMACIST", "ADMIN")
                         .requestMatchers("/api/doctor/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers("/api/vendor/**").hasAnyRole("VENDOR", "ADMIN")
@@ -93,6 +104,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/prescriptions/pharmacist/**").hasAnyRole("PHARMACIST", "ADMIN")
                         .requestMatchers("/api/prescriptions/doctor/**").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers("/api/prescriptions/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/notifications/test/**").hasAnyRole("ADMIN", "DOCTOR")
+                        .requestMatchers("/api/notifications/emails/**", "/api/notifications/sms/**").authenticated()
+                        // User management: everything scoped to the authenticated user.
+                        // Avatar images are served publicly (UUID filenames, unguessable)
+                        // so <img> tags can display them without auth headers.
+                        .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/avatars/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form.disable())

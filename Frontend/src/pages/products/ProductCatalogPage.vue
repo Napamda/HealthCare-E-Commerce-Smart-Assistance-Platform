@@ -1,12 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useProductStore } from '../stores/product.js'
-import { useCategoryStore } from '../stores/category.js'
-import { categoryToFilterValue, flattenCategoryTree } from '../services/category.js'
-import ProductCard from '../components/product/ProductCard.vue'
-import ProductFilters from '../components/product/ProductFilters.vue'
-import CategoryTree from '../components/category/CategoryTree.vue'
+import { useProductStore } from '../../stores/product.js'
+import { useCategoryStore } from '../../stores/category.js'
+import { categoryToFilterValue, flattenCategoryTree } from '../../services/category.js'
+import ProductCard from '../../components/product/ProductCard.vue'
+import ProductFilters from '../../components/product/ProductFilters.vue'
+import CategoryTree from '../../components/category/CategoryTree.vue'
 
 const store = useProductStore()
 const categoryStore = useCategoryStore()

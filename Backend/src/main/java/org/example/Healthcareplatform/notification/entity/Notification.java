@@ -42,8 +42,12 @@ public class Notification {
         LOW_STOCK,
         GENERIC,
         CONSULTATION_CREATED,
+        CONSULTATION_AVAILABLE,
         CONSULTATION_ACCEPTED,
-        CONSULTATION_IN_PROGRESS
+        CONSULTATION_IN_PROGRESS,
+        ORDER_CREATED,
+        EVENT_REMINDER,
+        WELCOME
     }
 
     @Id

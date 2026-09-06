@@ -2,15 +2,17 @@
 import { onMounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { useProductStore } from '../stores/product.js'
-import { useCartStore } from '../stores/cart.js'
-import { getProductImages } from '../services/product.js'
-import ImageGallery from '../components/product/ImageGallery.vue'
+import { useProductStore } from '../../stores/product.js'
+import { useCartStore } from '../../stores/cart.js'
+import { useAuthStore } from '../../stores/auth.js'
+import { getProductImages } from '../../services/product.js'
+import ImageGallery from '../../components/product/ImageGallery.vue'
 
 const route = useRoute()
 const router = useRouter()
 const store = useProductStore()
 const cartStore = useCartStore()
+const authStore = useAuthStore()
 const { selectedProduct, isLoading, error } = storeToRefs(store)
 
 const activeTab = ref('ingredients')
@@ -131,7 +133,7 @@ async function handleAddToCart() {
             <span v-else class="out-of-stock">Out of Stock</span>
           </div>
 
-          <div class="detail-actions">
+          <div v-if="authStore.userRole === 'PATIENT'" class="detail-actions">
             <button
               class="btn-add-cart"
               :class="{ 'btn-added': addedToCart }"

@@ -165,7 +165,7 @@
 
 .register-card {
   width: 100%;
-  max-width: 520px;
+  max-width: 680px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -270,6 +270,37 @@
   gap: 18px;
 }
 
+.role-picker {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0;
+  border: 0;
+}
+
+.role-picker legend {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.role-option {
+  padding: 12px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.role-option input { position: absolute; opacity: 0; pointer-events: none; }
+.role-option.selected { border-color: var(--color-primary); background: var(--color-primary-bg); color: var(--color-primary); font-weight: 600; }
+.role-fields { display: flex; flex-direction: column; gap: 18px; padding: 16px; background: var(--color-bg); border-radius: var(--radius-md); }
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -359,6 +390,8 @@
   .form-row {
     grid-template-columns: 1fr;
   }
+
+  .role-picker { grid-template-columns: repeat(2, 1fr); }
 
   .verify-card {
     padding: 24px;

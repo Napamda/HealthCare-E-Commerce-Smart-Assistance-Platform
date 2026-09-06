@@ -50,15 +50,24 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT DISTINCT p.category FROM Order o JOIN o.items i JOIN org.example.Healthcareplatform.product.entity.Product p ON i.productId = p.id WHERE o.userId = :userId AND o.status != :cancelledStatus")
     List<String> findCategoriesByUserId(@Param("userId") Long userId, @Param("cancelledStatus") Order.OrderStatus cancelledStatus);
 
-    long countByStatus(Order.OrderStatus status);
+    // ============ Vendor / Admin dashboard statistics ============
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = :status")
+    long countByStatus(@Param("status") OrderStatus status);
 
     long countByCreatedAtAfter(Instant createdAt);
 
-    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.createdAt >= :createdAt")
-    Double sumTotalSince(@Param("createdAt") Instant createdAt);
-
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.status = :status")
-    Double sumTotalByStatus(@Param("status") Order.OrderStatus status);
+    BigDecimal sumTotalByStatus(@Param("status") OrderStatus status);
 
-    Page<Order> findByStatusOrderByCreatedAtDesc(Order.OrderStatus status, Pageable pageable);
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.createdAt >= :since")
+    BigDecimal sumTotalSince(@Param("since") Instant since);
+
+    Page<Order> findByStatusOrderByCreatedAtDesc(OrderStatus status, Pageable pageable);
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status <> :excluded")
+    BigDecimal totalRevenue(@Param("excluded") OrderStatus excluded);
+
+    @Query("SELECT o.status AS status, COUNT(o) AS count FROM Order o GROUP BY o.status")
+    List<Object[]> countOrdersByStatus();
 }

@@ -1,25 +1,29 @@
 package org.example.Healthcareplatform.vendor.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.Healthcareplatform.auth.util.SecurityContextUtil;
 import org.example.Healthcareplatform.order.dto.OrderResponse;
 import org.example.Healthcareplatform.order.entity.Order;
 import org.example.Healthcareplatform.order.entity.Order.OrderStatus;
 import org.example.Healthcareplatform.order.repository.OrderRepository;
 import org.example.Healthcareplatform.product.repository.ProductRepository;
 import org.example.Healthcareplatform.user.repository.UserRepository;
+import org.example.Healthcareplatform.vendor.dto.UpdateVendorProfileRequest;
 import org.example.Healthcareplatform.vendor.dto.VendorDashboardStats;
+import org.example.Healthcareplatform.vendor.dto.VendorProfileResponse;
+import org.example.Healthcareplatform.vendor.service.VendorProfileService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-
-import java.math.BigDecimal;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +44,8 @@ public class VendorController {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final VendorProfileService vendorProfileService;
+    private final SecurityContextUtil securityContextUtil;
 
     // ============ Dashboard Stats ============
 
@@ -56,8 +62,8 @@ public class VendorController {
         long shippedOrders = orderRepository.countByStatus(OrderStatus.SHIPPED);
         long deliveredOrders = orderRepository.countByStatus(OrderStatus.DELIVERED);
         long ordersToday = orderRepository.countByCreatedAtAfter(startOfDay);
-        Double revenueToday = orderRepository.sumTotalSince(startOfDay);
-        Double totalRevenue = orderRepository.sumTotalByStatus(OrderStatus.DELIVERED);
+        BigDecimal revenueToday = orderRepository.sumTotalSince(startOfDay);
+        BigDecimal totalRevenue = orderRepository.sumTotalByStatus(OrderStatus.DELIVERED);
         long lowStockCount = productRepository.countByStockQuantityLessThanEqual(10);
         long outOfStockCount = productRepository.countByStockQuantity(0);
         long totalCustomers = userRepository.count();
@@ -70,8 +76,8 @@ public class VendorController {
         stats.setShippedOrders(shippedOrders);
         stats.setDeliveredOrders(deliveredOrders);
         stats.setOrdersToday(ordersToday);
-        stats.setRevenueToday(revenueToday != null ? BigDecimal.valueOf(revenueToday) : BigDecimal.ZERO);
-        stats.setTotalRevenue(totalRevenue != null ? BigDecimal.valueOf(totalRevenue) : BigDecimal.ZERO);
+        stats.setRevenueToday(revenueToday != null ? revenueToday : BigDecimal.ZERO);
+        stats.setTotalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO);
         stats.setLowStockCount(lowStockCount);
         stats.setOutOfStockCount(outOfStockCount);
         stats.setTotalCustomers(totalCustomers);
@@ -155,5 +161,29 @@ public class VendorController {
         orderRepository.save(order);
 
         return ResponseEntity.ok(OrderResponse.fromEntity(order));
+    }
+
+    // ============ Vendor Business Profile (self-service) ============
+
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile() {
+        Long userId = securityContextUtil.getCurrentUserId();
+        log.info("GET /api/vendor/profile — userId={}", userId);
+        try {
+            return ResponseEntity.ok(vendorProfileService.getProfile(userId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody UpdateVendorProfileRequest request) {
+        Long userId = securityContextUtil.getCurrentUserId();
+        log.info("PUT /api/vendor/profile — userId={}", userId);
+        try {
+            return ResponseEntity.ok(vendorProfileService.updateProfile(userId, request));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

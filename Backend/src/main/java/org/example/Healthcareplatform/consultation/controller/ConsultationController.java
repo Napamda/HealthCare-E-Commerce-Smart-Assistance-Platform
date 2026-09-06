@@ -6,6 +6,7 @@ import org.example.Healthcareplatform.auth.util.SecurityContextUtil;
 import org.example.Healthcareplatform.consultation.dto.ConsultationResponse;
 import org.example.Healthcareplatform.consultation.dto.EscalationRequest;
 import org.example.Healthcareplatform.consultation.service.ConsultationService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -33,6 +34,14 @@ public class ConsultationController {
         Long patientUserId = securityContextUtil.getCurrentUserId();
         log.info("POST /api/consultations/escalate — conversationId={}, patientUserId={}, priority={}",
                 request.getConversationId(), patientUserId, request.getPriority());
+
+        // Doctors review escalated consultations; a doctor must not escalate
+        // their own AI chat to "a doctor".
+        if ("DOCTOR".equals(securityContextUtil.getCurrentUserRole())) {
+            log.warn("POST /api/consultations/escalate denied — doctors cannot escalate their own chat (userId={})",
+                    patientUserId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         if (request.getConversationId() == null) {
             return ResponseEntity.badRequest().build();
@@ -79,27 +88,26 @@ public class ConsultationController {
             @RequestParam String status,
             @RequestParam(required = false) String rejectionReason,
             @RequestParam(required = false) String scheduledAt) {
+        // Only real doctors act on consultations. Admins can view queues via
+        // the preview routes but must not claim or move patients' requests.
+        String role = securityContextUtil.getCurrentUserRole();
+        if (!"DOCTOR".equals(role)) {
+            log.warn("PATCH /api/consultations/{}/status denied for role={}", id, role);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         Long doctorUserId = securityContextUtil.getCurrentUserId();
         log.info("PATCH /api/consultations/{}/status — status={}, doctorUserId={}, rejectionReason={}, scheduledAt={}",
                 id, status, doctorUserId, rejectionReason, scheduledAt);
 
         Instant scheduledInstant = null;
         if (scheduledAt != null && !scheduledAt.isBlank()) {
-            try {
-                scheduledInstant = Instant.parse(scheduledAt);
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().body(null);
-            }
+            scheduledInstant = Instant.parse(scheduledAt); // 400 via global handler on malformed input
         }
 
-        try {
-            ConsultationResponse response = consultationService.updateStatus(
-                    id, status, doctorUserId, rejectionReason, scheduledInstant);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest()
-                    .body(null);
-        }
+        ConsultationResponse response = consultationService.updateStatus(
+                id, status, doctorUserId, rejectionReason, scheduledInstant);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/doctor/queue")

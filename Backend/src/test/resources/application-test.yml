@@ -13,6 +13,10 @@ spring:
   ai:
     openai:
       api-key: test-key
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false
 
 ai:
   provider: mock

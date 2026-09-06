@@ -12,7 +12,7 @@ function removeNotification(id) {
   <div class="notification-container">
     <TransitionGroup name="notification">
       <div
-        v-for="notification in notificationStore.notifications"
+        v-for="notification in notificationStore.toasts"
         :key="notification.id"
         :class="['notification', 'notification-' + notification.type]"
       >

@@ -1,9 +1,11 @@
 <script setup>
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useChatStore } from '../../stores/chat.js'
 import { useConsultationStore } from '../../stores/consultation.js'
+import { useAuthStore } from '../../stores/auth.js'
+import { ROLES } from '../../config/permissions.js'
 import ChatSidebar from '../../components/chat/ChatSidebar.vue'
 import ChatMessage from '../../components/chat/ChatMessage.vue'
 import ChatInput from '../../components/chat/ChatInput.vue'
@@ -12,6 +14,7 @@ import EscalateDialog from '../../components/chat/EscalateDialog.vue'
 const route = useRoute()
 const store = useChatStore()
 const consultationStore = useConsultationStore()
+const authStore = useAuthStore()
 const {
   messages,
   isSending,
@@ -25,6 +28,10 @@ const { activeConsultation, isEscalating } = storeToRefs(consultationStore)
 const chatBodyRef = ref(null)
 const chatInputRef = ref(null)
 const showEscalateDialog = ref(false)
+
+// Doctors review escalated consultations — they must not escalate their own
+// AI chat to "a doctor", so the option is hidden for the DOCTOR role.
+const canEscalate = computed(() => authStore.userRole !== ROLES.DOCTOR)
 
 // On mount: load conversations + route-based conversation
 onMounted(async () => {
@@ -160,7 +167,7 @@ function getStatusLabel(status) {
         class="chat-body"
       >
         <!-- Escalation toolbar (visible when conversation has messages) -->
-        <div v-if="messages.length > 0" class="chat-toolbar">
+        <div v-if="canEscalate && messages.length > 0" class="chat-toolbar">
           <button
             class="btn-escalate-toolbar"
             :disabled="isEscalating || !!activeConsultation"
@@ -256,7 +263,7 @@ function getStatusLabel(status) {
 
     <!-- Escalate dialog -->
     <EscalateDialog
-      v-if="showEscalateDialog"
+      v-if="showEscalateDialog && canEscalate"
       :conversation-id="activeConversationId"
       @close="onEscalateClose"
       @escalated="onEscalated"

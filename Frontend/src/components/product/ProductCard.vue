@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../../stores/cart.js'
+import { useAuthStore } from '../../stores/auth.js'
 
 const props = defineProps({
   product: {
@@ -12,6 +13,7 @@ const props = defineProps({
 
 const router = useRouter()
 const cartStore = useCartStore()
+const authStore = useAuthStore()
 const adding = ref(false)
 
 const categoryLabel = computed(() => {
@@ -85,7 +87,7 @@ async function handleAddToCart(e) {
         <span class="product-price">{{ formatPrice(product.price) }}</span>
       </div>
 
-      <button class="btn-card-cart" :disabled="adding" @click="handleAddToCart">
+      <button v-if="authStore.userRole === 'PATIENT'" class="btn-card-cart" :disabled="adding" @click="handleAddToCart">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />

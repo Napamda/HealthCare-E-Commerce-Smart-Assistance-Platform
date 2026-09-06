@@ -35,4 +35,30 @@ public class RegisterRequest {
         message = "Role must be one of: PATIENT, PHARMACIST, DOCTOR, ADMIN, VENDOR"
     )
     private String role;
+
+    private String dateOfBirth;
+
+    @Size(max = 200)
+    private String clinicName;
+
+    @Size(max = 50)
+    private String medicalLicenseNumber;
+
+    @Size(max = 100)
+    private String specialty;
+
+    @Size(max = 200)
+    private String pharmacyName;
+
+    @Size(max = 50)
+    private String pharmacistLicenseNumber;
+
+    @Size(max = 100)
+    private String specialization;
+
+    @Size(max = 200)
+    private String businessName;
+
+    @Size(max = 200)
+    private String businessLicense;
 }

@@ -50,3 +50,20 @@ export function updateOrderStatus(orderId, status) {
 export function shipOrder(orderId, trackingNumber) {
   return api.put(`/api/vendor/orders/${orderId}/ship`, { trackingNumber }).then((res) => res.data)
 }
+
+/**
+ * Get the vendor's own business profile (application + approval status).
+ * @returns {Promise<import('../types').VendorProfile>}
+ */
+export function getVendorProfile() {
+  return api.get('/api/vendor/profile').then((res) => res.data)
+}
+
+/**
+ * Update the vendor's own business profile.
+ * @param {{ businessName: string, businessLicense?: string | null }} data
+ * @returns {Promise<import('../types').VendorProfile>}
+ */
+export function updateVendorProfile(data) {
+  return api.put('/api/vendor/profile', data).then((res) => res.data)
+}

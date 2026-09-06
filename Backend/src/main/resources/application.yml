@@ -6,8 +6,8 @@ spring:
       enabled: false
   datasource:
     url: jdbc:mysql://localhost:3306/healthcare?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: ${DB_USER:root}
-    password: ${DB_PASSWORD:}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -30,13 +30,42 @@ spring:
       - reverseGeocode
     caffeine:
       spec: maximumSize=2000,expireAfterWrite=24h
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_AUTH:false}
+          starttls:
+            enable: ${MAIL_STARTTLS:false}
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+  #rabbitmq:
+   # host: ${RABBITMQ_HOST:localhost}
+   # port: ${RABBITMQ_PORT:5672}
+    #username: ${RABBITMQ_DEFAULT_USER:guest}
+    #password: ${RABBITMQ_DEFAULT_PASS:guest}
+    #listener:
+    #  simple:
+    #    acknowledge-mode: auto
+     #   retry:
+      #    enabled: true
+       #   max-attempts: 3
+        #  initial-interval: 1000ms
 
 # =====================================================
 # AI Configuration — OpenRouter via custom provider
 # =====================================================
 ai:
   # Active provider: openrouter | mock
-  provider: ${AI_PROVIDER:mock}
+  provider: ${AI_PROVIDER:openrouter}
   openrouter:
     api-key: ${OPENROUTER_API_KEY:}
     base-url: https://openrouter.ai/api/v1
@@ -70,6 +99,15 @@ geocoding:
   base-url: ${GEOCODING_BASE_URL:https://nominatim.openstreetmap.org}
   user-agent: ${GEOCODING_USER_AGENT:HealthCarePlatform/1.0 (https://localhost)}
 
+# =====================================================
+# Storage Configuration
+# =====================================================
+user:
+  avatar:
+    storage-root: ${AVATAR_STORAGE_ROOT:uploads/avatars}
+prescription:
+  storage-root: ${PRESCRIPTION_STORAGE_ROOT:uploads/prescriptions}
+
 mybatis:
   mapper-locations: classpath:mappers/*.xml
   configuration:
@@ -77,4 +115,4 @@ mybatis:
 
 logging:
   file:
-    name: app_logs/application.log
+    name: ${LOG_PATH:logs}/application.log

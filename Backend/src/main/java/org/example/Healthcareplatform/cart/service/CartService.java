@@ -66,13 +66,13 @@ public class CartService {
             if (product == null) continue;
             int qty = mergeItem.getQuantity() != null && mergeItem.getQuantity() > 0
                     ? mergeItem.getQuantity() : 1;
-            long available = inventoryService.getAvailableQuantity(product.getId());
-            if (qty > available) qty = Math.max(1, (int) available);
+            int available = inventoryService.getAvailableQuantity(product.getId());
+            if (qty > available) qty = Math.max(1, available);
 
             var existing = cartItemRepository.findByUserIdAndProductId(userId, product.getId());
             if (existing.isPresent()) {
                 CartItem item = existing.get();
-                item.setQuantity(Math.min(item.getQuantity() + qty, (int) available));
+                item.setQuantity(Math.min(item.getQuantity() + qty, available));
                 cartItemRepository.save(item);
             } else {
                 cartItemRepository.save(CartItem.builder()
@@ -116,7 +116,7 @@ public class CartService {
             int newQty = request.getQuantity() != null && request.getQuantity() > 0
                     ? request.getQuantity()
                     : item.getQuantity() + 1;
-            long available = inventoryService.getAvailableQuantity(product.getId());
+            int available = inventoryService.getAvailableQuantity(product.getId());
             if (newQty > available) {
                 throw new IllegalArgumentException("Only " + available
                         + " units of " + product.getName() + " are available");
@@ -157,7 +157,7 @@ public class CartService {
         }
 
         productRepository.findById(item.getProductId()).ifPresent(product -> {
-            long available = inventoryService.getAvailableQuantity(product.getId());
+            int available = inventoryService.getAvailableQuantity(product.getId());
             if (quantity > available) {
                 throw new IllegalArgumentException("Only " + available
                         + " units of " + product.getName() + " are available");

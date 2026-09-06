@@ -31,6 +31,7 @@ async function attemptRefreshAndClearOnFailure() {
         firstName: data.firstName,
         lastName: data.lastName,
         role: data.role,
+        avatarUrl: data.avatarUrl || null,
       }
       localStorage.setItem('user', JSON.stringify(user))
       return true

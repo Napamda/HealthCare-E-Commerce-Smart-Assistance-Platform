@@ -3,7 +3,10 @@ package org.example.Healthcareplatform.prescription.service;
 import org.example.Healthcareplatform.ai.ocr.OCRService;
 import org.example.Healthcareplatform.cart.service.CartService;
 import org.example.Healthcareplatform.notification.entity.Notification;
+import org.example.Healthcareplatform.notification.service.EmailNotificationService;
 import org.example.Healthcareplatform.notification.service.NotificationService;
+import org.example.Healthcareplatform.notification.service.SmsSimulationService;
+import org.example.Healthcareplatform.messaging.publisher.HealthcareEventPublisher;
 import org.example.Healthcareplatform.prescription.dto.PrescriptionResponse;
 import org.example.Healthcareplatform.prescription.dto.ReviewRequest;
 import org.example.Healthcareplatform.prescription.dto.UploadResponse;
@@ -11,6 +14,7 @@ import org.example.Healthcareplatform.prescription.entity.Prescription;
 import org.example.Healthcareplatform.prescription.repository.PrescriptionItemRepository;
 import org.example.Healthcareplatform.prescription.repository.PrescriptionRepository;
 import org.example.Healthcareplatform.product.repository.ProductRepository;
+import org.example.Healthcareplatform.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +56,18 @@ class PrescriptionServiceTest {
     @Mock
     private OCRService ocrService;
 
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private EmailNotificationService emailNotificationService;
+
+    @Mock
+    private SmsSimulationService smsSimulationService;
+
+    @Mock
+    private HealthcareEventPublisher eventPublisher;
+
     @InjectMocks
     private PrescriptionService prescriptionService;
 
@@ -73,6 +89,11 @@ class PrescriptionServiceTest {
         // New dependencies: responses carry an (empty) medication list.
         lenient().when(prescriptionItemRepository.findByPrescriptionIdOrderByIdAsc(anyLong()))
                 .thenReturn(List.of());
+
+        // Email/SMS notifications look up the patient — return empty so
+        // the ifPresent calls are no-ops.
+        lenient().when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.empty());
 
         pendingPrescription = Prescription.builder()
                 .id(10L)

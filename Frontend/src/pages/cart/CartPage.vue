@@ -1,9 +1,9 @@
 ﻿<script setup>
 import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCartStore } from '../stores/cart.js'
-import { useAuthStore } from '../stores/auth.js'
-import { useCategoryStore } from '../stores/category.js'
+import { useCartStore } from '../../stores/cart.js'
+import { useAuthStore } from '../../stores/auth.js'
+import { useCategoryStore } from '../../stores/category.js'
 
 const router = useRouter()
 const store = useCartStore()

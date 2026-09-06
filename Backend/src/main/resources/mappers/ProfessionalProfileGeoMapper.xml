@@ -3,41 +3,35 @@
 <mapper namespace="org.example.Healthcareplatform.location.mapper.ProfessionalProfileGeoMapper">
 
     <select id="findNearby" resultType="org.example.Healthcareplatform.location.dto.NearbyProfessionalRow">
-        SELECT *
-        FROM (
-            SELECT id,
-                   user_id,
-                   first_name,
-                   last_name,
-                   title,
-                   specialty,
-                   bio,
-                   phone,
-                   address,
-                   city,
-                   latitude,
-                   longitude,
-                   active,
-                   created_at,
-                   updated_at,
-                   (CAST(6371.0 AS DOUBLE) * ACOS(
-                        LEAST(CAST(1.0 AS DOUBLE),
-                              CAST(
-                                  COS(RADIANS(CAST(#{lat} AS DOUBLE))) * COS(RADIANS(latitude))
-                                      * COS(RADIANS(longitude) - RADIANS(CAST(#{lng} AS DOUBLE)))
-                                      + SIN(RADIANS(CAST(#{lat} AS DOUBLE))) * SIN(RADIANS(latitude))
-                                  AS DOUBLE
-                              )
-                        )
-                   )) AS distance_km
-            FROM professional_profiles
-            WHERE active = TRUE
-              AND latitude BETWEEN CAST(#{lat} AS DOUBLE) - CAST(#{radiusKm} AS DOUBLE) / CAST(111.320 AS DOUBLE)
-                              AND CAST(#{lat} AS DOUBLE) + CAST(#{radiusKm} AS DOUBLE) / CAST(111.320 AS DOUBLE)
-              AND longitude BETWEEN CAST(#{lng} AS DOUBLE) - CAST(#{radiusKm} AS DOUBLE) / (CAST(111.320 AS DOUBLE) * COS(RADIANS(CAST(#{lat} AS DOUBLE))))
-                              AND CAST(#{lng} AS DOUBLE) + CAST(#{radiusKm} AS DOUBLE) / (CAST(111.320 AS DOUBLE) * COS(RADIANS(CAST(#{lat} AS DOUBLE))))
-              AND (#{specialty} IS NULL OR LOWER(specialty) LIKE CONCAT('%', LOWER(#{specialty}), '%'))
-        ) AS nearby
+        SELECT * FROM (
+        SELECT id,
+               user_id,
+               first_name,
+               last_name,
+               title,
+               specialty,
+               bio,
+               phone,
+               address,
+               city,
+               latitude,
+               longitude,
+               active,
+               created_at,
+               updated_at,
+               (6371.0 * ACOS(LEAST(1.0, GREATEST(-1.0,
+                   COS(RADIANS(CAST(#{lat} AS DOUBLE))) * COS(RADIANS(CAST(latitude AS DOUBLE))) *
+                   COS(RADIANS(CAST(longitude AS DOUBLE)) - RADIANS(CAST(#{lng} AS DOUBLE))) +
+                   SIN(RADIANS(CAST(#{lat} AS DOUBLE))) * SIN(RADIANS(CAST(latitude AS DOUBLE)))
+               )))) AS distance_km
+        FROM professional_profiles
+        WHERE active = TRUE
+          AND CAST(latitude AS DOUBLE) BETWEEN CAST(#{lat} AS DOUBLE) - (CAST(#{radiusKm} AS DOUBLE) / 111.0)
+                                           AND CAST(#{lat} AS DOUBLE) + (CAST(#{radiusKm} AS DOUBLE) / 111.0)
+          AND CAST(longitude AS DOUBLE) BETWEEN CAST(#{lng} AS DOUBLE) - (CAST(#{radiusKm} AS DOUBLE) / (111.0 * COS(RADIANS(CAST(#{lat} AS DOUBLE)))))
+                                            AND CAST(#{lng} AS DOUBLE) + (CAST(#{radiusKm} AS DOUBLE) / (111.0 * COS(RADIANS(CAST(#{lat} AS DOUBLE)))))
+          AND (#{specialty} IS NULL OR LOWER(specialty) LIKE CONCAT('%', LOWER(#{specialty}), '%'))
+        ) nearby
         WHERE distance_km &lt;= CAST(#{radiusKm} AS DOUBLE)
         ORDER BY distance_km ASC
     </select>

@@ -11,6 +11,9 @@ import org.example.Healthcareplatform.event.registration.entity.EventRegistratio
 import org.example.Healthcareplatform.event.registration.entity.RegistrationStatus;
 import org.example.Healthcareplatform.event.registration.repository.EventRegistrationRepository;
 import org.example.Healthcareplatform.event.repository.HealthEventRepository;
+import org.example.Healthcareplatform.messaging.publisher.HealthcareEventPublisher;
+import org.example.Healthcareplatform.user.entity.User;
+import org.example.Healthcareplatform.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,8 @@ public class EventRegistrationService {
     private final EventRegistrationRepository registrationRepository;
     private final HealthEventRepository eventRepository;
     private final SecurityContextUtil securityContextUtil;
+    private final UserRepository userRepository;
+    private final HealthcareEventPublisher eventPublisher;
 
     @Transactional
     public EventRegistrationResponse register(Long eventId) {
@@ -64,6 +69,12 @@ public class EventRegistrationService {
                     .build());
         }
         log.info("Event registered — eventId={}, userId={}, volunteerRole={}", eventId, userId, volunteerRole);
+
+        eventPublisher.publishEventRegistration(eventId, userId,
+                userRepository.findById(userId).map(User::getEmail).orElse(""),
+                userRepository.findById(userId).map(u -> u.getFirstName() + " " + u.getLastName()).orElse(""),
+                event.getTitle(), volunteerRole);
+
         return toResponse(registration);
     }
 

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import apiClient from '../services/api.js'
 
 export const usePaymentStore = defineStore('payment', () => {
   const methods = ref([])
@@ -11,9 +12,8 @@ export const usePaymentStore = defineStore('payment', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await fetch('/api/payments/methods')
-      if (!response.ok) throw new Error('Failed to fetch payment methods')
-      methods.value = await response.json()
+      const response = await apiClient.get('/api/payments/methods')
+      methods.value = response.data
     } catch (err) {
       error.value = err.message
       console.error('Failed to fetch payment methods:', err)
@@ -26,16 +26,8 @@ export const usePaymentStore = defineStore('payment', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await fetch('/api/payments/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, method })
-      })
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to initiate payment')
-      }
-      currentPayment.value = await response.json()
+      const response = await apiClient.post('/api/payments/initiate', { orderId, method })
+      currentPayment.value = response.data
       return currentPayment.value
     } catch (err) {
       error.value = err.message
@@ -49,16 +41,8 @@ export const usePaymentStore = defineStore('payment', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await fetch(`/api/payments/${paymentId}/execute/card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cardDetails)
-      })
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Card payment failed')
-      }
-      return await response.json()
+      const response = await apiClient.post(`/api/payments/${paymentId}/execute/card`, cardDetails)
+      return response.data
     } catch (err) {
       error.value = err.message
       throw err
@@ -71,14 +55,8 @@ export const usePaymentStore = defineStore('payment', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await fetch(`/api/payments/${paymentId}/execute/paypal`, {
-        method: 'POST'
-      })
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'PayPal payment failed')
-      }
-      return await response.json()
+      const response = await apiClient.post(`/api/payments/${paymentId}/execute/paypal`)
+      return response.data
     } catch (err) {
       error.value = err.message
       throw err

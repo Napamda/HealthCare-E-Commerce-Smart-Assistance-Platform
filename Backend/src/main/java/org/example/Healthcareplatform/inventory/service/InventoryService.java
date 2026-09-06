@@ -3,6 +3,7 @@ package org.example.Healthcareplatform.inventory.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.inventory.dto.StockInfoResponse;
+import org.example.Healthcareplatform.inventory.dto.StockValidateResponse;
 import org.example.Healthcareplatform.inventory.entity.StockHistory;
 import org.example.Healthcareplatform.inventory.entity.StockReservation;
 import org.example.Healthcareplatform.inventory.repository.StockHistoryRepository;
@@ -54,18 +55,12 @@ public class InventoryService {
     }
 
     @Transactional(readOnly = true)
-    public long getAvailableQuantity(Long productId) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
-        int stockQty = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
-        long reserved = 0L;
-        try {
-            Long reservedRaw = reservationRepository.sumActiveReservedQuantity(product.getId());
-            reserved = reservedRaw != null ? reservedRaw : 0L;
-        } catch (Exception e) {
-            log.warn("Reservation lookup failed for product {}: {}", product.getId(), e.getMessage());
-        }
-        return Math.max(0L, stockQty - reserved);
+    public int getAvailableQuantity(Long productId) {
+        Product product = getProduct(productId);
+        int stock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+        Long activeReserved = reservationRepository.sumActiveReservedQuantity(product.getId());
+        long reserved = activeReserved != null ? activeReserved : 0L;
+        return (int) Math.max(0L, stock - reserved);
     }
 
     @Transactional(readOnly = true)
@@ -112,6 +107,42 @@ public class InventoryService {
             log.warn("Failed to load recent stock activity: {}", e.getMessage());
             return List.of();
         }
+    }
+
+    @Transactional(readOnly = true)
+    public StockValidateResponse validateStock(List<ReserveItem> items) {
+        List<StockValidateResponse.ValidationError> errors = new java.util.ArrayList<>();
+        for (ReserveItem item : items) {
+            Product product = productRepository.findById(item.productId()).orElse(null);
+            if (product == null) {
+                errors.add(StockValidateResponse.ValidationError.builder()
+                        .productId(item.productId())
+                        .productName("Unknown")
+                        .requested(item.quantity())
+                        .available(0)
+                        .message("Product not found")
+                        .build());
+                continue;
+            }
+            int stock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+            Long activeReserved = reservationRepository.sumActiveReservedQuantity(product.getId());
+            long available = stock - (activeReserved != null ? activeReserved : 0L);
+            if (available < item.quantity() || stock <= 0) {
+                errors.add(StockValidateResponse.ValidationError.builder()
+                        .productId(product.getId())
+                        .productName(product.getName())
+                        .requested(item.quantity())
+                        .available(Math.max(0, available))
+                        .message(stock <= 0
+                                ? product.getName() + " is out of stock"
+                                : "Only " + available + " units of " + product.getName() + " are available")
+                        .build());
+            }
+        }
+        return StockValidateResponse.builder()
+                .valid(errors.isEmpty())
+                .errors(errors)
+                .build();
     }
 
     // ============ Stock mutations ============

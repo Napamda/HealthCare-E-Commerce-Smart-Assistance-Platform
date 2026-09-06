@@ -1,7 +1,9 @@
 ﻿<script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useConsultationStore } from '../../stores/consultation.js'
+
+const POLL_INTERVAL_MS = 20000
 
 const consultationStore = useConsultationStore()
 const { doctorQueue, upcomingConsultations, escalationError } = storeToRefs(consultationStore)
@@ -109,10 +111,39 @@ const calendarDays = computed(() => {
   return days
 })
 
+let pollTimer = null
+
+function startPolling() {
+  stopPolling()
+  pollTimer = setInterval(() => {
+    if (actionLoading.value !== null) return // don't clobber an in-flight action
+    consultationStore.fetchDoctorQueue()
+    consultationStore.fetchUpcoming()
+  }, POLL_INTERVAL_MS)
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
 onMounted(() => {
   consultationStore.fetchDoctorQueue()
   consultationStore.fetchUpcoming()
+  startPolling()
 })
+
+onUnmounted(() => {
+  stopPolling()
+})
+
+// Claim races / ownership violations set the store error; dismiss it shortly
+// so the banner doesn't linger after the polling keeps running.
+function scheduleErrorDismiss() {
+  setTimeout(() => consultationStore.clearEscalationError(), 6000)
+}
 
 function refreshActiveTab() {
   if (activeTab.value === 'queue') consultationStore.fetchDoctorQueue()
@@ -125,6 +156,8 @@ async function handleAccept(id) {
   actionLoading.value = id
   try {
     await consultationStore.updateStatus(id, 'ACCEPTED')
+  } catch {
+    scheduleErrorDismiss()
   } finally {
     actionLoading.value = null
   }
@@ -149,6 +182,8 @@ async function confirmReject() {
     })
     rejectingId.value = null
     rejectionReason.value = ''
+  } catch {
+    scheduleErrorDismiss()
   } finally {
     actionLoading.value = null
   }
@@ -158,6 +193,8 @@ async function handleClose(id) {
   actionLoading.value = id
   try {
     await consultationStore.updateStatus(id, 'CLOSED')
+  } catch {
+    scheduleErrorDismiss()
   } finally {
     actionLoading.value = null
   }
@@ -167,6 +204,8 @@ async function handleStartProgress(id) {
   actionLoading.value = id
   try {
     await consultationStore.updateStatus(id, 'IN_PROGRESS')
+  } catch {
+    scheduleErrorDismiss()
   } finally {
     actionLoading.value = null
   }
@@ -200,6 +239,8 @@ async function confirmSchedule() {
     scheduleModalId.value = null
     scheduleDate.value = ''
     scheduleTime.value = ''
+  } catch {
+    scheduleErrorDismiss()
   } finally {
     actionLoading.value = null
   }
@@ -264,15 +305,25 @@ function today() {
         <h1 class="page-title">Doctor Dashboard</h1>
         <p class="page-subtitle">Manage patient consultation requests</p>
       </div>
-      <button class="btn-refresh" @click="refreshActiveTab" :disabled="actionLoading">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10" />
-          <polyline points="1 20 1 14 7 14" />
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-        </svg>
-        Refresh
-      </button>
+      <div class="header-actions">
+        <router-link to="/doctor/profile" class="btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          My Profile
+        </router-link>
+        <button class="btn-refresh" @click="refreshActiveTab" :disabled="actionLoading">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10" />
+            <polyline points="1 20 1 14 7 14" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>
+          Refresh
+        </button>
+      </div>
     </div>
 
     <div class="stats-row">
@@ -408,13 +459,6 @@ function today() {
               >
                 Accept & Schedule
               </button>
-              <button
-                class="btn btn-reject"
-                :disabled="actionLoading === consultation.id"
-                @click="openRejectModal(consultation.id)"
-              >
-                Reject
-              </button>
             </template>
             <template v-else-if="consultation.status === 'ACCEPTED'">
               <button
@@ -440,6 +484,13 @@ function today() {
                 @click="openScheduleModal(consultation.id)"
               >
                 Reschedule
+              </button>
+              <button
+                class="btn btn-reject"
+                :disabled="actionLoading === consultation.id"
+                @click="openRejectModal(consultation.id)"
+              >
+                Reject
               </button>
             </template>
             <template v-else-if="consultation.status === 'IN_PROGRESS'">
