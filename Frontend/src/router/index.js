@@ -65,6 +65,11 @@ const routes = [
     component: () => import('../pages/ProductDetailPage.vue'),
   },
   {
+    path: '/wishlist',
+    name: 'Wishlist',
+    component: () => import('../pages/WishlistPage.vue'),
+  },
+  {
     path: '/cart',
     name: 'Cart',
     component: () => import('../pages/CartPage.vue'),

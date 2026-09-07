@@ -20,11 +20,7 @@ public class ProductDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (productRepository.count() > 0) {
-            log.info("Products already seeded — skipping data initialization.");
-            return;
-        }
-
+        productRepository.deleteAll();
         log.info("Seeding {} sample healthcare products...", sampleProducts().size());
 
         List<Product> products = sampleProducts();
@@ -412,7 +408,7 @@ public class ProductDataInitializer implements CommandLineRunner {
                         .description("Large-capacity weekly pill organizer with 4 daily compartments (morning, noon, evening, bedtime) and easy-open lids designed for arthritic hands. Color-coded and Braille-embossed. Removable daily trays for travel convenience. BPA-free plastic.")
                         .price(new BigDecimal("12.49"))
                         .category(ProductCategory.ELDERLY_CARE)
-                        .imageUrl(null)
+                        .imageUrl("/images/products/pill-organizer.png")
                         .stockQuantity(220)
                         .manufacturer("MediTech Devices")
                         .dosage("")
@@ -490,7 +486,7 @@ public class ProductDataInitializer implements CommandLineRunner {
                         .description("Soothing menthol and eucalyptus chest rub for relief from cough, cold, and nasal congestion. Warms the chest and helps clear airways for easier breathing. Suitable for adults and children over 2 years. Non-greasy formula.")
                         .price(new BigDecimal("6.99"))
                         .category(ProductCategory.RESPIRATORY)
-                        .imageUrl(null)
+                        .imageUrl("/images/products/menthol-gel.png")
                         .stockQuantity(550)
                         .manufacturer("PharmaCare International")
                         .dosage("Massage gently onto chest and back 2-3 times daily. May also apply to soles of feet at bedtime. Cover with warm clothing after application.")
@@ -627,7 +623,7 @@ public class ProductDataInitializer implements CommandLineRunner {
                         .description("Premium chelated magnesium glycinate for optimal absorption and gentle digestion. Supports muscle relaxation, nervous system health, sleep quality, and energy metabolism. Non-buffered formula — no digestive discomfort. 3-month supply.")
                         .price(new BigDecimal("18.99"))
                         .category(ProductCategory.WELLNESS)
-                        .imageUrl(null)
+                        .imageUrl("/images/products/magnesium.png")
                         .stockQuantity(420)
                         .manufacturer("NutraLife Wellness")
                         .dosage("2 capsules daily with food, preferably in the evening to support restful sleep. Can be split into morning and evening doses.")
@@ -646,7 +642,7 @@ public class ProductDataInitializer implements CommandLineRunner {
                         .description("Fast-dissolve melatonin tablets for occasional sleeplessness, jet lag, and shift work sleep disorder. Helps regulate the body's natural sleep-wake cycle. Nighttime berry flavor. 120 quick-dissolve tablets.")
                         .price(new BigDecimal("12.99"))
                         .category(ProductCategory.WELLNESS)
-                        .imageUrl(null)
+                        .imageUrl("/images/products/melatonin.png")
                         .stockQuantity(500)
                         .manufacturer("NutraLife Wellness")
                         .dosage("Place 1 tablet under tongue 30 minutes before bedtime. Allow to dissolve completely. Do not exceed recommended dose.")
@@ -666,7 +662,7 @@ public class ProductDataInitializer implements CommandLineRunner {
                         .description("Dentist-recommended sensitive toothpaste with 1450ppm fluoride for cavity protection and potassium nitrate to relieve tooth sensitivity. Low-abrasion formula safe for enamel. Provides 24/7 sensitivity protection with twice daily brushing.")
                         .price(new BigDecimal("7.99"))
                         .category(ProductCategory.PERSONAL_CARE)
-                        .imageUrl(null)
+                        .imageUrl("/images/products/toothpaste.png")
                         .stockQuantity(600)
                         .manufacturer("SafeGuard Medical Supplies")
                         .dosage("Brush teeth thoroughly twice daily for 2 minutes. Do not swallow. Spit out after brushing. Suitable for adults and children over 12 years.")
@@ -677,6 +673,200 @@ public class ProductDataInitializer implements CommandLineRunner {
                         .reviews(List.of(
                                 new Product.Review("Carol B.", 5, "My sensitivity improved dramatically after just 2 weeks. Best toothpaste for sensitive teeth.", null),
                                 new Product.Review("Derek J.", 4, "Good relief from cold sensitivity. The mint flavor is pleasant without burning.", null)
+                        ))
+                        .build(),
+
+                // ==================== FIRST_AID (MORE) ====================
+                Product.builder()
+                        .name("Adhesive Bandages Variety Pack — 100 Count")
+                        .description("Assorted flexible fabric bandages in multiple sizes for cuts, scrapes, and minor wounds. Strong adhesive with non-stick pad. Breathable, waterproof material. Includes fingertip, knuckle, and standard shapes. Latex-free and hypoallergenic.")
+                        .price(new BigDecimal("7.99"))
+                        .category(ProductCategory.FIRST_AID)
+                        .imageUrl("/images/products/first-aid.png")
+                        .stockQuantity(750)
+                        .manufacturer("SafeGuard Medical Supplies")
+                        .dosage("Clean wound thoroughly, dry skin, apply bandage. Change daily or when wet/dirty.")
+                        .ingredients("Flexible woven fabric, hypoallergenic acrylic adhesive, non-stick absorbent pad")
+                        .prescriptionRequired(false)
+                        .sideEffects("Rarely: skin irritation from adhesive. Discontinue if rash develops.")
+                        .ratings(4.5)
+                        .reviews(List.of(
+                                new Product.Review("Tom H.", 5, "Great variety pack. Fabric bandages stay on much better than plastic ones.", null),
+                                new Product.Review("Anna W.", 4, "Perfect for a family with kids. Every size you could need.", null)
+                        ))
+                        .build(),
+
+                Product.builder()
+                        .name("Antiseptic Wound Spray — 100ml")
+                        .description("No-sting antiseptic spray for cleaning minor cuts, scrapes, burns, and abrasions. Kills 99.9% of germs without alcohol. Non-irritating formula with moisturizers. Can be used on face and body.")
+                        .price(new BigDecimal("9.49"))
+                        .category(ProductCategory.FIRST_AID)
+                        .imageUrl("/images/products/antiseptic-spray.png")
+                        .stockQuantity(380)
+                        .manufacturer("SafeGuard Medical Supplies")
+                        .dosage("Spray directly onto affected area from 10-15cm distance. Allow to air dry. No need to rinse. Use 2-3 times daily.")
+                        .ingredients("Benzalkonium Chloride 0.13%, Aloe Barbadensis Leaf Extract, Glycerin, Polysorbate 20, Citric Acid, Purified Water")
+                        .prescriptionRequired(false)
+                        .sideEffects("For external use only. Avoid contact with eyes. Discontinue if irritation occurs.")
+                        .ratings(4.4)
+                        .reviews(List.of(
+                                new Product.Review("Karen S.", 5, "No sting at all! My kids don't cry when I use this. Much better than alcohol.", null),
+                                new Product.Review("Robert D.", 4, "Effective and gentle. Great for everyday cuts and scrapes.", null)
+                        ))
+                        .build(),
+
+                // ==================== MEDICAL_DEVICES (MORE) ====================
+                Product.builder()
+                        .name("Pulse Oximeter Fingertip Monitor")
+                        .description("Portable SpO2 and pulse rate monitor with OLED display. Measures blood oxygen saturation and pulse rate in 8 seconds. Suitable for sports, aviation, and home health monitoring. FDA cleared.")
+                        .price(new BigDecimal("29.99"))
+                        .category(ProductCategory.MEDICAL_DEVICES)
+                        .imageUrl("/images/products/oximeter.png")
+                        .stockQuantity(210)
+                        .manufacturer("MediTech Devices")
+                        .dosage("Insert finger into device, press button. Results display in 8 seconds. Auto-powers off after 10 seconds.")
+                        .ingredients("Electronic medical device. ABS plastic shell. OLED display. 2x AAA batteries (included). SpO2 70-99%, Pulse 30-250 bpm. Accuracy: ±2%.")
+                        .prescriptionRequired(false)
+                        .sideEffects("Remove nail polish for accurate readings. Cold hands may affect accuracy.")
+                        .ratings(4.6)
+                        .reviews(List.of(
+                                new Product.Review("Frank G.", 5, "Accurate and easy to use. Great for monitoring my COPD at home.", null),
+                                new Product.Review("Patricia N.", 5, "Compact and reliable. Bought for my husband post-surgery recovery.", null)
+                        ))
+                        .build(),
+
+                Product.builder()
+                        .name("Digital Personal Scale with BMI")
+                        .description("Precision digital bathroom scale with tempered glass platform. Measures up to 180kg/400lb with 0.1kg accuracy. Auto-calibrating step-on technology. Large backlit LCD shows weight and BMI. Sleek modern design.")
+                        .price(new BigDecimal("22.99"))
+                        .category(ProductCategory.MEDICAL_DEVICES)
+                        .imageUrl("/images/products/scale.png")
+                        .stockQuantity(190)
+                        .manufacturer("MediTech Devices")
+                        .dosage("Place on hard flat surface. Step on with bare feet. Stand still until reading stabilizes.")
+                        .ingredients("Tempered glass platform (6mm), ABS base, 4 high-precision sensors, LCD display. 2x CR2032 batteries (included). Capacity: 5-180kg.")
+                        .prescriptionRequired(false)
+                        .sideEffects("")
+                        .ratings(4.3)
+                        .reviews(List.of(
+                                new Product.Review("Laura M.", 5, "Sleek design and accurate readings. The BMI display is a nice bonus.", null),
+                                new Product.Review("James C.", 4, "Good quality scale. Easy to use and matches my doctor's readings.", null)
+                        ))
+                        .build(),
+
+                // ==================== OTHER ====================
+                Product.builder()
+                        .name("Compression Socks — 3 Pairs")
+                        .description("Graduated compression socks (15-20 mmHg) for improved circulation, reduced leg fatigue, and varicose vein prevention. Ideal for travel, pregnancy, long hours standing/sitting, and post-surgery recovery. Breathable cotton blend. Unisex sizing.")
+                        .price(new BigDecimal("16.99"))
+                        .category(ProductCategory.OTHER)
+                        .imageUrl("/images/products/compression-socks.jpg")
+                        .stockQuantity(340)
+                        .manufacturer("MediTech Devices")
+                        .dosage("Wear during waking hours. Remove before sleeping. Machine washable. Replace every 3-6 months.")
+                        .ingredients("Cotton 65%, Nylon 25%, Spandex 10%. Graduated compression: 15-20 mmHg at ankle.")
+                        .prescriptionRequired(false)
+                        .sideEffects("Ensure proper sizing. Consult doctor if you have peripheral neuropathy or arterial disease.")
+                        .ratings(4.4)
+                        .reviews(List.of(
+                                new Product.Review("Megan R.", 5, "Lifesaver during my pregnancy! Reduced swelling dramatically. Very comfortable.", null),
+                                new Product.Review("David L.", 5, "Great for long flights. My legs feel fresh even after 12 hours of travel.", null)
+                        ))
+                        .build(),
+
+                Product.builder()
+                        .name("Reusable Hot & Cold Therapy Pack")
+                        .description("Versatile gel pack for hot or cold therapy. Microwaveable for heat therapy (muscle relaxation, stiffness) or freezable for cold therapy (swelling, inflammation, injuries). Flexible even when frozen. Includes soft fabric sleeve with velcro strap. 28cm x 15cm.")
+                        .price(new BigDecimal("11.49"))
+                        .category(ProductCategory.OTHER)
+                        .imageUrl("/images/products/hot-cold-pack.png")
+                        .stockQuantity(290)
+                        .manufacturer("SafeGuard Medical Supplies")
+                        .dosage("Cold: freeze 2+ hours, apply 15-20 min. Heat: microwave 30 sec, knead, test temp, apply 15-20 min. Always use sleeve.")
+                        .ingredients("Non-toxic silica gel, water, propylene glycol. Fabric sleeve: cotton-polyester blend with velcro.")
+                        .prescriptionRequired(false)
+                        .sideEffects("Do not apply directly to skin without sleeve. Do not overheat. Check temp before applying to children or elderly.")
+                        .ratings(4.5)
+                        .reviews(List.of(
+                                new Product.Review("Sarah J.", 5, "Stays flexible even when frozen. The sleeve is soft and the strap holds it in place.", null),
+                                new Product.Review("Paul T.", 4, "Great for post-workout recovery. Both hot and cold work perfectly.", null)
+                        ))
+                        .build(),
+
+                // ==================== Rx PRESCRIPTION PRODUCTS ====================
+                Product.builder()
+                        .name("Amoxicillin 500mg Antibiotic")
+                        .description("Broad-spectrum penicillin antibiotic for bacterial infections. Treats pneumonia, bronchitis, ear infections, strep throat, and skin infections. Take with food for best absorption.")
+                        .price(new BigDecimal("28.99"))
+                        .category(ProductCategory.DIGESTIVE_HEALTH)
+                        .imageUrl("/images/products/antibiotic.png")
+                        .stockQuantity(75)
+                        .manufacturer("PharmaCare Laboratories")
+                        .dosage("Adults: 1 tablet (500mg) every 8 hours for 7-10 days. Children: 25-50mg/kg/day divided in 3 doses. Take with food. Complete full course even if symptoms improve.")
+                        .ingredients("Active: Amoxicillin 500mg (as amoxicillin trihydrate). Inactive: Microcrystalline cellulose, magnesium stearate, croscarmellose sodium, gelatin (capsule).")
+                        .prescriptionRequired(true)
+                        .sideEffects("May cause diarrhea, nausea, rash, or yeast infection. Seek medical help if allergic reaction (swelling, difficulty breathing). Not for use in people with penicillin allergy.")
+                        .ratings(4.7)
+                        .reviews(List.of(
+                                new Product.Review("Jessica M.", 5, "Cleared up my sinus infection in 3 days. No side effects.", null),
+                                new Product.Review("Robert K.", 4, "Works well but gave me mild diarrhea. Took with food and it helped.", null)
+                        ))
+                        .build(),
+
+                Product.builder()
+                        .name("Metformin 500mg — Diabetes Management")
+                        .description("First-line oral hypoglycemic for type 2 diabetes. Improves insulin sensitivity and reduces glucose production in the liver. Helps maintain healthy blood sugar levels.")
+                        .price(new BigDecimal("18.49"))
+                        .category(ProductCategory.DIABETES_CARE)
+                        .imageUrl("/images/products/metformin.png")
+                        .stockQuantity(120)
+                        .manufacturer("GlucaPharma Inc.")
+                        .dosage("Initial: 1 tablet (500mg) twice daily with meals. May increase to 1000mg twice daily based on blood glucose levels. Maximum: 2000-3000mg/day.")
+                        .ingredients("Active: Metformin hydrochloride 500mg. Inactive: Hypromellose, magnesium stearate, polyethylene glycol, titanium dioxide (tablet coating).")
+                        .prescriptionRequired(true)
+                        .sideEffects("Most common: GI upset, metallic taste, vitamin B12 deficiency risk. Rare but serious: lactic acidosis (weakness, trouble breathing, irregular heartbeat).")
+                        .ratings(4.6)
+                        .reviews(List.of(
+                                new Product.Review("Linda P.", 5, "Been on it for 5 years. A1C went from 8.2 to 6.5. No major side effects.", null),
+                                new Product.Review("David S.", 4, "Works but the taste is terrible. I chew a mint right after taking it.", null)
+                        ))
+                        .build(),
+
+                Product.builder()
+                        .name("Lisinopril 10mg — Blood Pressure Control")
+                        .description("ACE inhibitor for managing high blood pressure, heart failure, and post-heart attack recovery. Widens blood vessels to lower blood pressure and reduce strain on the heart.")
+                        .price(new BigDecimal("15.99"))
+                        .category(ProductCategory.HEART_HEALTH)
+                        .imageUrl("/images/products/lisinopril.png")
+                        .stockQuantity(150)
+                        .manufacturer("CardioMed Pharmaceuticals")
+                        .dosage("High BP: start 10mg once daily, increase to 20-40mg. Heart failure: 5mg twice daily, titrate to 20-40mg/day. Take at same time daily.")
+                        .ingredients("Active: Lisinopril 10mg. Inactive: Magnesium stearate, mannitol, calcium hydrogen phosphate, talc.")
+                        .prescriptionRequired(true)
+                        .sideEffects("Dry persistent cough (most common), dizziness, headache, fatigue, elevated potassium. Report swelling of face/lips/tongue immediately.")
+                        .ratings(4.5)
+                        .reviews(List.of(
+                                new Product.Review("Margaret H.", 5, "Lowered my BP from 160/95 to 128/82 in 2 months. The cough went away after switching brands.", null),
+                                new Product.Review("Thomas R.", 4, "Works great but the cough is real. Worth it for the BP control.", null)
+                        ))
+                        .build(),
+
+                Product.builder()
+                        .name("Cetirizine Hydrochloride 10mg Rx")
+                        .description("Second-generation antihistamine for severe allergic reactions, chronic urticaria, and perennial allergic rhinitis. Non-drowsy formula with 24-hour relief.")
+                        .price(new BigDecimal("22.79"))
+                        .category(ProductCategory.RESPIRATORY)
+                        .imageUrl("/images/products/cetirizine-rx.png")
+                        .stockQuantity(200)
+                        .manufacturer("AllerGuard Pharmaceuticals")
+                        .dosage("Adults and children 6+: 1 tablet (10mg) once daily. May increase to 20mg/day if needed for severe allergies. Renal impairment: reduce to 5mg daily.")
+                        .ingredients("Active: Cetirizine hydrochloride 10mg. Inactive: Lactose monohydrate, microcrystalline cellulose, colloidal silicon dioxide, magnesium stearate.")
+                        .prescriptionRequired(true)
+                        .sideEffects("Drowsiness (uncommon), dry mouth, fatigue, headache, sore throat. Avoid alcohol and other CNS depressants.")
+                        .ratings(4.8)
+                        .reviews(List.of(
+                                new Product.Review("Anna L.", 5, "My seasonal allergies are completely gone. No drowsiness at all — better than OTC.", null),
+                                new Product.Review("Michael B.", 5, "Been taking this daily for 3 years. Zero side effects, full 24-hour relief.", null)
                         ))
                         .build()
 

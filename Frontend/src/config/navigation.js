@@ -8,6 +8,7 @@ export const NAV_ITEMS = {
   [ROLES.PATIENT]: [
     { to: '/chat', label: 'AI Chat' },
     { to: '/products', label: 'Shop' },
+    { to: '/wishlist', label: 'Wishlist' },
     { to: '/events', label: 'Events' },
     { to: '/events/registrations', label: 'My Events' },
     { to: '/consultations', label: 'Consultations' },
@@ -52,6 +53,7 @@ export const NAV_ITEMS = {
   [ROLES.VENDOR]: [
     { to: '/vendor', label: 'Dashboard' },
     { to: '/products', label: 'Shop' },
+    { to: '/wishlist', label: 'Wishlist' },
     { to: '/events', label: 'Events' },
     { to: '/events/registrations', label: 'My Events' },
     { to: '/chat', label: 'AI Chat' },
