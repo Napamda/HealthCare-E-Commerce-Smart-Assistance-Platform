@@ -13,6 +13,7 @@ export const NAV_ITEMS = {
         { to: '/products', label: 'Products' },
         { to: '/recommendations', label: 'AI Recommendations' },
         { to: '/cart', label: 'Cart' },
+        { to: '/wishlist', label: 'Wishlist' },
         { to: '/orders', label: 'Orders' },
       ],
     },
@@ -21,6 +22,7 @@ export const NAV_ITEMS = {
       children: [
         { to: '/consultations', label: 'Consultations' },
         { to: '/prescriptions', label: 'Prescriptions' },
+        { to: '/professionals', label: 'Find Professionals' },
       ],
     },
     {
@@ -34,25 +36,74 @@ export const NAV_ITEMS = {
 
   [ROLES.DOCTOR]: [
     { to: '/doctor', label: 'Dashboard' },
-    { to: '/events', label: 'Events' },
-    { to: '/events/manage', label: 'Manage Events' },
-    { to: '/events/registrations', label: 'My Events' },
-    { to: '/chat', label: 'AI Chat' },
+    {
+      label: 'Consultations',
+      children: [
+        { to: '/doctor/chat', label: 'Patient Messages' },
+        { to: '/professionals', label: 'Professional Directory' },
+      ],
+    },
+    {
+      label: 'Events',
+      children: [
+        { to: '/events', label: 'Browse Events' },
+        { to: '/events/manage', label: 'Manage Events' },
+        { to: '/events/registrations', label: 'My Events' },
+      ],
+    },
+    {
+      label: 'Tools',
+      children: [
+        { to: '/chat', label: 'AI Chat' },
+        { to: '/products', label: 'Product Catalog' },
+        { to: '/admin/notifications', label: 'Notification Logs' },
+      ],
+    },
   ],
 
   [ROLES.PHARMACIST]: [
     { to: '/pharmacist', label: 'Dashboard' },
-    { to: '/events', label: 'Events' },
-    { to: '/events/registrations', label: 'My Events' },
+    {
+      label: 'Explore',
+      children: [
+        { to: '/products', label: 'Product Catalog' },
+        { to: '/professionals', label: 'Professional Directory' },
+        { to: '/chat', label: 'AI Chat' },
+      ],
+    },
+    {
+      label: 'Events',
+      children: [
+        { to: '/events', label: 'Browse Events' },
+        { to: '/events/registrations', label: 'My Events' },
+      ],
+    },
   ],
 
   [ROLES.ADMIN]: [
     { to: '/admin', label: 'Dashboard' },
-    { to: '/admin/users', label: 'Manage Users' },
-    { to: '/admin/products', label: 'Manage Products' },
-    { to: '/admin/categories', label: 'Manage Categories' },
-    { to: '/inventory', label: 'Manage Inventory' },
-    { to: '/events/manage', label: 'Manage Events' },
+    {
+      label: 'Management',
+      children: [
+        { to: '/admin/users', label: 'Users' },
+        { to: '/admin/moderation', label: 'Moderation' },
+        { to: '/admin/products', label: 'Products' },
+        { to: '/admin/categories', label: 'Categories' },
+        { to: '/inventory', label: 'Inventory' },
+        { to: '/events/manage', label: 'Events' },
+        { to: '/admin/notifications', label: 'Notification Logs' },
+      ],
+    },
+    {
+      label: 'Explore',
+      children: [
+        { to: '/products', label: 'Product Catalog' },
+        { to: '/professionals', label: 'Professional Directory' },
+        { to: '/events', label: 'Browse Events' },
+        { to: '/events/registrations', label: 'My Events' },
+        { to: '/chat', label: 'AI Chat' },
+      ],
+    },
     {
       label: 'Role Views',
       children: [
@@ -66,10 +117,22 @@ export const NAV_ITEMS = {
   [ROLES.VENDOR]: [
     { to: '/vendor', label: 'Dashboard' },
     { to: '/inventory', label: 'Inventory' },
-    { to: '/products', label: 'Shop' },
-    { to: '/events', label: 'Events' },
-    { to: '/events/registrations', label: 'My Events' },
-    { to: '/chat', label: 'AI Chat' },
+    {
+      label: 'Explore',
+      children: [
+        { to: '/products', label: 'Product Catalog' },
+        { to: '/wishlist', label: 'Wishlist' },
+        { to: '/professionals', label: 'Professional Directory' },
+        { to: '/chat', label: 'AI Chat' },
+      ],
+    },
+    {
+      label: 'Events',
+      children: [
+        { to: '/events', label: 'Browse Events' },
+        { to: '/events/registrations', label: 'My Events' },
+      ],
+    },
   ],
 }
 

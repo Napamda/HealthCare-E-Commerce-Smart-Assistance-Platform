@@ -1,6 +1,8 @@
 package org.example.Healthcareplatform.payment.controller;
 
 import jakarta.validation.Valid;
+import org.example.Healthcareplatform.payment.dto.BankTransferRequest;
+import org.example.Healthcareplatform.payment.dto.PayPalPaymentRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.payment.dto.PaymentExecuteRequest;
@@ -62,11 +64,22 @@ public class PaymentController {
     }
 
     @PostMapping("/{paymentId}/execute/paypal")
-    public ResponseEntity<?> executePayPal(@PathVariable Long paymentId, Authentication auth) {
+    public ResponseEntity<?> executePayPal(@PathVariable Long paymentId, @Valid @RequestBody PayPalPaymentRequest request, Authentication auth) {
         Long userId = getUserId(auth);
         log.info("POST /api/payments/{}/execute/paypal — user={}", paymentId, userId);
         try {
-            return ResponseEntity.ok(paymentService.executePayPalPayment(userId, paymentId));
+            return ResponseEntity.ok(paymentService.executePayPalPayment(userId, paymentId, request));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{paymentId}/execute/bank-transfer")
+    public ResponseEntity<?> executeBankTransfer(@PathVariable Long paymentId,
+                                                  @Valid @RequestBody BankTransferRequest request,
+                                                  Authentication auth) {
+        try {
+            return ResponseEntity.ok(paymentService.executeBankTransferPayment(getUserId(auth), paymentId, request));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

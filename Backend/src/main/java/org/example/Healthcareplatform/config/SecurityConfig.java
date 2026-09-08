@@ -58,6 +58,7 @@ public class SecurityConfig {
                                 "/api/auth/verify-email"
                         ).permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         // These handlers require authentication and must be evaluated
                         // before the broader public product-catalog matcher.
                         .requestMatchers("/api/products/recommendations/**").authenticated()

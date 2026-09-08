@@ -1,9 +1,11 @@
 package org.example.Healthcareplatform.payment.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.Healthcareplatform.payment.dto.BankTransferRequest;
+import org.example.Healthcareplatform.payment.dto.PayPalPaymentRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.inventory.service.InventoryService;
-import org.example.Healthcareplatform.messaging.publisher.HealthcareEventPublisher;
+import org.example.Healthcareplatform.notification.entity.Notification;
 import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.order.entity.Order;
 import org.example.Healthcareplatform.order.repository.OrderRepository;
@@ -38,7 +40,6 @@ public class PaymentService {
     private final OrderRepository orderRepository;
     private final InventoryService inventoryService;
     private final NotificationService notificationService;
-    private final HealthcareEventPublisher eventPublisher;
 
     @Transactional
     public PaymentResponse initiatePayment(Long userId, Long orderId, String methodName) {
@@ -85,15 +86,37 @@ public class PaymentService {
                 orderRepository.save(order);
             }
             inventoryService.confirmReservations(order.getId());
-            notificationService.notify(userId, "ORDER", "Order confirmed",
+            notificationService.createNotification(
+                    userId,
+                    "Order confirmed",
                     "Your order " + order.getOrderNumber() + " is confirmed. You will pay "
-                            + order.getTotalAmount() + " on delivery.");
+                            + order.getTotalAmount() + " on delivery.",
+                    Notification.NotificationType.ORDER_CONFIRMED,
+                    order.getId());
         } else {
+            // Idempotent initiate: if this order already has a pending or retryable
+            // payment for the same method, reuse it instead of inserting a second row.
+            Payment existing = paymentRepository.findByOrderIdOrderByCreatedAtDesc(orderId).stream()
+                    .filter(p -> p.getStatus() == Payment.Status.PENDING
+                            || (p.getStatus() == Payment.Status.FAILED
+                            && p.getRetryCount() < p.getMaxRetries()))
+                    .findFirst()
+                    .orElse(null);
+            if (existing != null && existing.getMethod() == method) {
+                log.info("Reusing existing payment: id={}, order={}, status={}",
+                        existing.getId(), order.getOrderNumber(), existing.getStatus());
+                return PaymentResponse.fromEntity(existing);
+            }
+
             Payment saved = paymentRepository.save(payment);
             log.info("Payment initiated: id={}, order={}, method={}", saved.getId(), order.getOrderNumber(), method);
-            notificationService.notify(userId, "PAYMENT", "Payment pending",
+            notificationService.createNotification(
+                    userId,
+                    "Payment pending",
                     "A payment of $" + order.getTotalAmount() + " for order " + order.getOrderNumber()
-                            + " is awaiting completion.");
+                            + " is awaiting completion.",
+                    Notification.NotificationType.PAYMENT_PENDING,
+                    order.getId());
             return PaymentResponse.fromEntity(saved);
         }
         return PaymentResponse.fromEntity(payment);
@@ -132,8 +155,12 @@ public class PaymentService {
             String retryMessage = payment.getRetryCount() < payment.getMaxRetries()
                     ? " You can retry payment. Attempts remaining: " + (payment.getMaxRetries() - payment.getRetryCount())
                     : " Maximum retry attempts exceeded. Please contact support.";
-            notificationService.notify(userId, "PAYMENT", "Payment failed",
-                    "Your payment for order " + payment.getOrderNumber() + " was declined (" + declineCode + ")." + retryMessage);
+            notificationService.createNotification(
+                    userId,
+                    "Payment failed",
+                    "Your payment for order " + payment.getOrderNumber() + " was declined (" + declineCode + ")." + retryMessage,
+                    Notification.NotificationType.PAYMENT_FAILED,
+                    payment.getOrderId());
             return PaymentResponse.fromEntity(payment);
         }
 
@@ -144,51 +171,52 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResponse executePayPalPayment(Long userId, Long paymentId) {
+    public PaymentResponse executePayPalPayment(Long userId, Long paymentId, PayPalPaymentRequest request) {
+        Payment payment = executablePayment(userId, paymentId, Payment.Method.PAYPAL);
+        // This application uses a simulated gateway, not a live PayPal integration.
+        // Keep approval deterministic; validation failures still return errors.
+        markSuccessful(payment, request.getEmail().trim());
+        confirmOrderStock(payment);
+        sendSuccessNotifications(userId, payment);
+        return PaymentResponse.fromEntity(payment);
+    }
+
+    @Transactional
+    public PaymentResponse executeBankTransferPayment(Long userId, Long paymentId, BankTransferRequest request) {
+        Payment payment = executablePayment(userId, paymentId, Payment.Method.BANK_TRANSFER);
+        // Demo settlement only. A real transfer must be verified by a bank/provider
+        // before this status transition; a user-entered reference is not proof of payment.
+        payment.setTransferReference(request.getTransferReference().trim());
+        markSuccessful(payment, request.getAccountHolder().trim());
+        confirmOrderStock(payment);
+        sendSuccessNotifications(userId, payment);
+        return PaymentResponse.fromEntity(payment);
+    }
+
+    private Payment executablePayment(Long userId, Long paymentId, Payment.Method method) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found: " + paymentId));
         if (!payment.getUserId().equals(userId)) {
             throw new IllegalArgumentException("Payment does not belong to user");
         }
-        if (payment.getStatus() == Payment.Status.SUCCESS) {
-            throw new IllegalArgumentException("Payment is already successful");
+        if (payment.getMethod() != method) {
+            throw new IllegalArgumentException("Payment method does not match " + method);
         }
-        if (payment.getMethod() != Payment.Method.PAYPAL) {
-            throw new IllegalArgumentException("This payment is not a PayPal payment");
+        if (payment.getStatus() != Payment.Status.PENDING && payment.getStatus() != Payment.Status.FAILED) {
+            throw new IllegalArgumentException("Payment cannot be executed in its current status");
         }
-
-        // Check retry limits
-        if (payment.getStatus() == Payment.Status.FAILED && payment.getRetryCount() >= payment.getMaxRetries()) {
-            throw new IllegalStateException("Maximum retry attempts (" + payment.getMaxRetries() + ") exceeded. Please contact support.");
+        if (payment.getRetryCount() >= payment.getMaxRetries()) {
+            throw new IllegalStateException("Maximum retry attempts exceeded");
         }
-
-        try {
-            Thread.sleep(1200);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        Order order = orderRepository.findById(payment.getOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        if (order.getStatus() != Order.OrderStatus.PENDING) {
+            throw new IllegalArgumentException("Only pending orders can be paid");
         }
-
-        // Simulate occasional PayPal failures (10% chance)
-        if (RANDOM.nextInt(10) == 0) {
-            payment.setStatus(Payment.Status.FAILED);
-            payment.setErrorMessage("PayPal transaction declined");
-            payment.setRetryCount(payment.getRetryCount() + 1);
-            payment.setLastRetryAt(Instant.now());
-            paymentRepository.save(payment);
-            log.warn("PayPal payment FAILED: payment={}, retryCount={}", paymentId, payment.getRetryCount());
-
-            String retryMessage = payment.getRetryCount() < payment.getMaxRetries()
-                    ? " You can retry payment. Attempts remaining: " + (payment.getMaxRetries() - payment.getRetryCount())
-                    : " Maximum retry attempts exceeded. Please contact support.";
-            notificationService.notify(userId, "PAYMENT", "Payment failed",
-                    "Your PayPal payment for order " + payment.getOrderNumber() + " was declined." + retryMessage);
-            return PaymentResponse.fromEntity(payment);
+        if (!method.name().equals(order.getPaymentMethod())) {
+            throw new IllegalArgumentException("Payment method does not match the order");
         }
-
-        markSuccessful(payment, null);
-        confirmOrderStock(payment);
-        sendSuccessNotifications(userId, payment);
-        return PaymentResponse.fromEntity(payment);
+        return payment;
     }
 
     @Transactional(readOnly = true)
@@ -240,6 +268,10 @@ public class PaymentService {
         }
         int expiryMonth = Integer.parseInt(request.getExpiryMonth());
         int expiryYear = Integer.parseInt(request.getExpiryYear());
+        // Accept both YY (e.g. "29") and YYYY (e.g. "2029") expiry years.
+        if (request.getExpiryYear().length() == 2) {
+            expiryYear += 2000;
+        }
         LocalDate now = LocalDate.now();
         if (expiryYear < now.getYear() ||
                 (expiryYear == now.getYear() && expiryMonth < now.getMonthValue())) {
@@ -286,19 +318,21 @@ public class PaymentService {
 
     private void sendSuccessNotifications(Long userId, Payment payment) {
         // Send payment success notification
-        notificationService.notify(userId, "PAYMENT", "Payment successful",
+        notificationService.createNotification(
+                userId,
+                "Payment successful",
                 "Payment of $" + payment.getAmount() + " for order " + payment.getOrderNumber()
-                        + " was successful. Receipt: " + payment.getReceiptNumber());
+                        + " was successful. Receipt: " + payment.getReceiptNumber(),
+                Notification.NotificationType.PAYMENT_SUCCESS,
+                payment.getOrderId());
 
         // Send order confirmation notification
-        notificationService.notify(userId, "ORDER", "Order confirmed",
-                "Your order " + payment.getOrderNumber() + " has been confirmed and is being processed.");
-
-        Order order = orderRepository.findById(payment.getOrderId()).orElse(null);
-        if (order != null) {
-            eventPublisher.publishPaymentSuccess(payment.getId(), order.getId(), userId,
-                    order.getUserEmail(), order.getUserName(), payment.getAmount());
-        }
+        notificationService.createNotification(
+                userId,
+                "Order confirmed",
+                "Your order " + payment.getOrderNumber() + " has been confirmed and is being processed.",
+                Notification.NotificationType.ORDER_CONFIRMED,
+                payment.getOrderId());
     }
 
     @Transactional(readOnly = true)
@@ -336,6 +370,7 @@ public class PaymentService {
                 .paymentMethod(payment.getMethod().name())
                 .paymentStatus(payment.getStatus().name())
                 .billingName(payment.getBillingName())
+                .transferReference(payment.getTransferReference())
                 .paidAt(payment.getPaidAt())
                 .createdAt(payment.getCreatedAt())
                 .items(items)
@@ -371,9 +406,13 @@ public class PaymentService {
         paymentRepository.save(payment);
 
         log.info("Payment reset for retry: payment={}, retryCount={}", paymentId, payment.getRetryCount());
-        notificationService.notify(userId, "PAYMENT", "Payment retry available",
+        notificationService.createNotification(
+                userId,
+                "Payment retry available",
                 "Your payment for order " + payment.getOrderNumber() + " is ready to retry. Attempts remaining: "
-                        + (payment.getMaxRetries() - payment.getRetryCount()));
+                        + (payment.getMaxRetries() - payment.getRetryCount()),
+                Notification.NotificationType.PAYMENT_PENDING,
+                payment.getOrderId());
 
         return PaymentResponse.fromEntity(payment);
     }

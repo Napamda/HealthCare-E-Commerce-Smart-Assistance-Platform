@@ -31,6 +31,17 @@ export function cancelOrder(orderId) {
 export function reorder(orderId) {
   return api.post(`/api/orders/${orderId}/reorder`).then((res) => res.data)
 }
+
+/**
+ * Customer confirms receipt of a shipped order (SHIPPED → DELIVERED).
+ * @param {number} orderId
+ * @param {string} signature
+ * @returns {Promise<import('../types').OrderResponse>}
+ */
+export function confirmDelivery(orderId, signature) {
+  return api.post(`/api/orders/${orderId}/confirm-delivery`, { signature }).then((res) => res.data)
+}
+
 /**
  * Preview the checkout breakdown (subtotal, discount, shipping, tax, total).
  * @param {{ shippingMethod?: string, discountCode?: string }} params
@@ -38,4 +49,22 @@ export function reorder(orderId) {
  */
 export function previewCheckout(params) {
   return api.post('/api/orders/preview', params).then((res) => res.data)
+}
+async function cancelExistingOrder(orderId) {
+  loading.value = true
+  error.value = null
+  try {
+    const data = await cancelOrder(orderId)
+    // Update in orders list
+    const idx = orders.value.findIndex((o) => o.id === orderId)
+    if (idx !== -1) orders.value[idx] = data
+    // Update selected order
+    if (selectedOrder.value?.id === orderId) selectedOrder.value = data
+    return data
+  } catch (e) {
+    error.value = e.response?.data?.error || 'Failed to cancel order'
+    throw e
+  } finally {
+    loading.value = false
+  }
 }

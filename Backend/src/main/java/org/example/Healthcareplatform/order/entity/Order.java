@@ -88,6 +88,12 @@ public class Order {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "delivery_signature", columnDefinition = "TEXT")
+    private String deliverySignature;
+
+    @Column(name = "delivery_confirmed_at")
+    private Instant deliveryConfirmedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

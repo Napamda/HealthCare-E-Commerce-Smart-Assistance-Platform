@@ -40,18 +40,28 @@ const statusColor = (status) => {
 const statusLabel = (status) => status.charAt(0) + status.slice(1).toLowerCase()
 
 const nextStatus = (current) => {
-  const flow = { PENDING: 'CONFIRMED', CONFIRMED: 'PROCESSING', PROCESSING: 'SHIPPED', SHIPPED: 'DELIVERED' }
+  const flow = { PENDING: 'CONFIRMED', CONFIRMED: 'PROCESSING', PROCESSING: 'SHIPPED' }
   return flow[current] || null
 }
 
 const nextStatusLabel = (current) => {
-  const map = { PENDING: 'Confirm', CONFIRMED: 'Process', PROCESSING: 'Ship', SHIPPED: 'Deliver' }
+  const map = { PENDING: 'Confirm', CONFIRMED: 'Process', PROCESSING: 'Ship' }
   return map[current] || ''
 }
 
 function formatPrice(val) {
   if (val == null) return '$0.00'
   return '$' + Number(val).toFixed(2)
+}
+
+// Generate a random tracking number in the same format the server uses.
+function generateTrackingNumber() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let tracking = 'TRK'
+  for (let i = 0; i < 16; i++) {
+    tracking += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return tracking
 }
 
 function formatDate(iso) {
@@ -127,7 +137,8 @@ async function doAdvanceStatus(order) {
 }
 
 function openShipModal(order) {
-  shipModal.value = { visible: true, order, trackingNumber: order.trackingNumber || '' }
+  // Always assign a tracking number up front — it is never optional.
+  shipModal.value = { visible: true, order, trackingNumber: order.trackingNumber || generateTrackingNumber() }
 }
 
 function closeShipModal() {
@@ -424,13 +435,14 @@ onMounted(() => {
         </div>
         <div class="vd-modal-body">
           <p class="vd-modal-order">Order #{{ shipModal.order?.id }} — {{ shipModal.order?.userName || shipModal.order?.userEmail }}</p>
-          <label class="vd-field-label">Tracking Number <span class="vd-optional">(optional)</span></label>
+          <label class="vd-field-label">Tracking Number <span class="vd-auto-badge">auto-generated</span></label>
           <input
             v-model="shipModal.trackingNumber"
             class="vd-field-input"
             type="text"
-            placeholder="e.g. 1Z999AA10123456784"
+            placeholder="A tracking number is assigned automatically"
           />
+          <p class="vd-field-hint">A random tracking number has been generated for this shipment. You can keep it or replace it before shipping.</p>
         </div>
         <div class="vd-modal-footer">
           <button class="vd-btn vd-btn-ghost" @click="closeShipModal">Cancel</button>
@@ -794,7 +806,21 @@ onMounted(() => {
 .vd-modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--color-border); }
 .vd-modal-order { margin: 0 0 14px; font-weight: 600; color: var(--color-text); }
 .vd-field-label { display: block; font-size: 12px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 6px; }
-.vd-optional { font-weight: 400; color: var(--color-text-muted); }
+.vd-auto-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #0d9488;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  border-radius: var(--radius-full);
+  vertical-align: middle;
+}
+.vd-field-hint { margin: 6px 0 0; font-size: 12px; color: var(--color-text-muted); line-height: 1.45; }
 .vd-field-input {
   width: 100%;
   box-sizing: border-box;

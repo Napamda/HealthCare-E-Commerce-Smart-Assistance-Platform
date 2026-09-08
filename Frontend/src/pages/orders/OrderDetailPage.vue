@@ -1,5 +1,5 @@
 ﻿<script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useOrderStore } from '../../stores/order.js'
 
@@ -8,6 +8,8 @@ const router = useRouter()
 const store = useOrderStore()
 
 const orderId = computed(() => Number(route.params.id))
+const confirmingDelivery = ref(false)
+const deliverySignature = ref('')
 
 function formatPrice(price) {
   if (price == null) return '$0.00'
@@ -31,16 +33,16 @@ function formatStatus(status) {
 
 function formatPaymentMethod(method) {
   if (!method) return 'N/A'
-  const map = { CARD: 'Credit/Debit Card', PAYPAL: 'PayPal', CASH_ON_DELIVERY: 'Cash on Delivery' }
+  const map = { CARD: 'Credit/Debit Card', PAYPAL: 'PayPal', BANK_TRANSFER: 'Bank Transfer', CASH_ON_DELIVERY: 'Cash on Delivery' }
   return map[method] || method
 }
 
 function isActive(status) {
   const currentStatus = order.value?.status
   if (!currentStatus) return false
-  const order = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED']
-  const currentIndex = order.indexOf(currentStatus)
-  const targetIndex = order.indexOf(status)
+  const statusFlow = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED']
+  const currentIndex = statusFlow.indexOf(currentStatus)
+  const targetIndex = statusFlow.indexOf(status)
   return currentIndex >= targetIndex
 }
 
@@ -68,6 +70,29 @@ async function handleCancel() {
   } catch (_) { /* error shown in store */ }
 }
 
+/* ---------- Delivery confirmation with frontend verification ---------- */
+const canConfirmDelivery = computed(() => order.value?.status === 'SHIPPED')
+
+function promptDeliveryVerify() {
+  confirmingDelivery.value = true
+}
+
+function cancelDeliveryVerify() {
+  confirmingDelivery.value = false
+}
+
+async function submitDeliveryConfirm() {
+  if (!deliverySignature.value.trim()) {
+    alert('Please provide your signature to confirm delivery')
+    return
+  }
+  try {
+    await store.confirmDelivery(orderId.value, deliverySignature.value)
+    confirmingDelivery.value = false
+    deliverySignature.value = ''
+  } catch (_) { /* error shown in store */ }
+}
+
 const order = computed(() => store.selectedOrder)
 const canCancel = computed(() => {
   const s = order.value?.status
@@ -89,7 +114,7 @@ onMounted(async () => {
       Back to Orders
     </button>
 
-    <div v-if="store.loading" class="loading">
+    <div v-if="store.loading && !order" class="loading">
       <div class="loading-spinner">
         <svg class="spinner" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -99,7 +124,7 @@ onMounted(async () => {
       <p>Loading order details...</p>
     </div>
 
-    <div v-else-if="store.error" class="error">
+    <div v-else-if="store.error && !order" class="error">
       <div class="error-icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -281,6 +306,42 @@ onMounted(async () => {
             </svg>
             Cancel Order
           </button>
+
+          <!-- Delivery confirmation with inline verification -->
+          <template v-if="canConfirmDelivery">
+            <template v-if="!confirmingDelivery">
+              <button class="btn-confirm-delivery" @click="promptDeliveryVerify">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Confirm Delivery
+              </button>
+            </template>
+            <template v-else>
+              <div class="delivery-verify-box">
+                <span class="verify-text">Have you received this order?</span>
+                <div class="signature-input-group">
+                  <label class="signature-label">Please sign to confirm delivery:</label>
+                  <textarea 
+                    v-model="deliverySignature"
+                    class="signature-input"
+                    placeholder="Type your full name as signature"
+                    rows="2"
+                  ></textarea>
+                </div>
+                <button class="btn-back" @click="cancelDeliveryVerify">No, go back</button>
+                <button
+                  class="btn-confirm-delivery"
+                  :disabled="store.loading || !deliverySignature.trim()"
+                  @click="submitDeliveryConfirm"
+                >
+                  {{ store.loading ? 'Confirming…' : 'Yes, mark as delivered' }}
+                </button>
+              </div>
+            </template>
+          </template>
+
           <button class="btn-reorder" @click="handleReorder">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -547,7 +608,7 @@ onMounted(async () => {
 .action-info { display: flex; flex-direction: column; gap: 4px; }
 .item-count { font-size: 14px; color: var(--color-text-muted); }
 .order-total-display { font-size: 24px; font-weight: 700; color: var(--color-primary); }
-.action-buttons { display: flex; gap: 12px; }
+.action-buttons { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .btn-cancel {
   display: flex;
   align-items: center;
@@ -563,6 +624,65 @@ onMounted(async () => {
   transition: all 0.15s;
 }
 .btn-cancel:hover { background: #fef2f2; }
+
+.btn-confirm-delivery {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-confirm-delivery:hover { background: #15803d; }
+.btn-confirm-delivery:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.delivery-verify-box {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  min-width: 300px;
+}
+.verify-text {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+.signature-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.signature-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.signature-input {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.signature-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.signature-input::placeholder {
+  color: var(--color-text-muted);
+}
+
 .btn-reorder {
   display: flex;
   align-items: center;
@@ -598,7 +718,9 @@ onMounted(async () => {
   }
   .action-buttons {
     flex-direction: column;
+    align-items: stretch;
   }
+
   .shipping-grid {
     grid-template-columns: 1fr;
   }

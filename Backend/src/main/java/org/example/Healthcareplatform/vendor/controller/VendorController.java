@@ -132,7 +132,15 @@ public class VendorController {
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
 
         try {
-            order.setStatus(OrderStatus.valueOf(status.toUpperCase()));
+            OrderStatus newStatus = OrderStatus.valueOf(status.toUpperCase());
+            
+            // Vendors cannot change status to DELIVERED - only patients can confirm delivery
+            if (newStatus == OrderStatus.DELIVERED) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Vendors cannot change order status to DELIVERED. Only patients can confirm delivery."));
+            }
+            
+            order.setStatus(newStatus);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid status: " + status));
         }
@@ -143,9 +151,27 @@ public class VendorController {
 
     // ============ Ship Order ============
 
+    private static final java.security.SecureRandom TRACKING_RANDOM = new java.security.SecureRandom();
+    private static final String TRACKING_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    private static String generateTrackingNumber() {
+        StringBuilder sb = new StringBuilder("TRK");
+        for (int i = 0; i < 16; i++) {
+            sb.append(TRACKING_ALPHABET.charAt(TRACKING_RANDOM.nextInt(TRACKING_ALPHABET.length())));
+        }
+        return sb.toString();
+    }
+
     @PutMapping("/orders/{orderId}/ship")
     public ResponseEntity<?> shipOrder(@PathVariable Long orderId, @RequestBody Map<String, String> body) {
+        // If the vendor did not supply a tracking number, assign a randomly generated one.
+        // The order is always shipped with a tracking number (never optional).
         String trackingNumber = body.get("trackingNumber");
+        if (trackingNumber == null || trackingNumber.isBlank()) {
+            trackingNumber = generateTrackingNumber();
+        } else {
+            trackingNumber = trackingNumber.trim();
+        }
         log.info("PUT /api/vendor/orders/{}/ship — tracking={}", orderId, trackingNumber);
 
         Order order = orderRepository.findById(orderId)
@@ -157,7 +183,7 @@ public class VendorController {
         }
 
         order.setStatus(OrderStatus.SHIPPED);
-        order.setTrackingNumber(trackingNumber != null ? trackingNumber.trim() : null);
+        order.setTrackingNumber(trackingNumber);
         orderRepository.save(order);
 
         return ResponseEntity.ok(OrderResponse.fromEntity(order));

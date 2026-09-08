@@ -8,6 +8,8 @@ import org.example.Healthcareplatform.discount.service.DiscountService;
 import org.example.Healthcareplatform.inventory.service.InventoryService;
 import org.example.Healthcareplatform.discount.service.DiscountService;
 import org.example.Healthcareplatform.inventory.service.InventoryService;
+import org.example.Healthcareplatform.notification.entity.Notification;
+import org.example.Healthcareplatform.notification.service.NotificationService;
 import org.example.Healthcareplatform.order.dto.CheckoutPreviewRequest;
 import org.example.Healthcareplatform.order.dto.CheckoutPreviewResponse;
 import org.example.Healthcareplatform.order.dto.OrderRequest;
@@ -15,6 +17,7 @@ import org.example.Healthcareplatform.order.dto.OrderResponse;
 import org.example.Healthcareplatform.messaging.publisher.HealthcareEventPublisher;
 import org.example.Healthcareplatform.order.dto.OrderStatisticsResponse;
 import org.example.Healthcareplatform.order.entity.Order;
+import org.example.Healthcareplatform.order.entity.Order.OrderStatus;
 import org.example.Healthcareplatform.order.entity.OrderItem;
 import org.example.Healthcareplatform.order.repository.OrderRepository;
 import org.example.Healthcareplatform.product.entity.Product;
@@ -54,6 +57,7 @@ public class OrderService {
     private final InventoryService inventoryService;
     private final DiscountService discountService;
     private final HealthcareEventPublisher eventPublisher;
+    private final NotificationService notificationService;
 
     private static final List<String> SHIPPING_METHODS = List.of("STANDARD", "EXPRESS", "SAME_DAY");
 
@@ -311,17 +315,43 @@ public class OrderService {
                 .statusBreakdown(statusBreakdown)
                 .build();
     }
-
+    // OrderService.java - cancelOrder method
     @Transactional
-    public OrderResponse cancelOrder(Long userId, Long orderId) {
+    public Order cancelOrder(Long userId, Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
+
         if (!order.getUserId().equals(userId)) {
             throw new IllegalArgumentException("Order does not belong to user");
         }
-        return doCancel(order);
-    }
 
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("Order is already cancelled");
+        }
+
+        if (order.getStatus() == OrderStatus.SHIPPED ||
+                order.getStatus() == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Cannot cancel shipped or delivered order");
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order = orderRepository.save(order);
+
+        // ✅ Release inventory with reason
+        inventoryService.releaseReservations(orderId, "Order cancelled by user");
+
+        // Notify user
+        notificationService.createNotification(
+                userId,
+                "Order Cancelled",
+                "Your order " + order.getOrderNumber() + " has been cancelled.",
+                Notification.NotificationType.ORDER_CANCELLED,
+                orderId
+        );
+
+        log.info("Order cancelled: id={}, userId={}", orderId, userId);
+        return order;
+    }
     @Transactional
     public OrderResponse cancelOrderByAdmin(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -390,6 +420,36 @@ public class OrderService {
         order.setStatus(target);
         Order saved = orderRepository.save(order);
         log.info("Order {} status updated: {} -> {} by user {}", saved.getOrderNumber(), order.getStatus(), target, actorUserId);
+        return OrderResponse.fromEntity(saved);
+    }
+
+    @Transactional
+    public OrderResponse confirmDelivery(Long userId, Long orderId, String signature) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
+        
+        // Verify the order belongs to the user
+        if (!order.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Order does not belong to user");
+        }
+        
+        // Only orders in SHIPPED status can be confirmed as delivered
+        if (order.getStatus() != Order.OrderStatus.SHIPPED) {
+            throw new IllegalArgumentException("Only shipped orders can be confirmed as delivered");
+        }
+        
+        // Validate signature is provided
+        if (signature == null || signature.isBlank()) {
+            throw new IllegalArgumentException("Signature is required to confirm delivery");
+        }
+        
+        // Update order to delivered status with signature
+        order.setStatus(Order.OrderStatus.DELIVERED);
+        order.setDeliverySignature(signature);
+        order.setDeliveryConfirmedAt(Instant.now());
+        
+        Order saved = orderRepository.save(order);
+        log.info("Order {} delivery confirmed by user {} with signature", saved.getOrderNumber(), userId);
         return OrderResponse.fromEntity(saved);
     }
 

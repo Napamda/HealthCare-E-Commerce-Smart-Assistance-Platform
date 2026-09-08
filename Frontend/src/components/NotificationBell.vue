@@ -25,18 +25,35 @@ function formatTime(dateStr) {
 }
 
 function typeLabel(type) {
-  if (type === 'PRESCRIPTION_APPROVED') return 'Rx Approved'
-  if (type === 'PRESCRIPTION_REJECTED') return 'Rx Rejected'
-  if (type === 'CONSULTATION_ACCEPTED') return 'Consultation'
-  if (type === 'CONSULTATION_IN_PROGRESS') return 'Consultation'
-  if (type === 'CONSULTATION_CREATED') return 'Consultation'
-  return type
+  const labels = {
+    PRESCRIPTION_APPROVED: 'Rx Approved',
+    PRESCRIPTION_REJECTED: 'Rx Rejected',
+    CONSULTATION_ACCEPTED: 'Consultation',
+    CONSULTATION_IN_PROGRESS: 'Consultation',
+    CONSULTATION_CREATED: 'Consultation',
+    ORDER_CREATED: 'Order',
+    ORDER_SHIPPED: 'Order Shipped',
+    ORDER_DELIVERED: 'Order Delivered',
+    PAYMENT_SUCCESS: 'Payment',
+    PAYMENT_FAILED: 'Payment Failed',
+    EVENT_REGISTRATION: 'Event',
+    EVENT_REMINDER: 'Event Reminder',
+    USER_REGISTERED: 'Welcome',
+    WELCOME: 'Welcome',
+    STOCK_LOW: 'Low Stock',
+    STOCK_OUT: 'Out of Stock'
+  }
+  return labels[type] || type
 }
 
 function typeClass(type) {
   if (type === 'PRESCRIPTION_APPROVED') return 'type-approved'
   if (type === 'PRESCRIPTION_REJECTED') return 'type-rejected'
-  return 'type-consultation'
+  if (type?.includes('ORDER')) return 'type-order'
+  if (type?.includes('PAYMENT')) return 'type-payment'
+  if (type?.includes('CONSULTATION')) return 'type-consultation'
+  if (type?.includes('EVENT')) return 'type-event'
+  return 'type-other'
 }
 
 async function handleBellClick() {
@@ -48,18 +65,74 @@ async function handleBellClick() {
   }
 }
 
+// ✅ IMPROVED: Click handler with proper routing
 async function handleNotificationClick(notification) {
+  // Mark as read first
   if (!notification.isRead) {
     await notificationStore.markNotificationRead(notification.id)
   }
+  
   notificationStore.closeDropdown()
-  // Route to the right page based on notification type.
+  
   const type = notification.type
-  if (type && type.startsWith('CONSULTATION')) {
-    router.push('/consultations')
-  } else {
-    router.push(`/prescriptions/${notification.referenceId}`)
+  const referenceId = notification.referenceId
+  
+  // Define routing logic
+  const routes = {
+    // Prescription related
+    PRESCRIPTION_APPROVED: () => router.push(`/prescriptions/${referenceId}`),
+    PRESCRIPTION_REJECTED: () => router.push(`/prescriptions/${referenceId}`),
+    
+    // Consultation related
+    CONSULTATION_ACCEPTED: () => router.push('/consultations'),
+    CONSULTATION_IN_PROGRESS: () => router.push('/consultations'),
+    CONSULTATION_CREATED: () => router.push('/consultations'),
+    
+    // Order related
+    ORDER_CREATED: () => router.push(`/orders/${referenceId}`),
+    ORDER_SHIPPED: () => router.push(`/orders/${referenceId}`),
+    ORDER_DELIVERED: () => router.push(`/orders/${referenceId}`),
+    
+    // Payment related
+    PAYMENT_SUCCESS: () => router.push(`/orders/${referenceId}`),
+    PAYMENT_FAILED: () => router.push('/checkout'),
+    
+    // Event related
+    EVENT_REGISTRATION: () => router.push(`/events/${referenceId}`),
+    EVENT_REMINDER: () => router.push(`/events/${referenceId}`),
+    
+    // User related
+    USER_REGISTERED: () => router.push('/profile'),
+    WELCOME: () => router.push('/products'),
+    
+    // Inventory related
+    STOCK_LOW: () => router.push('/vendor/inventory'),
+    STOCK_OUT: () => router.push('/vendor/inventory'),
+    
+    // Default fallback
+    DEFAULT: () => {
+      // Try to navigate based on type pattern
+      if (referenceId) {
+        if (type?.includes('PRESCRIPTION')) {
+          router.push(`/prescriptions/${referenceId}`)
+        } else if (type?.includes('ORDER') || type?.includes('PAYMENT')) {
+          router.push(`/orders/${referenceId}`)
+        } else if (type?.includes('CONSULTATION')) {
+          router.push('/consultations')
+        } else if (type?.includes('EVENT')) {
+          router.push(`/events/${referenceId}`)
+        } else {
+          router.push('/notifications')
+        }
+      } else {
+        router.push('/notifications')
+      }
+    }
   }
+  
+  // Execute the appropriate route function
+  const routeFn = routes[type] || routes.DEFAULT
+  routeFn()
 }
 
 async function handleMarkAllRead() {
@@ -141,3 +214,21 @@ onUnmounted(() => {
     </Transition>
   </div>
 </template>
+
+<style scoped>
+/* Your existing styles... */
+
+.notification-item {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.notification-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.type-order { background: #4a90d9; }
+.type-payment { background: #27ae60; }
+.type-event { background: #8e44ad; }
+.type-other { background: #7f8c8d; }
+</style>

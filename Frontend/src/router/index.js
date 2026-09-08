@@ -44,6 +44,11 @@ const routes = [
     name: 'Chat',
     component: () => import('../pages/chat/ChatPage.vue'),
   },
+    {
+    path: '/wishlist',
+    name: 'Wishlist',
+    component: () => import('../pages/WishlistPage.vue'),
+  },
   {
     path: '/chat/:id',
     name: 'ChatConversation',
@@ -59,19 +64,19 @@ const routes = [
   {
     path: '/doctor/profile',
     name: 'DoctorProfile',
-    meta: { requiresRole: [ROLES.DOCTOR, ROLES.ADMIN] },
+    meta: { requiresExactRole: ROLES.DOCTOR },
     component: () => import('../pages/doctor/DoctorProfilePage.vue'),
   },
   {
     path: '/pharmacist/profile',
     name: 'PharmacistProfile',
-    meta: { requiresRole: [ROLES.PHARMACIST, ROLES.ADMIN] },
+    meta: { requiresExactRole: ROLES.PHARMACIST },
     component: () => import('../pages/pharmacist/PharmacistProfilePage.vue'),
   },
   {
     path: '/vendor/profile',
     name: 'VendorProfile',
-    meta: { requiresRole: [ROLES.VENDOR, ROLES.ADMIN] },
+    meta: { requiresExactRole: ROLES.VENDOR },
     component: () => import('../pages/vendor/VendorProfilePage.vue'),
   },
   {
@@ -83,6 +88,7 @@ const routes = [
   {
     path: '/recommendations',
     name: 'Recommendations',
+    meta: { requiresExactRole: ROLES.PATIENT },
     component: () => import('../pages/products/RecommendationsPage.vue'),
   },
   {
@@ -204,7 +210,7 @@ const routes = [
   {
     path: '/admin/profile',
     name: 'AdminProfile',
-    meta: { requiresRole: [ROLES.ADMIN] },
+    meta: { requiresExactRole: ROLES.ADMIN },
     component: () => import('../pages/admin/AdminProfilePage.vue'),
   },
   {
@@ -234,19 +240,19 @@ const routes = [
   {
     path: '/prescriptions',
     name: 'PrescriptionList',
-    meta: { requiresRole: [ROLES.PATIENT] },
+    meta: { requiresExactRole: ROLES.PATIENT },
     component: () => import('../pages/prescriptions/PrescriptionListPage.vue'),
   },
   {
     path: '/prescriptions/upload',
     name: 'PrescriptionUpload',
-    meta: { requiresRole: [ROLES.PATIENT] },
+    meta: { requiresExactRole: ROLES.PATIENT },
     component: () => import('../pages/prescriptions/PrescriptionUploadPage.vue'),
   },
   {
     path: '/prescriptions/:id',
     name: 'PrescriptionDetail',
-    meta: { requiresRole: [ROLES.PATIENT] },
+    meta: { requiresExactRole: ROLES.PATIENT },
     component: () => import('../pages/prescriptions/PrescriptionDetailPage.vue'),
   },
   {

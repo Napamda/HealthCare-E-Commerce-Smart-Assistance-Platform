@@ -16,5 +16,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     Optional<Payment> findFirstByOrderIdAndStatusOrderByCreatedAtDesc(Long orderId, Payment.Status status);
 
+    Optional<Payment> findFirstByOrderIdAndMethodOrderByCreatedAtDesc(Long orderId, Payment.Method method);
+
     List<Payment> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

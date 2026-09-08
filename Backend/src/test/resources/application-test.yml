@@ -18,6 +18,11 @@ spring:
       simple:
         auto-startup: false
 
+management:
+  health:
+    rabbit:
+      enabled: false
+
 ai:
   provider: mock
   openrouter:

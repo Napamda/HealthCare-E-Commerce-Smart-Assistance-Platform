@@ -32,6 +32,7 @@ public class Payment {
     public enum Method {
         CARD,
         PAYPAL,
+        BANK_TRANSFER,
         CASH_ON_DELIVERY
     }
 
@@ -81,6 +82,9 @@ public class Payment {
 
     @Column(name = "billing_name", length = 150)
     private String billingName;
+
+    @Column(name = "transfer_reference", length = 60)
+    private String transferReference;
 
     @Column(name = "retry_count")
     @Builder.Default

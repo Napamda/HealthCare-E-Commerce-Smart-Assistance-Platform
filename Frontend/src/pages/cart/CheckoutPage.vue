@@ -151,9 +151,16 @@ async function placeOrder() {
       confirmPrescription: form.value.confirmPrescription || undefined,
       notes: form.value.notes,
     })
-    orderPlaced.value = order
     cartStore.itemCount = 0
     cartStore.items = []
+
+    // Online payment methods collect details on the payment page.
+    if (['CARD', 'PAYPAL', 'BANK_TRANSFER'].includes(form.value.paymentMethod)) {
+      router.push(`/payment/${order.id}`)
+      return
+    }
+
+    orderPlaced.value = order
   } catch (_) {
     // error shown via store
   } finally {
@@ -311,7 +318,21 @@ onMounted(async () => {
               <input type="radio" v-model="form.paymentMethod" value="CARD" />
               <div class="payment-info">
                 <span class="payment-title">Credit / Debit Card</span>
-                <span class="payment-desc">Coming soon</span>
+                <span class="payment-desc">Pay securely online — you'll enter your card details right after your order is placed</span>
+              </div>
+            </label>
+            <label class="payment-option" :class="{ selected: form.paymentMethod === 'PAYPAL' }">
+              <input type="radio" v-model="form.paymentMethod" value="PAYPAL" />
+              <div class="payment-info">
+                <span class="payment-title">PayPal</span>
+                <span class="payment-desc">Continue to PayPal payment details</span>
+              </div>
+            </label>
+            <label class="payment-option" :class="{ selected: form.paymentMethod === 'BANK_TRANSFER' }">
+              <input type="radio" v-model="form.paymentMethod" value="BANK_TRANSFER" />
+              <div class="payment-info">
+                <span class="payment-title">Bank Transfer</span>
+                <span class="payment-desc">Continue to bank transfer details</span>
               </div>
             </label>
           </div>

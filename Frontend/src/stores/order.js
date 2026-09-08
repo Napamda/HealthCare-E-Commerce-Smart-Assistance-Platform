@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { createOrder, getUserOrders, getOrderById, cancelOrder, reorder } from '../services/order.js'
+import { createOrder, getUserOrders, getOrderById, cancelOrder, reorder, confirmDelivery as apiConfirmDelivery } from '../services/order.js'
 
 export const useOrderStore = defineStore('order', () => {
   const orders = ref([])
@@ -8,6 +8,24 @@ export const useOrderStore = defineStore('order', () => {
   const loading = ref(false)
   const error = ref(null)
   const pagination = ref({ page: 0, totalPages: 0, totalElements: 0 })
+
+  async function confirmDelivery(orderId, signature) {
+    loading.value = true
+    error.value = null
+    try {
+      const data = await apiConfirmDelivery(orderId, signature)
+      // refresh local selected order if it matches
+      if (selectedOrder.value?.id === orderId) {
+        selectedOrder.value = data
+      }
+      return data
+    } catch (err) {
+      error.value = err?.response?.data?.error || 'Failed to confirm delivery. Please try again.'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
 
   async function placeOrder(orderData) {
     loading.value = true
@@ -75,13 +93,37 @@ export const useOrderStore = defineStore('order', () => {
       throw e
     }
   }
+  async function fetchOrderById(orderId) {
+  loading.value = true
+  error.value = null
+  try {
+    selectedOrder.value = await getOrderById(orderId)  // ✅ This sets it
+    return selectedOrder.value
+  } catch (e) {
+    error.value = 'Failed to load order'
+    throw e
+  } finally {
+    loading.value = false
+  }
+}
+
 
   function clearError() {
     error.value = null
   }
-
+  
   return {
     orders, selectedOrder, loading, error, pagination,
-    placeOrder, fetchOrders, fetchOrderById, cancelExistingOrder, reorderExistingOrder, clearError,
+    placeOrder, fetchOrders, fetchOrderById, cancelExistingOrder, reorderExistingOrder, confirmDelivery, clearError,
   }
+
+
 })
+/**
+ * Cancel an order
+ * @param {number} orderId - The order ID
+ * @returns {Promise<Object>} Updated order
+ */
+export function cancelOrder(orderId) {
+  return api.post(`/api/orders/${orderId}/cancel`).then((res) => res.data)
+}

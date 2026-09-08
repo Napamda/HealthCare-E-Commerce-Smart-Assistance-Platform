@@ -45,6 +45,17 @@ public class PaymentMethodResponse {
                     .supportedCurrencies(List.of("USD"))
                     .enabled(true)
                     .build();
+        } else if (method == Payment.Method.BANK_TRANSFER) {
+            return PaymentMethodResponse.builder()
+                    .method("BANK_TRANSFER")
+                    .displayName("Bank Transfer")
+                    .description("Pay by bank transfer")
+                    .requiresCardDetails(false)
+                    .supportsRefunds(false)
+                    .processingFee(0.0)
+                    .supportedCurrencies(List.of("USD"))
+                    .enabled(true)
+                    .build();
         } else {
             return PaymentMethodResponse.builder()
                     .method("CASH_ON_DELIVERY")

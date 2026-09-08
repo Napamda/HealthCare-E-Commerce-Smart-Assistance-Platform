@@ -6,9 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.Healthcareplatform.common.CurrentUser;
 import org.example.Healthcareplatform.order.dto.CheckoutPreviewRequest;
 import org.example.Healthcareplatform.order.dto.CheckoutPreviewResponse;
+import org.example.Healthcareplatform.order.dto.DeliveryConfirmationRequest;
 import org.example.Healthcareplatform.order.dto.OrderRequest;
 import org.example.Healthcareplatform.order.dto.OrderResponse;
 import org.example.Healthcareplatform.order.dto.OrderStatisticsResponse;
+import org.example.Healthcareplatform.order.entity.Order;
 import org.example.Healthcareplatform.order.service.OrderService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -97,16 +99,18 @@ public class OrderController {
         }
     }
 
-    @PostMapping("/{orderId}/cancel")
-    public ResponseEntity<?> cancelOrder(@PathVariable Long orderId, Authentication auth) {
-        Long userId = getUserId(auth);
-        log.info("POST /api/orders/{}/cancel — userId={}", orderId, userId);
-        try {
-            return ResponseEntity.ok(orderService.cancelOrder(userId, orderId));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+@PostMapping("/{orderId}/cancel")
+public ResponseEntity<?> cancelOrder(@PathVariable Long orderId, Authentication auth) {
+    Long userId = Long.parseLong(auth.getName());
+    try {
+        Order order = orderService.cancelOrder(userId, orderId);
+        return ResponseEntity.ok(order);
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    } catch (IllegalStateException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
     }
+}
 
     @PostMapping("/{orderId}/reorder")
     public ResponseEntity<?> reorder(@PathVariable Long orderId, Authentication auth) {
@@ -126,6 +130,17 @@ public class OrderController {
         log.info("POST /api/orders/{}/confirm — userId={}", orderId, userId);
         try {
             return ResponseEntity.ok(orderService.confirmOrder(userId, orderId));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{orderId}/confirm-delivery")
+    public ResponseEntity<?> confirmDelivery(@PathVariable Long orderId, @Valid @RequestBody DeliveryConfirmationRequest request, Authentication auth) {
+        Long userId = getUserId(auth);
+        log.info("POST /api/orders/{}/confirm-delivery — userId={}", orderId, userId);
+        try {
+            return ResponseEntity.ok(orderService.confirmDelivery(userId, orderId, request.getSignature()));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

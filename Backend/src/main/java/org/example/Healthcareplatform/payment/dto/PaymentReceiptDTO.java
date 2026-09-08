@@ -25,6 +25,7 @@ public class PaymentReceiptDTO {
     private String paymentMethod;
     private String paymentStatus;
     private String billingName;
+    private String transferReference;
     private Instant paidAt;
     private Instant createdAt;
     private List<ReceiptItem> items;

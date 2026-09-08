@@ -22,6 +22,7 @@ export const usePaymentStore = defineStore('payment', () => {
     }
   }
 
+
   async function initiatePayment(orderId, method) {
     loading.value = true
     error.value = null
@@ -51,11 +52,11 @@ export const usePaymentStore = defineStore('payment', () => {
     }
   }
 
-  async function executePayPalPayment(paymentId) {
+  async function executePayPalPayment(paymentId, details) {
     loading.value = true
     error.value = null
     try {
-      const response = await apiClient.post(`/api/payments/${paymentId}/execute/paypal`)
+      const response = await apiClient.post(`/api/payments/${paymentId}/execute/paypal`, details)
       return response.data
     } catch (err) {
       error.value = err.message
@@ -65,20 +66,33 @@ export const usePaymentStore = defineStore('payment', () => {
     }
   }
 
+  async function executeBankTransferPayment(paymentId, details) {
+    const response = await apiClient.post(`/api/payments/${paymentId}/execute/bank-transfer`, details)
+    return response.data
+  }
+
   function formatPrice(price) {
     if (price == null) return '$0.00'
     return '$' + Number(price).toFixed(2)
   }
+// stores/payment.js - Add this method
+function setCurrentPayment(payment) {
+  currentPayment.value = payment
+}
 
-  return {
-    methods,
-    currentPayment,
-    loading,
-    error,
-    fetchPaymentMethods,
-    initiatePayment,
-    executeCardPayment,
-    executePayPalPayment,
-    formatPrice
-  }
+// Add to return statement
+return {
+  methods,
+  currentPayment,
+  loading,
+  error,
+  fetchPaymentMethods,
+  initiatePayment,
+  executeCardPayment,
+  executePayPalPayment,
+  executeBankTransferPayment,
+  setCurrentPayment,  // ← ADD THIS
+  formatPrice
+}
+
 })

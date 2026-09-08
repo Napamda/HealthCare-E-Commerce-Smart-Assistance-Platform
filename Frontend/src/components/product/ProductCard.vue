@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../../stores/cart.js'
 import { useAuthStore } from '../../stores/auth.js'
+import FavoriteButton from './FavoriteButton.vue'
 
 const props = defineProps({
   product: {
@@ -71,6 +72,9 @@ async function handleAddToCart(e) {
         </svg>
       </div>
       <span class="category-badge">{{ categoryLabel }}</span>
+      <div class="favorite-btn-wrapper">
+        <FavoriteButton :product-id="product.id" size="sm" />
+      </div>
     </div>
 
     <!-- Info -->
@@ -156,6 +160,12 @@ async function handleAddToCart(e) {
   font-weight: 600;
   color: var(--color-primary);
   border: 1px solid var(--color-primary-light);
+}
+
+.favorite-btn-wrapper {
+  position: absolute;
+  top: 12px;
+  right: 12px;
 }
 
 .card-info {
